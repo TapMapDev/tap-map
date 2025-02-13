@@ -1,0 +1,49 @@
+name: tap_map
+description: "A new Flutter project."
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  mapbox_maps_flutter: ^2.5.2
+  http: ^0.13.5
+  flutter_dotenv: ^5.2.1
+  geolocator: ^13.0.2
+  dio: ^5.7.0
+  get_it: ^8.0.3
+  talker: ^4.6.0
+  get: ^4.6.6
+  flutter_bloc: ^9.0.0
+  shared_preferences: ^2.3.5
+  bloc: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/
+    - assets/png/
+    - assets/svg/
+
+
+
+
+
+
+
+
+
+
+
+
+
