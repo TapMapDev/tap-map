@@ -1,5 +1,3 @@
-
-
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -11,13 +9,13 @@ class AuthorizationRepositoryImpl {
   AuthorizationRepositoryImpl({required this.apiService});
 
   Future<AuthorizationResponseModel> authorize({
-    required String email,
+    required String username,
     required String password,
   }) async {
     final response = await apiService.postData(
-        '/user/login',
+        '/auth/jwt/create/',
         {
-          'email': email,
+          'username': username,
           'password': password,
         },
         useAuth: false);

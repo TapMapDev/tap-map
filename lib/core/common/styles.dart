@@ -14,7 +14,6 @@ class StyleManager {
   static const Color blocColor = Color(0xFFF6F5F8);
   static const Color blackColor = Color(0xFF1D1D1D);
   static const Color grayColor = Color(0xFFC5C5CE);
-
 }
 
 class TextStylesManager {
@@ -45,5 +44,10 @@ class TextStylesManager {
       fontWeight: FontWeight.w300,
       fontSize: 12,
       color: StyleManager.blackColor);
-
+  static TextStyle drawerText = const TextStyle(
+    fontWeight: FontWeight.w500,
+    fontSize: 16,
+    color: StyleManager.blackColor,
+    height: 20 / 16,
+  );
 }

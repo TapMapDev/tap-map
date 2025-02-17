@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 
 class CheckAuthPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _CheckAuthPageState extends State<CheckAuthPage> {
       child: const Scaffold(
         body: Center(
           child: CircularProgressIndicator(
-            // color: StyleManager.mainColor,
+            color: StyleManager.mainColor,
           ),
         ),
       ),

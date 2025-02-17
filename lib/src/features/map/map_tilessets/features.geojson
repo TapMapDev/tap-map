@@ -1,0 +1,4569 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "type": "Event",
+        "name": "Sample Event",
+        "zoom": 1.5,
+        "rating": 57.51,
+        "min_dist": 999999,
+        "marker_type": "https://tap-maptravel.s3.amazonaws.com/media/gifs/markertype/M-Fest_RDR2_64.webm"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.38978835231241,
+          7.873048955412353
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "type": "Event",
+        "name": "\u0441\u043e\u0431\u044b\u0442\u0438\u0435",
+        "zoom": 1.5,
+        "rating": 57.51,
+        "min_dist": 999999,
+        "marker_type": "https://tap-maptravel.s3.amazonaws.com/media/gifs/markertype/M-Fest_RDR2_64.webm"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.40416689103482,
+          7.850681453753392
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3487,
+        "type": "Point",
+        "name": "The Lao Caf\u00e9 Ang Thong",
+        "zoom": 1.5,
+        "rating": 42.52,
+        "min_dist": 7085.138814274953,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "20:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3910923,
+          14.60248
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3813,
+        "type": "Point",
+        "name": "\u0e1a\u0e2d\u0e01\u0e15\u0e48\u0e2d Bohk Toh restaurant",
+        "zoom": 1.5,
+        "rating": 61.17,
+        "min_dist": 5376.1353034527765,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.44182,
+          14.561862
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2934,
+        "type": "Point",
+        "name": "\u0e23\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e2b\u0e32\u0e23\u0e1b\u0e34\u0e48\u0e19\u0e42\u0e15 - Pinto Restaurant",
+        "zoom": 1.5,
+        "rating": 32.07,
+        "min_dist": 5376.1353034527765,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.460133,
+          14.5168801
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2529,
+        "type": "Point",
+        "name": "Botanist activity space and more",
+        "zoom": 1.5,
+        "rating": 80.36,
+        "min_dist": 10351.551257361632,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.7252147,
+          13.8481583
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2545,
+        "type": "Point",
+        "name": "Madras Darbar Indian Restaurant",
+        "zoom": 1.5,
+        "rating": 92.34,
+        "min_dist": 119.95889356495134,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "00:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5409921,
+          13.7540647
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2565,
+        "type": "Point",
+        "name": "Big Mama Pizzeria - Italian food Restaurant",
+        "zoom": 1.5,
+        "rating": 61.59,
+        "min_dist": 343.24777235792124,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5616249,
+          13.7403753
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2566,
+        "type": "Point",
+        "name": "Medinii Restaurant Sukhumvit (35th floor)",
+        "zoom": 1.5,
+        "rating": 92.18,
+        "min_dist": 173.85132063604635,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "00:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5619765,
+          13.7361331
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2643,
+        "type": "Point",
+        "name": "Chu",
+        "zoom": 1.5,
+        "rating": 51.48,
+        "min_dist": 499.31464045241177,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "07:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "07:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "07:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "07:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "07:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5670742,
+          13.7358634
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2644,
+        "type": "Point",
+        "name": "Cafe De Chote",
+        "zoom": 1.5,
+        "rating": 81.65,
+        "min_dist": 5534.854996335434,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.402893,
+          13.7111858
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3942,
+        "type": "Point",
+        "name": "Flow",
+        "zoom": 1.5,
+        "rating": 52.07,
+        "min_dist": 3534.15243155687,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:00",
+              "12:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5455768,
+          13.7861683
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2748,
+        "type": "Point",
+        "name": "KHAO (Ekkamai)",
+        "zoom": 1.5,
+        "rating": 51.54,
+        "min_dist": 1055.4452054766525,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:30",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:30",
+              "17:30"
+            ],
+            "close_times": [
+              "14:00",
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5878445,
+          13.7292347
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2788,
+        "type": "Point",
+        "name": "Little Spicy Restaurant (Halal)",
+        "zoom": 1.5,
+        "rating": 51.57,
+        "min_dist": 312.7706451483273,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5564365,
+          13.7411763
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2790,
+        "type": "Point",
+        "name": "Kalyana Restaurant",
+        "zoom": 1.5,
+        "rating": 71.39,
+        "min_dist": 119.95889356495134,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5419686,
+          13.7545787
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2385,
+        "type": "Point",
+        "name": "Zhong ped pa low",
+        "zoom": 1.5,
+        "rating": 51.35,
+        "min_dist": 4253.552008455209,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "04:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5919361,
+          13.8308429
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 683,
+        "type": "Point",
+        "name": "Sky Bar",
+        "zoom": 1.5,
+        "rating": 0.0,
+        "min_dist": 466.28914787149284,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5168806,
+          13.7214231
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 684,
+        "type": "Point",
+        "name": "Copper Beyond Buffet The Sense Pinklao",
+        "zoom": 1.5,
+        "rating": 71.84,
+        "min_dist": 111.45079340360232,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "12:00",
+              "16:30"
+            ],
+            "close_times": [
+              "14:00",
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "12:00",
+              "16:30"
+            ],
+            "close_times": [
+              "14:00",
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "12:00",
+              "16:30"
+            ],
+            "close_times": [
+              "14:00",
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "12:00",
+              "16:30"
+            ],
+            "close_times": [
+              "14:00",
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "12:00",
+              "16:30"
+            ],
+            "close_times": [
+              "14:00",
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:30",
+              "20:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00",
+              "16:00"
+            ],
+            "close_times": [
+              "14:30",
+              "20:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4750035,
+          13.7798151
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 687,
+        "type": "Point",
+        "name": "Hua Seng Hong Restaurant @Yaowarat Road",
+        "zoom": 1.5,
+        "rating": 41.21,
+        "min_dist": 260.61139142731895,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "01:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5091015,
+          13.7408546
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 690,
+        "type": "Point",
+        "name": "Phran Nok Market",
+        "zoom": 1.5,
+        "rating": 31.15,
+        "min_dist": 1106.3162294350652,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "05:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4785112,
+          13.7550141
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 691,
+        "type": "Point",
+        "name": "Ban Khun Mae",
+        "zoom": 1.5,
+        "rating": 31.17,
+        "min_dist": 248.5631684148355,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5301838,
+          13.7454864
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 692,
+        "type": "Point",
+        "name": "Shanghai Mansion Bangkok",
+        "zoom": 1.5,
+        "rating": 51.44,
+        "min_dist": 70.18952606309183,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5112252,
+          13.7397422
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 696,
+        "type": "Point",
+        "name": "Mama Restaurant - Best Indian Food Restaurant in Bangkok",
+        "zoom": 1.5,
+        "rating": 61.55,
+        "min_dist": 568.6547125438769,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5018951,
+          13.7431935
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 699,
+        "type": "Point",
+        "name": "The Artist House Bangkok",
+        "zoom": 1.5,
+        "rating": 61.55,
+        "min_dist": 3112.1101625796905,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4632993,
+          13.7312448
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 700,
+        "type": "Point",
+        "name": "Lhong Tou Cafe at Yaowarat",
+        "zoom": 1.5,
+        "rating": 21.19,
+        "min_dist": 70.18952606309183,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "08:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5115376,
+          13.7391887
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 703,
+        "type": "Point",
+        "name": "Shoshana restaurant",
+        "zoom": 1.5,
+        "rating": 61.54,
+        "min_dist": 140.712611780215,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4962706,
+          13.7600272
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 705,
+        "type": "Point",
+        "name": "The Family",
+        "zoom": 1.5,
+        "rating": 91.77,
+        "min_dist": 704.4505871634859,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "wednesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "thursday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5027915,
+          13.7601662
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 709,
+        "type": "Point",
+        "name": "Scarlett Wine Bar & Restaurant",
+        "zoom": 1.5,
+        "rating": 61.54,
+        "min_dist": 155.47520645910885,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "16:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.525876,
+          13.726056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 711,
+        "type": "Point",
+        "name": "sala rattanakosin Bangkok",
+        "zoom": 1.5,
+        "rating": 31.37,
+        "min_dist": 708.7132657739835,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4909116,
+          13.7452707
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 712,
+        "type": "Point",
+        "name": "Saravana Bhavan",
+        "zoom": 1.5,
+        "rating": 31.38,
+        "min_dist": 466.28914787149284,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:30"
+            ],
+            "close_times": [
+              "22:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5207138,
+          13.7233514
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2987,
+        "type": "Point",
+        "name": "Baanoppa \u0e07\u0e32\u0e21\u0e27\u0e07\u0e28\u0e4c\u0e27\u0e32\u0e19",
+        "zoom": 1.5,
+        "rating": 80.89,
+        "min_dist": 1268.2159519364532,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5428365,
+          13.8443107
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 714,
+        "type": "Point",
+        "name": "Boon Restaurant",
+        "zoom": 1.5,
+        "rating": 41.46,
+        "min_dist": 155.47520645910885,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5270514,
+          13.726863
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 717,
+        "type": "Point",
+        "name": "Kouen Sushi Bar | Siam Square 1",
+        "zoom": 1.5,
+        "rating": 31.44,
+        "min_dist": 209.85501512457606,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5340086,
+          13.7451135
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 719,
+        "type": "Point",
+        "name": "BAR B Q RESORT PINKLAO",
+        "zoom": 1.5,
+        "rating": 31.45,
+        "min_dist": 111.45079340360232,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4760181,
+          13.7799984
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3008,
+        "type": "Point",
+        "name": "Little Sheep Kids Cafe",
+        "zoom": 1.5,
+        "rating": 90.58,
+        "min_dist": 5534.854996335434,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "tuesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "16:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "16:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "16:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "16:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.3592487,
+          13.7372637
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 723,
+        "type": "Point",
+        "name": "K. Panich Sticky Rice",
+        "zoom": 1.5,
+        "rating": 61.51,
+        "min_dist": 803.2758555434657,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "07:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4983613,
+          13.7520958
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3012,
+        "type": "Point",
+        "name": "Bisou Bangkok - French Restaurant",
+        "zoom": 1.5,
+        "rating": 90.56,
+        "min_dist": 1201.7912704163182,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5420853,
+          13.7376798
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3015,
+        "type": "Point",
+        "name": "Jitprapassorn Restaurant",
+        "zoom": 1.5,
+        "rating": 71.11,
+        "min_dist": 1268.2159519364532,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "wednesday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:30"
+            ],
+            "close_times": [
+              "21:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5536481,
+          13.8398518
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 720,
+        "type": "Point",
+        "name": "Ranee's Velo Restaurant",
+        "zoom": 1.5,
+        "rating": 61.52,
+        "min_dist": 91.37835130253319,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4957121,
+          13.758846
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 730,
+        "type": "Point",
+        "name": "Sutunthip Vegan",
+        "zoom": 1.5,
+        "rating": 71.46,
+        "min_dist": 2225.5780466027873,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.499047,
+          13.7114007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3821,
+        "type": "Point",
+        "name": "Cafe Phom Kanom Ter \u0e01\u0e32\u0e41\u0e1f\u0e1c\u0e21 \u0e02\u0e19\u0e21\u0e40\u0e18\u0e2d",
+        "zoom": 1.5,
+        "rating": 61.17,
+        "min_dist": 2107.0261308923355,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "17:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5536074,
+          13.8601126
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 727,
+        "type": "Point",
+        "name": "Ruenton Restaurant",
+        "zoom": 1.5,
+        "rating": 51.52,
+        "min_dist": 661.7763081621449,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "21:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5315092,
+          13.7309456
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3069,
+        "type": "Point",
+        "name": "Barcelona Gaudi Restaurant",
+        "zoom": 1.5,
+        "rating": 42.05,
+        "min_dist": 173.85132063604635,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "12:00"
+            ],
+            "close_times": [
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5627674,
+          13.7374948
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 731,
+        "type": "Point",
+        "name": "Maji Curry",
+        "zoom": 1.5,
+        "rating": 71.46,
+        "min_dist": 209.85501512457606,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5323825,
+          13.7461464
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2873,
+        "type": "Point",
+        "name": "Aesops Greek Restaurant & Rooftop",
+        "zoom": 1.5,
+        "rating": 51.61,
+        "min_dist": 389.142899282459,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "17:00"
+            ],
+            "close_times": [
+              "00:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5605156,
+          13.7329341
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 724,
+        "type": "Point",
+        "name": "Tikka N Talk Indian Restaurant",
+        "zoom": 1.5,
+        "rating": 91.51,
+        "min_dist": 91.37835130253319,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:45"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:45"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "23:45"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "18:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4951202,
+          13.7594332
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3083,
+        "type": "Point",
+        "name": "Saffron Restaurant Bangkok",
+        "zoom": 1.5,
+        "rating": 100.0,
+        "min_dist": 312.7706451483273,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "11:30",
+              "18:00"
+            ],
+            "close_times": [
+              "14:30",
+              "23:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5569066,
+          13.7439518
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3098,
+        "type": "Point",
+        "name": "Sheba Arabic Restaurant",
+        "zoom": 1.5,
+        "rating": 42.07,
+        "min_dist": 342.9172773033659,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "03:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5537985,
+          13.7445808
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 736,
+        "type": "Point",
+        "name": "Savoey",
+        "zoom": 1.5,
+        "rating": 31.65,
+        "min_dist": 827.4372565299584,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "10:00"
+            ],
+            "close_times": [
+              "22:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4887501,
+          13.7552992
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3108,
+        "type": "Point",
+        "name": "Gaa",
+        "zoom": 1.5,
+        "rating": 51.73,
+        "min_dist": 1055.4452054766525,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "17:30"
+            ],
+            "close_times": [
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "12:00",
+              "17:30"
+            ],
+            "close_times": [
+              "15:00",
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "12:00",
+              "17:30"
+            ],
+            "close_times": [
+              "15:00",
+              "23:59"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.5782663,
+          13.7273585
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 739,
+        "type": "Point",
+        "name": "Floral Caf\u00e9 at Napasorn",
+        "zoom": 1.5,
+        "rating": 71.4,
+        "min_dist": 568.6547125438769,
+        "subcategory": "\u041a\u043e\u0444\u0435\u0439\u043d\u0438 \u0438 \u0437\u0430\u0432\u0442\u0440\u0430\u043a\u0438",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [],
+            "close_times": [],
+            "is_24": false,
+            "is_closed": true
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "19:00"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.4967127,
+          13.7422925
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3116,
+        "type": "Point",
+        "name": "\u0e1a\u0e49\u0e32\u0e19\u0e01\u0e49\u0e32\u0e21\u0e1b\u0e39 Bankampu Tropical Cafe",
+        "zoom": 1.5,
+        "rating": 51.73,
+        "min_dist": 4895.986875869313,
+        "subcategory": "\u041b\u0443\u0447\u0448\u0438\u0435 \u043a\u0430\u0444\u0435 \u0438 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d\u044b",
+        "working_hours": {
+          "monday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "tuesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "wednesday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "thursday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "friday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "saturday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          },
+          "sunday": {
+            "open_times": [
+              "09:00"
+            ],
+            "close_times": [
+              "18:30"
+            ],
+            "is_24": false,
+            "is_closed": false
+          }
+        }
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          100.6349273,
+          13.8168438
+        ]
+      }
+    }
+  ]
+}

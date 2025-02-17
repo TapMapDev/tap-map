@@ -12,7 +12,7 @@ class AuthorizationPage extends StatefulWidget {
 }
 
 class _AuthorizationPageState extends State<AuthorizationPage> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   @override
@@ -65,7 +65,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 6),
                                 child: Text(
-                                  'Phuket',
+                                  'Пхукет',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
@@ -80,10 +80,10 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                     ),
                     const SizedBox(height: 50),
                     TextField(
-                      controller: emailController,
+                      controller: usernameController,
                       decoration: InputDecoration(
                         filled: true,
-                        hintText: 'E-mail',
+                        hintText: 'Почта',
                         border: OutlineInputBorder(
                           borderSide: BorderSide.none,
                           borderRadius: BorderRadius.circular(5),
@@ -96,7 +96,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                       obscureText: true,
                       decoration: InputDecoration(
                         filled: true,
-                        hintText: 'Password',
+                        hintText: 'Пароль',
                         border: OutlineInputBorder(
                           borderSide: BorderSide.none,
                           borderRadius: BorderRadius.circular(5),
@@ -109,7 +109,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                         Navigator.pushNamed(context, '/password_reset');
                       },
                       child: const Text(
-                        'Forgot password?',
+                        'Забыл пароль',
                         style: TextStyle(
                           color: Colors.blue,
                           decoration: TextDecoration.underline,
@@ -118,20 +118,19 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
-
                       height: 42,
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
                           context.read<AuthorizationBloc>().add(
                                 AuthorizationSignInWithEmailPressedEvent(
-                                  email: emailController.text,
+                                  username: usernameController.text,
                                   password: passwordController.text,
                                 ),
                               );
                         },
                         child: const Text(
-                          'Sign in',
+                          'Войти',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 16,
@@ -148,7 +147,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                           Navigator.pushNamed(context, '/registration');
                         },
                         child: const Text(
-                          'Create an account',
+                          'Создать аккаунт',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 16,
@@ -199,13 +198,6 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
-                      ),
-                    ),
-                    const Text(
-                      'Terms & Conditions',
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
-                        color: Colors.blue,
                       ),
                     ),
                   ],

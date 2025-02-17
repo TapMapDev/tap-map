@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,6 +14,7 @@ class MajorMap extends StatefulWidget {
 
 class _MajorMapState extends State<MajorMap> {
   MapboxMap? mapboxMap;
+  final Random _random = Random();
 
   @override
   Widget build(BuildContext context) {
@@ -37,31 +41,58 @@ class _MajorMapState extends State<MajorMap> {
 
   /// 🚀 Инициализация карты
   void _initializeMap() {
-    // _importCustomStyle();
     _addVectorTileSource();
+    _addCustomMarkers(); // 🔥 Добавляем 30 точек
   }
 
-  /// 🎨 Применяем кастомный стиль
-  // void _importCustomStyle() {
-  //   mapboxMap?.style.getStyleImports().catchError((error) =>
-  //     // ignore: invalid_return_type_for_catch_error
-  //     debugPrint("❌ Ошибка загрузки стиля: $error")
-  //   );
-  // }
+  /// 📌 Добавляем 30 кастомных меток
+  Future<void> _addCustomMarkers() async {
+    if (mapboxMap == null) return;
+
+    final annotationManager = await mapboxMap!.annotations.createPointAnnotationManager();
+
+    try {
+      ByteData byteData = await rootBundle.load('assets/png/location_pin.png');
+      Uint8List imageData = byteData.buffer.asUint8List();
+
+      var options = <PointAnnotationOptions>[];
+      for (var i = 0; i < 30; i++) {
+        options.add(PointAnnotationOptions(
+          geometry: Point.fromJson(_createRandomPhuketPoint().toJson()),
+          image: imageData,
+        ));
+      }
+
+      annotationManager.createMulti(options);
+      debugPrint("✅ 30 меток успешно добавлены на Пхукет!");
+    } catch (e) {
+      debugPrint("❌ Ошибка загрузки иконки: $e");
+    }
+  }
+
+  /// 📌 Генерация случайной точки на острове Пхукет
+  Point _createRandomPhuketPoint() {
+    double lat = 7.80 + _random.nextDouble() * (8.20 - 7.80);
+    double lon = 98.25 + _random.nextDouble() * (98.50 - 98.25);
+    return Point(coordinates: Position(lon, lat));
+  }
 
   /// 🗺️ Добавляем source и слои
   Future<void> _addVectorTileSource() async {
     const sourceId = "custom-tileset-source";
-    const tilesetUrl = 'https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf';
+    const tilesetUrl =
+        'https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf';
 
     await _checkTileAvailability();
 
-    mapboxMap?.style.addSource(VectorSource(
+    mapboxMap?.style
+        .addSource(VectorSource(
       id: sourceId,
       tiles: [tilesetUrl],
       minzoom: 0,
       maxzoom: 22,
-    )).then((_) {
+    ))
+        .then((_) {
       _addLayers(sourceId);
     }).catchError((error) {
       debugPrint('❌ Ошибка добавления source: $error');
@@ -70,7 +101,14 @@ class _MajorMapState extends State<MajorMap> {
 
   /// 📌 Добавляем слои на карту
   void _addLayers(String sourceId) {
-    final layers = ['contour', 'transportation', 'water', 'landcover', 'landuse', 'poi'];
+    final layers = [
+      'contour',
+      'transportation',
+      'water',
+      'landcover',
+      'landuse',
+      'poi'
+    ];
 
     for (var layer in layers) {
       _addLayer(sourceId, layer);
@@ -101,7 +139,8 @@ class _MajorMapState extends State<MajorMap> {
     for (var tileUrl in testTiles) {
       try {
         final response = await http.get(Uri.parse(tileUrl));
-        debugPrint('🌐 Проверка тайла: $tileUrl | Статус: ${response.statusCode}');
+        debugPrint(
+            '🌐 Проверка тайла: $tileUrl | Статус: ${response.statusCode}');
       } catch (e) {
         debugPrint('❌ Ошибка загрузки тайла $tileUrl: $e');
       }

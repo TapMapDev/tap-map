@@ -8,9 +8,13 @@ import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
-import 'package:tap_map/src/features/auth/check_auth/check_auth.dart';
+
 import 'package:tap_map/src/features/map/map_tilessets/config.dart';
-import 'package:tap_map/src/features/map/major_map.dart';
+import 'package:tap_map/src/features/navbar/major_page.dart';
+import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
+import 'package:tap_map/src/features/registration/registration_page.dart';
+import 'package:tap_map/src/features/registration/registration_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -30,32 +34,36 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthorizationBloc>(
             create: (_) =>
                 AuthorizationBloc(getIt<AuthorizationRepositoryImpl>())),
-        // BlocProvider<RegistrationBloc>(
-        //     create: (_) => RegistrationBloc(getIt<
-        //         RegistrationRepositoryImpl>())), // Регистрация AuthBloc
-        //     BlocProvider<ResetPasswordBloc>(
-        //         create: (_) =>
-        //             ResetPasswordBloc(getIt<ResetPasswordRepositoryImpl>()))
+        BlocProvider<RegistrationBloc>(
+            create: (_) => RegistrationBloc(
+                getIt<RegistrationRepositoryImpl>())), // Регистрация AuthBloc
       ],
       child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
-        initialRoute: '/',
+        home: FutureBuilder<Widget>(
+          future: _getInitialPage(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return const Center(child: Text("Ошибка загрузки данных"));
+            } else {
+              return snapshot.data!;
+            }
+          },
+        ),
         routes: {
-          '/': (context) => const CheckAuthPage(),
           '/authorization': (context) => const AuthorizationPage(),
-          '/homepage': (context) => const MajorMap(),
-          // '/registration': (context) => const RegistrationPage(),
-          // '/password_reset': (context) => const ResetPasswordPage(),
-          // '/therapeutic_games': (context) => const TherapeuticGames(),
-          // '/analyze_emotion': (context) =>  AnalyzeEmotion(),
+          '/homepage': (context) => const MainPage(), // Ваш основной экран с BottomNavigationBar
+          '/registration': (context) => const RegistrationPage(),
         },
         theme: ThemeData(
           appBarTheme: const AppBarTheme(surfaceTintColor: Colors.transparent),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-                  backgroundColor: StyleManager.mainColor,
-                  foregroundColor: StyleManager.bgColor,
-                ),
+              backgroundColor: StyleManager.mainColor,
+              foregroundColor: StyleManager.bgColor,
+            ),
           ),
           scaffoldBackgroundColor: StyleManager.bgColor,
           fontFamily: 'regular',
@@ -63,4 +71,18 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
+
+  // Проверка, залогинен ли пользователь
+  Future<Widget> _getInitialPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+
+    if (isLoggedIn) {
+      return const MainPage(); // Если пользователь авторизован
+    } else {
+      return const AuthorizationPage(); // Если не авторизован
+    }
+  }
 }
+
+

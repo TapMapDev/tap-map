@@ -21,6 +21,8 @@ dependencies:
   flutter_bloc: ^9.0.0
   shared_preferences: ^2.3.5
   bloc: ^9.0.0
+  flutter_svg: ^2.0.9
+  
 
 dev_dependencies:
   flutter_test:
@@ -32,8 +34,10 @@ flutter:
   assets:
     - .env
     - assets/
-    - assets/png/
     - assets/svg/
+    - assets/png/
+    - assets/png/location_pin.png
+    
 
 
 
