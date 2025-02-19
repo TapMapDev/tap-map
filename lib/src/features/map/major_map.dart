@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as gl;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class MajorMap extends StatefulWidget {
   const MajorMap({super.key});
@@ -17,7 +18,6 @@ class _MajorMapState extends State<MajorMap> {
   @override
   void initState() {
     super.initState();
-    // _setupPositionTracking();
   }
 
   @override
@@ -26,17 +26,37 @@ class _MajorMapState extends State<MajorMap> {
     super.dispose();
   }
 
+  void _onStyleLoadedCallback(StyleLoadedEventData data) async {
+    // Добавляем векторный источник данных
+    await mapboxMapController?.style.addSource(mp.VectorSource(
+      id: "places_source",
+      tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
+      minzoom: 0,
+      maxzoom: 20,
+    ));
+
+    // Добавляем слой кругов (CircleLayer)
+    await mapboxMapController?.style.addLayer(mp.CircleLayer(
+      id: "places_circle_layer",
+      sourceId: "places_source",
+      sourceLayer: "mylayer",
+      circleRadius: 6.0, // Размер круга
+      circleOpacity: 0.8, // Прозрачность
+      circleStrokeWidth: 1.0, // Обводка // Белая обводка
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: mp.MapWidget(
-        styleUri: mp.MapboxStyles.MAPBOX_STREETS,
-        cameraOptions: mp.CameraOptions(
-          center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
-          zoom: 11.0,
-        ),
-        onMapCreated: _onMapCreated,
-      ),
+          styleUri: mp.MapboxStyles.MAPBOX_STREETS,
+          cameraOptions: mp.CameraOptions(
+            center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
+            zoom: 11.0,
+          ),
+          onMapCreated: _onMapCreated,
+          onStyleLoadedListener: _onStyleLoadedCallback),
     );
   }
 
@@ -50,30 +70,6 @@ class _MajorMapState extends State<MajorMap> {
       mp.LocationComponentSettings(
         enabled: true,
         pulsingEnabled: true,
-      ),
-    );
-    _addCustomTileSet();
-  }
-
-  Future<void> _addCustomTileSet() async {
-    if (mapboxMapController == null) return;
-
-    // Добавляем источник с Mapbox tileset
-    await mapboxMapController!.style.addSource(
-      mp.VectorSource(
-        id: "custom_tileset",
-        url: "mapbox://map23travel.09pa574p", // Ваш tileset из Mapbox
-      ),
-    );
-
-    await mapboxMapController!.style.addLayer(
-      mp.FillLayer(
-        id: "custom_layer",
-        sourceId: "custom_tileset",
-        sourceLayer:
-            "second", // Название слоя из Mapbox, укажите правильное имя слоя
-        fillColor: Colors.blue.value,
-        fillOpacity: 0.5,
       ),
     );
   }
@@ -99,7 +95,7 @@ class _MajorMapState extends State<MajorMap> {
           'Location permissions are permanently denied, we cannot request permissions.');
     }
 
-    gl.LocationSettings locationSettings = gl.LocationSettings(
+    gl.LocationSettings locationSettings = const gl.LocationSettings(
       accuracy: gl.LocationAccuracy.high,
       distanceFilter: 100,
     );

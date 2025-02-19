@@ -44,7 +44,8 @@ class _MainScreenState extends State<BottomNavbar> {
               label: 'Найти место'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset('assets/svg/map.svg'), label: 'Карта'),
-          BottomNavigationBarItem(icon: SvgPicture.asset('assets/svg/chat1.svg'), label: 'Чат'),
+          BottomNavigationBarItem(
+              icon: SvgPicture.asset('assets/svg/chat1.svg'), label: 'Чат'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset('assets/svg/Avatar.svg'),
               label: 'Профиль'),

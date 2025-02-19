@@ -8,6 +8,7 @@ import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
+import 'package:tap_map/src/features/map/major_map.dart';
 
 import 'package:tap_map/src/features/map/map_tilessets/config.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
@@ -40,7 +41,8 @@ class MyApp extends StatelessWidget {
       ],
       child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
-        home: FutureBuilder<Widget>(
+        home: 
+        FutureBuilder<Widget>(
           future: _getInitialPage(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -52,8 +54,11 @@ class MyApp extends StatelessWidget {
             }
           },
         ),
+        
         routes: {
-          '/authorization': (context) => const AuthorizationPage(),
+          // '/': (context) => const MajorMap(),
+          '/authorization': (context) =>  MajorMap(),
+          
           '/homepage': (context) =>
               const BottomNavbar(), // Ваш основной экран с BottomNavigationBar
           '/registration': (context) => const RegistrationPage(),
