@@ -1,9 +1,7 @@
-import 'dart:math';
-
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart' as gl;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
 
 class MajorMap extends StatefulWidget {
   const MajorMap({super.key});
@@ -13,137 +11,114 @@ class MajorMap extends StatefulWidget {
 }
 
 class _MajorMapState extends State<MajorMap> {
-  MapboxMap? mapboxMap;
-  final Random _random = Random();
+  mp.MapboxMap? mapboxMapController;
+  StreamSubscription? userPositionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // _setupPositionTracking();
+  }
+
+  @override
+  void dispose() {
+    userPositionStream?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: _buildMap(),
-    );
-  }
-
-  Widget _buildMap() {
-    return MapWidget(
-      key: const ValueKey("mapWidget"),
-      styleUri: MapboxStyles.MAPBOX_STREETS,
-      cameraOptions: CameraOptions(
-        center: Point(coordinates: Position(98.360473, 7.886778)),
-        zoom: 11.0,
+      body: mp.MapWidget(
+        styleUri: mp.MapboxStyles.MAPBOX_STREETS,
+        cameraOptions: mp.CameraOptions(
+          center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
+          zoom: 11.0,
+        ),
+        onMapCreated: _onMapCreated,
       ),
-      onMapCreated: (controller) {
-        mapboxMap = controller;
-        _initializeMap();
-      },
     );
   }
 
-  /// 🚀 Инициализация карты
-  void _initializeMap() {
-    _addVectorTileSource();
-    _addCustomMarkers(); // 🔥 Добавляем 30 точек
+  void _onMapCreated(mp.MapboxMap controller) {
+    setState(() {
+      mapboxMapController = controller;
+    });
+
+    // Включаем отображение местоположения
+    mapboxMapController?.location.updateSettings(
+      mp.LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+      ),
+    );
+    _addCustomTileSet();
   }
 
-  /// 📌 Добавляем 30 кастомных меток
-  Future<void> _addCustomMarkers() async {
-    if (mapboxMap == null) return;
+  Future<void> _addCustomTileSet() async {
+    if (mapboxMapController == null) return;
 
-    final annotationManager = await mapboxMap!.annotations.createPointAnnotationManager();
+    // Добавляем источник с Mapbox tileset
+    await mapboxMapController!.style.addSource(
+      mp.VectorSource(
+        id: "custom_tileset",
+        url: "mapbox://map23travel.09pa574p", // Ваш tileset из Mapbox
+      ),
+    );
 
-    try {
-      ByteData byteData = await rootBundle.load('assets/png/location_pin.png');
-      Uint8List imageData = byteData.buffer.asUint8List();
+    await mapboxMapController!.style.addLayer(
+      mp.FillLayer(
+        id: "custom_layer",
+        sourceId: "custom_tileset",
+        sourceLayer:
+            "second", // Название слоя из Mapbox, укажите правильное имя слоя
+        fillColor: Colors.blue.value,
+        fillOpacity: 0.5,
+      ),
+    );
+  }
 
-      var options = <PointAnnotationOptions>[];
-      for (var i = 0; i < 30; i++) {
-        options.add(PointAnnotationOptions(
-          geometry: Point.fromJson(_createRandomPhuketPoint().toJson()),
-          image: imageData,
+  Future<void> _setupPositionTracking() async {
+    bool serviceEnabled;
+    gl.LocationPermission permission;
+
+    serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      return Future.error('Location services are disabled.');
+    }
+    permission = await gl.Geolocator.checkPermission();
+    if (permission == gl.LocationPermission.denied) {
+      permission = await gl.Geolocator.requestPermission();
+      if (permission == gl.LocationPermission.denied) {
+        return Future.error('Location permissions are denied');
+      }
+    }
+    if (permission == gl.LocationPermission.deniedForever) {
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    gl.LocationSettings locationSettings = gl.LocationSettings(
+      accuracy: gl.LocationAccuracy.high,
+      distanceFilter: 100,
+    );
+
+    userPositionStream?.cancel();
+    userPositionStream =
+        gl.Geolocator.getPositionStream(locationSettings: locationSettings)
+            .listen((gl.Position? position) {
+      if (position != null && mapboxMapController != null) {
+        mapboxMapController?.setCamera(mp.CameraOptions(
+          zoom: 12,
+          center: mp.Point(
+            coordinates: mp.Position(
+              position.latitude,
+              position.longitude,
+            ),
+          ),
         ));
       }
-
-      annotationManager.createMulti(options);
-      debugPrint("✅ 30 меток успешно добавлены на Пхукет!");
-    } catch (e) {
-      debugPrint("❌ Ошибка загрузки иконки: $e");
-    }
-  }
-
-  /// 📌 Генерация случайной точки на острове Пхукет
-  Point _createRandomPhuketPoint() {
-    double lat = 7.80 + _random.nextDouble() * (8.20 - 7.80);
-    double lon = 98.25 + _random.nextDouble() * (98.50 - 98.25);
-    return Point(coordinates: Position(lon, lat));
-  }
-
-  /// 🗺️ Добавляем source и слои
-  Future<void> _addVectorTileSource() async {
-    const sourceId = "custom-tileset-source";
-    const tilesetUrl =
-        'https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf';
-
-    await _checkTileAvailability();
-
-    mapboxMap?.style
-        .addSource(VectorSource(
-      id: sourceId,
-      tiles: [tilesetUrl],
-      minzoom: 0,
-      maxzoom: 22,
-    ))
-        .then((_) {
-      _addLayers(sourceId);
-    }).catchError((error) {
-      debugPrint('❌ Ошибка добавления source: $error');
     });
-  }
-
-  /// 📌 Добавляем слои на карту
-  void _addLayers(String sourceId) {
-    final layers = [
-      'contour',
-      'transportation',
-      'water',
-      'landcover',
-      'landuse',
-      'poi'
-    ];
-
-    for (var layer in layers) {
-      _addLayer(sourceId, layer);
-    }
-  }
-
-  void _addLayer(String sourceId, String layerName) {
-    try {
-      mapboxMap?.style.addLayer(LineLayer(
-        id: 'debug-line-$layerName',
-        sourceId: sourceId,
-        sourceLayer: layerName,
-        lineColor: Colors.blue.value,
-        lineWidth: 2.0,
-      ));
-    } catch (e) {
-      debugPrint('❌ Ошибка добавления слоя $layerName: $e');
-    }
-  }
-
-  /// 🔍 Проверяем доступность тайлов
-  Future<void> _checkTileAvailability() async {
-    final testTiles = [
-      'https://map-travel.net/tilesets/data/tiles/11/1586/978.pbf',
-      'https://map-travel.net/tilesets/data/tiles/10/793/489.pbf'
-    ];
-
-    for (var tileUrl in testTiles) {
-      try {
-        final response = await http.get(Uri.parse(tileUrl));
-        debugPrint(
-            '🌐 Проверка тайла: $tileUrl | Статус: ${response.statusCode}');
-      } catch (e) {
-        debugPrint('❌ Ошибка загрузки тайла $tileUrl: $e');
-      }
-    }
   }
 }

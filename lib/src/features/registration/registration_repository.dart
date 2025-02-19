@@ -4,12 +4,12 @@ import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/registration/registration_response_model.dart';
 
 abstract class RegistrationRepository {
-  Future<RegistrationResponseModel> register(
-      {required String email,
-      required String password1,
-      required String password2, 
-      required String username,
-      });
+  Future<RegistrationResponseModel> register({
+    required String email,
+    required String password1,
+    required String password2,
+    required String username,
+  });
 }
 
 class RegistrationRepositoryImpl implements RegistrationRepository {
@@ -28,7 +28,8 @@ class RegistrationRepositoryImpl implements RegistrationRepository {
     print(password2);
     final response = await apiService.postData(
         '/auth/registration/',
-        {'username': username,
+        {
+          'username': username,
           'email': email,
           'password1': password1,
           'password2': password2,

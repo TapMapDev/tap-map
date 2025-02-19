@@ -22,6 +22,7 @@ dependencies:
   shared_preferences: ^2.3.5
   bloc: ^9.0.0
   flutter_svg: ^2.0.9
+  auto_route: ^9.3.0+1
   
 
 dev_dependencies:
@@ -36,7 +37,7 @@ flutter:
     - assets/
     - assets/svg/
     - assets/png/
-    - assets/png/location_pin.png
+    - assets/png/location.png
     
 
 

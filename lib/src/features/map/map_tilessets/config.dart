@@ -7,7 +7,7 @@ class MapConfig {
 
   static String get accessToken => dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
-  static const mapboxVectorSourceUrl = 'mapbox://map23travel.6poixnx3';
-  static const mapboxVectorSourceId = 'map23travel.6poixnx3';
-  static const mapboxVectorSourceLayerId = '6poixnx3';
+  // static const mapboxVectorSourceUrl = 'mapbox://map23travel.second';
+  // static const mapboxVectorSourceId = 'map23travel.second';
+  // static const mapboxVectorSourceLayerId = 'second';
 }

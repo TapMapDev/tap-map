@@ -10,15 +10,15 @@ import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 
 import 'package:tap_map/src/features/map/map_tilessets/config.dart';
-import 'package:tap_map/src/features/navbar/major_page.dart';
+import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/registration/registration_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-  await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
   setup();
   runApp(const MyApp());
@@ -54,7 +54,8 @@ class MyApp extends StatelessWidget {
         ),
         routes: {
           '/authorization': (context) => const AuthorizationPage(),
-          '/homepage': (context) => const MainPage(), // Ваш основной экран с BottomNavigationBar
+          '/homepage': (context) =>
+              const BottomNavbar(), // Ваш основной экран с BottomNavigationBar
           '/registration': (context) => const RegistrationPage(),
         },
         theme: ThemeData(
@@ -75,14 +76,11 @@ class MyApp extends StatelessWidget {
   // Проверка, залогинен ли пользователь
   Future<Widget> _getInitialPage() async {
     final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-
-    if (isLoggedIn) {
-      return const MainPage(); // Если пользователь авторизован
+    final String? access = prefs.getString('access_token');
+    if (access != null) {
+      return BottomNavbar(); // Если пользователь авторизован
     } else {
-      return const AuthorizationPage(); // Если не авторизован
+      return AuthorizationPage(); // Если не авторизован
     }
   }
 }
-
-

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:tap_map/src/features/map/major_map.dart';
 
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+class BottomNavbar extends StatefulWidget {
+  const BottomNavbar({super.key});
 
   @override
-  State<MainPage> createState() => _MainScreenState();
+  State<BottomNavbar> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainPage> {
+class _MainScreenState extends State<BottomNavbar> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
@@ -44,7 +44,7 @@ class _MainScreenState extends State<MainPage> {
               label: 'Найти место'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset('assets/svg/map.svg'), label: 'Карта'),
-          const BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Чат'),
+          BottomNavigationBarItem(icon: SvgPicture.asset('assets/svg/chat1.svg'), label: 'Чат'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset('assets/svg/Avatar.svg'),
               label: 'Профиль'),
