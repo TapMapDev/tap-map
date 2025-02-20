@@ -17,6 +17,7 @@ class _MajorMapState extends State<MajorMap> {
 
   @override
   void initState() {
+    _setupPositionTracking();
     super.initState();
   }
 
@@ -40,7 +41,7 @@ class _MajorMapState extends State<MajorMap> {
       id: "places_circle_layer",
       sourceId: "places_source",
       sourceLayer: "mylayer",
-      circleRadius: 6.0, // Размер круга
+      circleRadius: 3.0, // Размер круга
       circleOpacity: 0.8, // Прозрачность
       circleStrokeWidth: 1.0, // Обводка // Белая обводка
     ));
@@ -49,23 +50,36 @@ class _MajorMapState extends State<MajorMap> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: mp.MapWidget(
-          styleUri: mp.MapboxStyles.MAPBOX_STREETS,
-          cameraOptions: mp.CameraOptions(
-            center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
-            zoom: 11.0,
+      body: Stack(
+        children: [
+          mp.MapWidget(
+              styleUri: mp.MapboxStyles.MAPBOX_STREETS,
+              cameraOptions: mp.CameraOptions(
+                center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
+                zoom: 11.0,
+              ),
+              onMapCreated: _onMapCreated,
+              onStyleLoadedListener: _onStyleLoadedCallback),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              onPressed: _centerOnUserLocation,
+              backgroundColor: Colors.white,
+              child: const Icon(Icons.my_location, color: Colors.blue),
+            ),
           ),
-          onMapCreated: _onMapCreated,
-          onStyleLoadedListener: _onStyleLoadedCallback),
+        ],
+      ),
     );
   }
 
+// создание карты
   void _onMapCreated(mp.MapboxMap controller) {
     setState(() {
       mapboxMapController = controller;
     });
 
-    // Включаем отображение местоположения
     mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(
         enabled: true,
@@ -73,48 +87,48 @@ class _MajorMapState extends State<MajorMap> {
       ),
     );
   }
+// метка геопозиции
 
   Future<void> _setupPositionTracking() async {
-    bool serviceEnabled;
-    gl.LocationPermission permission;
+    bool serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
 
-    serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
-
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-    permission = await gl.Geolocator.checkPermission();
+    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
     if (permission == gl.LocationPermission.denied) {
       permission = await gl.Geolocator.requestPermission();
-      if (permission == gl.LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
+      if (permission == gl.LocationPermission.denied ||
+          permission == gl.LocationPermission.deniedForever) {
+        return;
       }
     }
-    if (permission == gl.LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
 
-    gl.LocationSettings locationSettings = const gl.LocationSettings(
-      accuracy: gl.LocationAccuracy.high,
-      distanceFilter: 100,
-    );
-
-    userPositionStream?.cancel();
-    userPositionStream =
-        gl.Geolocator.getPositionStream(locationSettings: locationSettings)
-            .listen((gl.Position? position) {
-      if (position != null && mapboxMapController != null) {
-        mapboxMapController?.setCamera(mp.CameraOptions(
-          zoom: 12,
-          center: mp.Point(
-            coordinates: mp.Position(
-              position.latitude,
-              position.longitude,
-            ),
-          ),
-        ));
-      }
-    });
+    gl.Position position = await gl.Geolocator.getCurrentPosition();
+    _moveCameraToPosition(position);
   }
+
+  Future<void> _centerOnUserLocation() async {
+    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
+    if (permission == gl.LocationPermission.denied ||
+        permission == gl.LocationPermission.deniedForever) {
+      permission = await gl.Geolocator.requestPermission();
+      if (permission == gl.LocationPermission.denied) {
+        return;
+      }
+    }
+
+    gl.Position position = await gl.Geolocator.getCurrentPosition();
+    _moveCameraToPosition(position);
+  }
+// центрирование на геопозицию при разрешении пользователя
+  void _moveCameraToPosition(gl.Position position) {
+    if (mapboxMapController != null) {
+      mapboxMapController?.setCamera(mp.CameraOptions(
+        zoom: 14,
+        center: mp.Point(
+          coordinates: mp.Position(position.longitude, position.latitude),
+        ),
+      ));
+    }
+  }
+// разрешение на геолокацию
 }
