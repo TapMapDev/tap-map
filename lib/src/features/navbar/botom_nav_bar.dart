@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:tap_map/src/features/map/major_map.dart';
+import 'package:tap_map/src/features/userFlow/map/major_map.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/search_screen.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/user_profile.dart';
 
 class BottomNavbar extends StatefulWidget {
   const BottomNavbar({super.key});
@@ -16,7 +18,7 @@ class _MainScreenState extends State<BottomNavbar> {
     const MajorMap(), // Карта
     const SearchScreen(), // Поиск
     const FavoritesScreen(), // Избранное
-    const ProfileScreen(), // Профиль
+    const UserProfileScreen(), // Профиль
     const SettingsScreen(), // Настройки
   ];
 
@@ -56,13 +58,7 @@ class _MainScreenState extends State<BottomNavbar> {
 }
 
 // Заглушки для экранов
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Афиша'));
-  }
-}
+
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -72,13 +68,7 @@ class FavoritesScreen extends StatelessWidget {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Карта'));
-  }
-}
+
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

@@ -9,9 +9,11 @@ import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
-import 'package:tap_map/src/features/map/major_map.dart';
+import 'package:tap_map/src/features/userFlow/map/major_map.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
 
-import 'package:tap_map/src/features/map/map_tilessets/config.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
@@ -19,11 +21,11 @@ import 'package:tap_map/src/features/registration/registration_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-  
+   setup();
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
-  setup();
+ 
   runApp(const MyApp());
   await _setupPositionTracking();
 }
@@ -41,7 +43,7 @@ Future<void> _setupPositionTracking() async {
     }
   }
 
-  gl.Position position = await gl.Geolocator.getCurrentPosition();
+  // gl.Position position = await gl.Geolocator.getCurrentPosition();
 }
 
 class MyApp extends StatelessWidget {
@@ -57,11 +59,14 @@ class MyApp extends StatelessWidget {
         BlocProvider<RegistrationBloc>(
             create: (_) => RegistrationBloc(
                 getIt<RegistrationRepositoryImpl>())), // Регистрация AuthBloc
+        BlocProvider<MapStyleBloc>(
+            create: (_) => MapStyleBloc(
+                  getIt<MapStyleRepository>()
+                )),
       ],
       child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
-        home: 
-        FutureBuilder<Widget>(
+        home: FutureBuilder<Widget>(
           future: _getInitialPage(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -73,11 +78,10 @@ class MyApp extends StatelessWidget {
             }
           },
         ),
-        
         routes: {
           // '/': (context) => const MajorMap(),
-          '/authorization': (context) =>  MajorMap(),
-          
+          '/authorization': (context) => MajorMap(),
+
           '/homepage': (context) =>
               const BottomNavbar(), // Ваш основной экран с BottomNavigationBar
           '/registration': (context) => const RegistrationPage(),

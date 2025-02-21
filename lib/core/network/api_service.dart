@@ -24,6 +24,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> getData(
     String path, {
+    Map<String, Object>? map,
     Map<String, dynamic>? queryParams,
     Map<String, dynamic>? headers,
   }) async {
@@ -119,3 +120,4 @@ class ApiService {
     }
   }
 }
+
