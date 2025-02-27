@@ -8,27 +8,34 @@ class AuthorizationRepositoryImpl {
   final prefs = getIt.get<SharedPrefsRepository>();
   AuthorizationRepositoryImpl({required this.apiService});
 
-  Future<AuthorizationResponseModel> authorize({
-    required String username,
-    required String password,
-  }) async {
-    final response = await apiService.postData(
-        '/auth/jwt/create/',
-        {
-          'username': username,
-          'password': password,
-        },
-        useAuth: false);
-    final responseModel = AuthorizationResponseModel.fromJson(
-        response['data'], response['statusCode']);
-    if (responseModel.accessToken != null &&
-        responseModel.refreshToken != null) {
-      await prefs.setString('access_token', responseModel.accessToken!);
-      await prefs.setString('refresh_token', responseModel.refreshToken!);
-    }
+Future<AuthorizationResponseModel> authorize({
+  required String username,
+  required String password,
+}) async {
+  final response = await apiService.postData(
+      '/auth/jwt/create/',
+      {
+        'username': username,
+        'password': password,
+      },
+      useAuth: false);
 
-    return responseModel;
+  print("Ответ от API: $response"); // Отладка API-ответа
+
+  final responseModel = AuthorizationResponseModel.fromJson(
+      response['data'], response['statusCode']);
+
+  if (responseModel.accessToken != null &&
+      responseModel.refreshToken != null) {
+    print("Сохранение Access Token: ${responseModel.accessToken}");
+    await prefs.setString('access_token', responseModel.accessToken!);
+    await prefs.setString('refresh_token', responseModel.refreshToken!);
+  } else {
+    print("❌ Ошибка: Токены не получены.");
   }
+
+  return responseModel;
+}
 
   Future<bool> isAuthorized() async {
     final accessToken = await prefs.getString('access_token');

@@ -1,4 +1,3 @@
-// Модели данных для стилей
 class MapStyleResponceModel {
   final int? id;
   final String? name;

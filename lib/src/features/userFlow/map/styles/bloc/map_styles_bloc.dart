@@ -18,7 +18,7 @@ class MapStyleBloc extends Bloc<MapStyleEvent, MapStyleState> {
       }
     });
     on<UpdateMapStyleEvent>((event, emit) async {
-      emit(MapStyleUpdateSuccess(styleUri: event.uriStyle));
+      emit(MapStyleUpdateSuccess(newStyleId: event.newStyleId, styleUri: event.uriStyle));
     });
     @override
     Future<void> close() {

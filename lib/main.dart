@@ -9,6 +9,8 @@ import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
@@ -61,7 +63,11 @@ class MyApp extends StatelessWidget {
                 getIt<RegistrationRepositoryImpl>())), // Регистрация AuthBloc
         BlocProvider<MapStyleBloc>(
             create: (_) => MapStyleBloc(
-                  getIt<MapStyleRepository>()
+                  getIt<MapStyleRepository>(),
+                )),
+        BlocProvider<IconsBloc>(
+            create: (_) => IconsBloc(
+                  getIt<IconsRepository>(),
                 )),
       ],
       child: GetMaterialApp(
@@ -80,7 +86,7 @@ class MyApp extends StatelessWidget {
         ),
         routes: {
           // '/': (context) => const MajorMap(),
-          '/authorization': (context) => MajorMap(),
+          '/authorization': (context) => AuthorizationPage(),
 
           '/homepage': (context) =>
               const BottomNavbar(), // Ваш основной экран с BottomNavigationBar
@@ -105,8 +111,9 @@ class MyApp extends StatelessWidget {
   Future<Widget> _getInitialPage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? access = prefs.getString('access_token');
+    debugPrint("🔍 Читаем access_token: $access");
     if (access != null) {
-      return BottomNavbar(); // Если пользователь авторизован
+      return MajorMap(); // Если пользователь авторизован
     } else {
       return AuthorizationPage(); // Если не авторизован
     }

@@ -1,0 +1,27 @@
+import 'package:tap_map/core/network/api_service.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dart';
+
+abstract class IconsRepository {
+  Future<List<IconsResponseModel>> fetchIcons(int styleId);
+}
+
+class IconsRepositoryImpl implements IconsRepository {
+  final ApiService apiService;
+
+  IconsRepositoryImpl({required this.apiService});
+
+  @override
+  Future<List<IconsResponseModel>> fetchIcons(int styleId) async {
+    final response = await apiService.getData('/styles/$styleId/icons/');
+
+    if (response.containsKey('statusCode') && response['statusCode'] == 200) {
+      final List<dynamic> data = response['data'] ?? []; // ✅ Добавили проверку
+      return data.map((item) => IconsResponseModel.fromJson(item)).toList();
+    } else if (response['statusCode'] == 401) {
+      throw Exception('Ошибка 401: Доступ запрещен. Проверь API-токен.');
+    } else {
+      throw Exception(
+          'Ошибка загрузки иконок: ${response['statusCode'] ?? "Неизвестный статус"}');
+    }
+  }
+}
