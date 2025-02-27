@@ -6,6 +6,7 @@ class SharedPrefsRepository {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _accessTokenKey = 'access_token';
   static const String _mapStyleKey = 'selected_map_style';
+  static const String _mapStyleIdKey = 'selected_map_style_id';
   final Talker talker = getIt.get<Talker>();
 
   // ✅ Универсальный метод для сохранения строки
@@ -89,5 +90,15 @@ class SharedPrefsRepository {
     } catch (e) {
       throw Exception("Ошибка загрузки сохранённого стиля карты: $e");
     }
+  }
+
+  Future<void> saveMapStyleId(int styleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_mapStyleIdKey, styleId);
+  }
+
+  Future<int?> getMapStyleId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_mapStyleIdKey);
   }
 }

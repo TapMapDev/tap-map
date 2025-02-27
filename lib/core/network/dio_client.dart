@@ -7,12 +7,14 @@ class DioClient {
   late final Dio _dio;
 
   DioClient() {
-    _dio = Dio(BaseOptions(
-      baseUrl: 'https://api.tap-map.net/api',
-      connectTimeout: const Duration(milliseconds: 5000),
-      receiveTimeout: const Duration(milliseconds: 3000),
-      headers: {'Content-Type': 'application/json'},
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: 'https://api.tap-map.net/api',
+        connectTimeout: const Duration(milliseconds: 5000),
+        receiveTimeout: const Duration(milliseconds: 3000),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
 
     // ✅ Интерцептор обработки 401 и обновления токенов
     _dio.interceptors.add(InterceptorsWrapper(
@@ -31,7 +33,8 @@ class DioClient {
             }
 
             // 🔄 Повтор запроса с новым токеном
-            error.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+            error.requestOptions.headers['Authorization'] =
+                'Bearer $newAccessToken';
             final response = await _dio.request(
               error.requestOptions.path,
               options: Options(
@@ -44,7 +47,8 @@ class DioClient {
 
             return handler.resolve(response);
           } catch (e) {
-            return handler.next(error); // Продолжаем ошибку 401, если токен не обновился
+            return handler
+                .next(error); // Продолжаем ошибку 401, если токен не обновился
           }
         }
 

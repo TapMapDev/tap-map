@@ -101,35 +101,37 @@ class ApiService {
     }
   }
 
- Future<bool> refreshTokens() async {
-  final prefs = getIt.get<SharedPrefsRepository>();
-  final refreshToken = await prefs.getRefreshToken(); // Используем getRefreshToken
+  Future<bool> refreshTokens() async {
+    final prefs = getIt.get<SharedPrefsRepository>();
+    final refreshToken =
+        await prefs.getRefreshToken(); // Используем getRefreshToken
 
-  if (refreshToken == null) {
-    talker.error('Не удалось обновить токены: refresh_token отсутствует');
-    return false;
-  }
-
-  try {
-    final response = await dioClient.client.post(
-      '/token/refresh',
-      data: {'refresh': refreshToken},
-    );
-    
-    if (response.statusCode == 200) {
-      final newAccessToken = response.data['access'];
-      final newRefreshToken = response.data['refresh'];
-      await prefs.setString('access_token', newAccessToken);
-      await prefs.saveRefreshToken(newRefreshToken); // Используем saveRefreshToken
-      return true;
-    } else {
-      talker.error('Ошибка обновления токена: ${response.statusCode}');
+    if (refreshToken == null) {
+      talker.error('Не удалось обновить токены: refresh_token отсутствует');
       return false;
     }
-  } catch (e) {
-    talker.error('Ошибка при обновлении токенов: $e');
-    return false;
+
+    try {
+      final response = await dioClient.client.post(
+        '/token/refresh',
+        data: {'refresh': refreshToken},
+         options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        final newAccessToken = response.data['access'];
+        final newRefreshToken = response.data['refresh'];
+        await prefs.setString('access_token', newAccessToken);
+        await prefs
+            .saveRefreshToken(newRefreshToken); // Используем saveRefreshToken
+        return true;
+      } else {
+        talker.error('Ошибка обновления токена: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      talker.error('Ошибка при обновлении токенов: $e');
+      return false;
+    }
   }
 }
-}
-

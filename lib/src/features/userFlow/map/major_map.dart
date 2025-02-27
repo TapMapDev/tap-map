@@ -80,10 +80,15 @@ class _MajorMapState extends State<MajorMap> {
           },
         ),
         BlocListener<MapStyleBloc, MapStyleState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is MapStyleUpdateSuccess) {
               _updateMapStyle(state.styleUri);
               currentStyleId = state.newStyleId;
+
+              // ✅ Очищаем старые иконки перед загрузкой новых
+              await _clearIcons();
+
+              // ✅ Загружаем иконки для нового стиля
               context
                   .read<IconsBloc>()
                   .add(FetchIconsEvent(styleId: state.newStyleId));
@@ -121,6 +126,18 @@ class _MajorMapState extends State<MajorMap> {
         ),
       ),
     );
+  }
+
+  Future<void> _clearIcons() async {
+    if (mapboxMapController == null) return;
+    debugPrint('🔄 Удаляем старые иконки...');
+
+    for (final iconKey in loadedIcons.keys) {
+      await mapboxMapController?.style.removeStyleImage(iconKey);
+    }
+
+    loadedIcons.clear();
+    debugPrint('✅ Все старые иконки удалены!');
   }
 
   void _onMapCreated(mp.MapboxMap controller) {
@@ -187,13 +204,15 @@ class _MajorMapState extends State<MajorMap> {
       final iconUrl = icon.logo.logoUrl;
 
       if (loadedIcons.containsKey(iconKey)) {
+        debugPrint('⚠️ Иконка $iconKey уже загружена, пропускаем.');
         continue;
       }
+
       tasks.add(_loadSingleIcon(iconKey, iconUrl));
     }
 
     await Future.wait(tasks);
-    debugPrint('✅ Все иконки загружены!');
+    debugPrint('✅ Все новые иконки загружены!');
   }
 
   Future<void> _loadSingleIcon(String iconName, String url) async {

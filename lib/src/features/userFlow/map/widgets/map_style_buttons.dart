@@ -25,14 +25,23 @@ class MapStyleButtons extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: ElevatedButton(
                     onPressed: () async {
-                      /// ✅ Сохраняем стиль карты
-                      await getIt.get<SharedPrefsRepository>().saveMapStyle(style.styleUrl!);
+                      /// Сохраняем ссылку на стиль
+                      await getIt
+                          .get<SharedPrefsRepository>()
+                          .saveMapStyle(style.styleUrl!);
 
-                      /// ✅ Отправляем только одно событие в BLoC
-                      mapStyleBloc.add(UpdateMapStyleEvent(
-                        newStyleId: style.id!,
-                        uriStyle: style.styleUrl!,
-                      ));
+                      /// Сохраняем ID стиля
+                      await getIt
+                          .get<SharedPrefsRepository>()
+                          .saveMapStyleId(style.id!);
+
+                      /// Запускаем ивент обновления стиля в BLoC
+                      mapStyleBloc.add(
+                        UpdateMapStyleEvent(
+                          newStyleId: style.id!,
+                          uriStyle: style.styleUrl!,
+                        ),
+                      );
                     },
                     child: Text(style.name!),
                   ),
