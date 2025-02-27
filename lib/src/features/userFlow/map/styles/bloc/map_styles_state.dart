@@ -26,6 +26,4 @@ class MapStyleUpdateSuccess extends MapStyleState {
   final String styleUri;
 
   MapStyleUpdateSuccess({required this.newStyleId, required this.styleUri});
-  // @override
-  // List<Object?> get props => [newStyleId, styleUri];
 }

@@ -48,7 +48,7 @@ class ApiService {
         'statusCode': response.statusCode,
         'statusMessage': response.statusMessage,
       };
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       talker.error('DioError при выполнении GET-запроса: $e');
       return {
         'data': e.response?.data,
@@ -101,23 +101,35 @@ class ApiService {
     }
   }
 
-  Future<void> refreshTokens() async {
-    final prefs = getIt.get<SharedPrefsRepository>();
-    final refreshToken = await prefs.getString('refresh_token');
+ Future<bool> refreshTokens() async {
+  final prefs = getIt.get<SharedPrefsRepository>();
+  final refreshToken = await prefs.getRefreshToken(); // Используем getRefreshToken
 
-    try {
-      final response = await dioClient.client.post(
-        '/token/refresh',
-        data: {'refresh': refreshToken},
-      );
+  if (refreshToken == null) {
+    talker.error('Не удалось обновить токены: refresh_token отсутствует');
+    return false;
+  }
+
+  try {
+    final response = await dioClient.client.post(
+      '/token/refresh',
+      data: {'refresh': refreshToken},
+    );
+    
+    if (response.statusCode == 200) {
       final newAccessToken = response.data['access'];
       final newRefreshToken = response.data['refresh'];
       await prefs.setString('access_token', newAccessToken);
-      await prefs.setString('refresh_token', newRefreshToken);
-    } catch (e) {
-      talker.error('Ошибка при обновлении токенов: $e');
-      rethrow;
+      await prefs.saveRefreshToken(newRefreshToken); // Используем saveRefreshToken
+      return true;
+    } else {
+      talker.error('Ошибка обновления токена: ${response.statusCode}');
+      return false;
     }
+  } catch (e) {
+    talker.error('Ошибка при обновлении токенов: $e');
+    return false;
   }
+}
 }
 

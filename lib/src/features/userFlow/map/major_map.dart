@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as gl;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
+import 'package:tap_map/core/di/di.dart';
+import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dart';
@@ -23,15 +25,28 @@ class _MajorMapState extends State<MajorMap> {
   StreamSubscription? userPositionStream;
   final Map<String, bool> loadedIcons = {};
   int? currentStyleId;
+  late String
+      mapStyleUri; // ✅ Делаем `late`, чтобы инициализировать перед `build()`
+  bool isStyleLoaded = false;
 
   @override
   void initState() {
-    super.initState();
     _setupPositionTracking();
+    super.initState();
+    _loadSavedMapStyle();
 
     // При старте загружаем стили карты
     Future.microtask(() {
       context.read<MapStyleBloc>().add(FetchMapStylesEvent());
+    });
+  }
+
+  Future<void> _loadSavedMapStyle() async {
+    final savedStyle =
+        await getIt.get<SharedPrefsRepository>().getSavedMapStyle();
+    setState(() {
+      mapStyleUri = savedStyle ?? mp.MapboxStyles.MAPBOX_STREETS;
+      isStyleLoaded = true; // ✅ После загрузки включаем отрисовку карты
     });
   }
 
@@ -43,6 +58,12 @@ class _MajorMapState extends State<MajorMap> {
 
   @override
   Widget build(BuildContext context) {
+    if (!isStyleLoaded) {
+      return const Center(
+          child:
+              CircularProgressIndicator()); // ✅ Показываем загрузку, пока стиль не загружен
+    }
+
     return MultiBlocListener(
       listeners: [
         BlocListener<IconsBloc, IconsState>(
@@ -74,7 +95,7 @@ class _MajorMapState extends State<MajorMap> {
         body: Stack(
           children: [
             mp.MapWidget(
-              styleUri: mp.MapboxStyles.MAPBOX_STREETS,
+              styleUri: mapStyleUri,
               cameraOptions: mp.CameraOptions(
                 center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
                 zoom: 11.0,
@@ -85,7 +106,7 @@ class _MajorMapState extends State<MajorMap> {
             const Positioned(
               bottom: 80,
               left: 20,
-              child:  MapStyleButtons(),
+              child: MapStyleButtons(),
             ),
             Positioned(
               bottom: 20,
@@ -122,8 +143,7 @@ class _MajorMapState extends State<MajorMap> {
 
     if (currentStyleId != null) {
       context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
-    } else {
-    }
+    } else {}
   }
 
   Future<void> _addSourceAndLayers() async {
@@ -264,7 +284,20 @@ class _MajorMapState extends State<MajorMap> {
   }
 
   Future<void> _updateMapStyle(String newStyle) async {
-    await mapboxMapController?.style.setStyleURI(newStyle);
+    if (mapboxMapController == null) return;
+
+    print("🔄 Меняем стиль карты на: $newStyle...");
+    await mapboxMapController!.style.setStyleURI(newStyle);
+
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      if (mapboxMapController != null) {
+        print("✅ Новый стиль загружен! Пересоздаём источники...");
+        await _addSourceAndLayers();
+      }
+    });
+
+    /// ✅ Сохраняем стиль карты в `SharedPreferences`, но не вызываем `setState()`
+    getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
   }
 }
 

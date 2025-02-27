@@ -48,7 +48,7 @@ Future<AuthorizationResponseModel> authorize({
   }
 
   Future<void> logout() async {
-    await prefs.deleteString('access_token');
-    await prefs.deleteString('refresh_token');
+    await prefs.deleteKey('access_token');
+    await prefs.deleteKey('refresh_token');
   }
 }

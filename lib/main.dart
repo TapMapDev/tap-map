@@ -11,7 +11,6 @@ import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
 
@@ -113,7 +112,7 @@ class MyApp extends StatelessWidget {
     final String? access = prefs.getString('access_token');
     debugPrint("🔍 Читаем access_token: $access");
     if (access != null) {
-      return MajorMap(); // Если пользователь авторизован
+      return const BottomNavbar(); // Если пользователь авторизован
     } else {
       return AuthorizationPage(); // Если не авторизован
     }
