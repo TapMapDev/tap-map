@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as gl;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
@@ -22,73 +23,104 @@ class MajorMap extends StatefulWidget {
 
 class _MajorMapState extends State<MajorMap> {
   mp.MapboxMap? mapboxMapController;
-  StreamSubscription? userPositionStream;
-  final Map<String, bool> loadedIcons = {};
-  int? currentStyleId;
-  late String
-      mapStyleUri; // ✅ Делаем `late`, чтобы инициализировать перед `build()`
+
+  /// Позиция пользователя до создания карты
+  gl.Position? _initialUserPosition;
+
+  /// Флаг готовности локации
+  bool isLocationLoaded = false;
+
+  /// Флаг готовности стиля
   bool isStyleLoaded = false;
+
+  /// Словарь "имя_иконки -> уже_загружено?"
+  final Map<String, bool> loadedIcons = {};
+
+  /// Сохранённый styleId
+  int? currentStyleId;
+
+  /// Сохранённый styleUri
+  late String mapStyleUri;
 
   @override
   void initState() {
-    _setupPositionTracking();
     super.initState();
-    _loadSavedMapStyle();
-
-    // При старте загружаем стили карты
+    _loadSavedMapStyle();        // 1) Грузим стиль
+    _setupPositionTracking();    // 2) Локация
+    // 3) Запрашиваем список стилей
     Future.microtask(() {
       context.read<MapStyleBloc>().add(FetchMapStylesEvent());
     });
   }
 
+  /// Грузим сохранённый стиль (URL + ID) из SharedPrefs
   Future<void> _loadSavedMapStyle() async {
-    final savedStyle =
-        await getIt.get<SharedPrefsRepository>().getSavedMapStyle();
+    final prefs = getIt.get<SharedPrefsRepository>();
+    final savedStyle = await prefs.getSavedMapStyle();
+    final savedStyleId = await prefs.getMapStyleId();
+
     setState(() {
       mapStyleUri = savedStyle ?? mp.MapboxStyles.MAPBOX_STREETS;
-      isStyleLoaded = true; // ✅ После загрузки включаем отрисовку карты
+      currentStyleId = savedStyleId;
+      isStyleLoaded = true;
+    });
+
+    // Если надо "прогреть" иконки заранее
+    if (currentStyleId != null) {
+      context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
+    }
+  }
+
+  /// Запрашиваем геолокацию
+  Future<void> _setupPositionTracking() async {
+    final serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
+    if (permission == gl.LocationPermission.denied) {
+      permission = await gl.Geolocator.requestPermission();
+      if (permission == gl.LocationPermission.denied ||
+          permission == gl.LocationPermission.deniedForever) {
+        return;
+      }
+    }
+
+    final position = await gl.Geolocator.getCurrentPosition();
+    setState(() {
+      _initialUserPosition = position;
+      isLocationLoaded = true;
     });
   }
 
   @override
-  void dispose() {
-    userPositionStream?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!isStyleLoaded) {
-      return const Center(
-          child:
-              CircularProgressIndicator()); // ✅ Показываем загрузку, пока стиль не загружен
+    // Ждём, пока карта готова и локация получена
+    if (!isStyleLoaded || !isLocationLoaded) {
+      return const Center(child: CircularProgressIndicator());
     }
 
     return MultiBlocListener(
       listeners: [
+        // Ловим события IconsBloc (загрузка иконок)
         BlocListener<IconsBloc, IconsState>(
           listener: (context, state) {
             if (state is IconsLoading) {
               debugPrint('🔄 Загрузка иконок...');
             } else if (state is IconsSuccess) {
-              debugPrint(
-                  '✅ Список иконок получен. Начинаем загрузку в MapBox...');
-              _loadIcons(state.icons);
+              debugPrint('✅ Иконки получены. Загружаем в MapBox...');
+              _loadIcons(state.icons, styleId: state.styleId);
             } else if (state is IconsError) {
               debugPrint('❌ Ошибка загрузки иконок: ${state.message}');
             }
           },
         ),
+        // Ловим события MapStyleBloc (смена стиля)
         BlocListener<MapStyleBloc, MapStyleState>(
           listener: (context, state) async {
             if (state is MapStyleUpdateSuccess) {
               _updateMapStyle(state.styleUri);
               currentStyleId = state.newStyleId;
-
-              // ✅ Очищаем старые иконки перед загрузкой новых
-              await _clearIcons();
-
-              // ✅ Загружаем иконки для нового стиля
+              await _clearIcons(); // чистим старые иконки
               context
                   .read<IconsBloc>()
                   .add(FetchIconsEvent(styleId: state.newStyleId));
@@ -102,17 +134,58 @@ class _MajorMapState extends State<MajorMap> {
             mp.MapWidget(
               styleUri: mapStyleUri,
               cameraOptions: mp.CameraOptions(
-                center: mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
-                zoom: 11.0,
+                center: _initialUserPosition != null
+                    ? mp.Point(
+                        coordinates: mp.Position(
+                          _initialUserPosition!.longitude,
+                          _initialUserPosition!.latitude,
+                        ),
+                      )
+                    : mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
+                zoom: 14.0,
               ),
               onMapCreated: _onMapCreated,
               onMapLoadedListener: _onStyleLoadedCallback,
+
+              /// Подписываемся на изменение камеры
+              onCameraChangeListener: (eventData) async {
+                // Запрашиваем текущее состояние камеры
+                final cameraState = await mapboxMapController?.getCameraState();
+                if (cameraState == null) return;
+
+                final zoom = cameraState.zoom;
+                // Считаем threshold
+                final threshold = getThresholdByZoom(zoom);
+
+                // Формируем icon-image expression
+                final iconExpression = buildIconImageExpression(threshold);
+
+                // Формируем text-field expression
+                final textExpression = buildTextFieldExpression(threshold);
+
+                // Обновляем icon-image
+                mapboxMapController?.style.setStyleLayerProperty(
+                  "places_symbol_layer",
+                  "icon-image",
+                  iconExpression,
+                );
+                // Обновляем text-field
+                mapboxMapController?.style.setStyleLayerProperty(
+                  "places_symbol_layer",
+                  "text-field",
+                  textExpression,
+                );
+              },
             ),
+
+            // Кнопки выбора стиля
             const Positioned(
               bottom: 80,
               left: 20,
               child: MapStyleButtons(),
             ),
+
+            // Кнопка "центр"
             Positioned(
               bottom: 20,
               right: 20,
@@ -128,61 +201,79 @@ class _MajorMapState extends State<MajorMap> {
     );
   }
 
-  Future<void> _clearIcons() async {
-    if (mapboxMapController == null) return;
-    debugPrint('🔄 Удаляем старые иконки...');
-
-    for (final iconKey in loadedIcons.keys) {
-      await mapboxMapController?.style.removeStyleImage(iconKey);
-    }
-
-    loadedIcons.clear();
-    debugPrint('✅ Все старые иконки удалены!');
-  }
-
+  /// Когда карта создана
   void _onMapCreated(mp.MapboxMap controller) {
-    setState(() {
-      mapboxMapController = controller;
-    });
+    mapboxMapController = controller;
 
+    // Включаем "синюю точку"
     mapboxMapController?.location.updateSettings(
-      mp.LocationComponentSettings(
-        enabled: true,
-        pulsingEnabled: true,
-      ),
+      mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
   }
 
+  /// Когда стиль загружен
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null) return;
 
+    // Добавляем источники и слой
     await _addSourceAndLayers();
+    // Загружаем my_dot_icon
+    await _loadMyDotIconFromUrl();
 
+    // Однократно инициализируем icon-image и text-field
+    final camState = await mapboxMapController?.getCameraState();
+    final currentZoom = camState?.zoom ?? 14.0;
+    final threshold = getThresholdByZoom(currentZoom);
+
+    final iconExpr = buildIconImageExpression(threshold);
+    final textExpr = buildTextFieldExpression(threshold);
+
+    // Устанавливаем свойства
+    mapboxMapController?.style.setStyleLayerProperty(
+      "places_symbol_layer",
+      "icon-image",
+      iconExpr,
+    );
+    mapboxMapController?.style.setStyleLayerProperty(
+      "places_symbol_layer",
+      "text-field",
+      textExpr,
+    );
+
+    // Если есть styleId -> грузим иконки
     if (currentStyleId != null) {
       context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
-    } else {}
+    }
   }
 
+  /// Добавляем источник + SymbolLayer (заглушка)
   Future<void> _addSourceAndLayers() async {
     await mapboxMapController?.style.addSource(
       mp.VectorSource(
         id: "places_source",
-        tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
+        tiles: [
+          "https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"
+        ],
         minzoom: 0,
         maxzoom: 20,
       ),
     );
 
+    // Логика icon-image / text-field теперь обновляется динамически,
+    // так что просто задаём заглушку
     await mapboxMapController?.style.addLayer(
       mp.SymbolLayer(
         id: "places_symbol_layer",
         sourceId: "places_source",
         sourceLayer: "mylayer",
-        iconImage: "{subcategory}",
-        iconSize: 0.4,
+
+        iconImage: "my_dot_icon", // Заглушка
+        iconSize: 0.3,
         iconAllowOverlap: true,
         iconIgnorePlacement: true,
-        textField: "{subcategory}",
+
+        // Тоже заглушка
+        textField: "",
         textFont: ["DIN Offc Pro Medium"],
         textSize: 12.0,
         textAnchor: mp.TextAnchor.TOP,
@@ -194,54 +285,110 @@ class _MajorMapState extends State<MajorMap> {
     );
   }
 
-  Future<void> _loadIcons(List<IconsResponseModel> icons) async {
+  /// Очищаем старые иконки
+  Future<void> _clearIcons() async {
     if (mapboxMapController == null) return;
-    debugPrint('🔄 Загружаем ${icons.length} иконок...');
-
-    List<Future<void>> tasks = [];
-    for (final icon in icons) {
-      final iconKey = icon.name;
-      final iconUrl = icon.logo.logoUrl;
-
-      if (loadedIcons.containsKey(iconKey)) {
-        debugPrint('⚠️ Иконка $iconKey уже загружена, пропускаем.');
-        continue;
-      }
-
-      tasks.add(_loadSingleIcon(iconKey, iconUrl));
+    debugPrint('🔄 Удаляем старые иконки...');
+    for (final iconKey in loadedIcons.keys) {
+      await mapboxMapController?.style.removeStyleImage(iconKey);
     }
-
-    await Future.wait(tasks);
-    debugPrint('✅ Все новые иконки загружены!');
+    loadedIcons.clear();
+    debugPrint('✅ Все старые иконки удалены!');
   }
 
-  Future<void> _loadSingleIcon(String iconName, String url) async {
-    try {
-      final Uint8List? rawBytes =
-          await NetworkAssetManager().downloadImage(url);
-      if (rawBytes == null || rawBytes.isEmpty) {
-        debugPrint('❌ Ошибка загрузки иконки $iconName: байты пустые');
-        return;
-      }
+  /// Загружаем иконки из API
+  Future<void> _loadIcons(
+    List<IconsResponseModel> icons, {
+    required int styleId,
+  }) async {
+    if (mapboxMapController == null) return;
 
-      final ui.Codec codec = await ui.instantiateImageCodec(rawBytes);
+    debugPrint('🔄 Загружаем ${icons.length} иконок для styleId=$styleId...');
+    final tasks = <Future<void>>[];
+    for (final icon in icons) {
+      final iconName = icon.name;
+      final iconUrl = icon.logo.logoUrl;
+      if (loadedIcons.containsKey(iconName)) {
+        debugPrint('⚠️ Иконка $iconName уже загружена');
+        continue;
+      }
+      tasks.add(_loadSingleIcon(iconName, iconUrl, styleId));
+    }
+    await Future.wait(tasks);
+    debugPrint('✅ Все иконки загружены для styleId=$styleId!');
+  }
+
+  /// Загружаем my_dot_icon
+  Future<void> _loadMyDotIconFromUrl() async {
+    if (mapboxMapController == null) return;
+    try {
+      const iconUrl =
+          "https://tap-maptravel.s3.ap-southeast-2.amazonaws.com/media/svgs/circle/%D0%9A%D1%80%D1%83%D0%B3_rdr.png";
+      final downloaded = await NetworkAssetManager().downloadImage(iconUrl);
+      if (downloaded == null || downloaded.isEmpty) return;
+
+      final ui.Codec codec = await ui.instantiateImageCodec(downloaded);
       final ui.FrameInfo frameInfo = await codec.getNextFrame();
       final ui.Image decodedImage = frameInfo.image;
 
-      final ByteData? byteData =
+      final byteData =
           await decodedImage.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) {
-        debugPrint('❌ Не удалось конвертировать $iconName в PNG');
-        return;
-      }
-      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      if (byteData == null) return;
 
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
       final mp.MbxImage mbxImage = mp.MbxImage(
         width: decodedImage.width,
         height: decodedImage.height,
         data: pngBytes,
       );
+      await mapboxMapController?.style.addStyleImage(
+        "my_dot_icon",
+        1.0,
+        mbxImage,
+        false,
+        [],
+        [],
+        null,
+      );
+      debugPrint('✅ my_dot_icon зарегистрирован!');
+    } catch (e, st) {
+      debugPrint('❌ Ошибка при загрузке my_dot_icon: $e\n$st');
+    }
+  }
 
+  /// Загружаем одну иконку (API)
+  Future<void> _loadSingleIcon(String iconName, String url, int styleId) async {
+    if (mapboxMapController == null) return;
+    try {
+      final compositeKey = '$styleId-$iconName';
+      final prefs = getIt.get<SharedPrefsRepository>();
+      final cached = await prefs.getIconBytes(compositeKey);
+      Uint8List? finalBytes;
+
+      if (cached != null && cached.isNotEmpty) {
+        finalBytes = cached;
+        debugPrint('💾 Иконка $iconName найдена в кэше');
+      } else {
+        final downloaded = await NetworkAssetManager().downloadImage(url);
+        if (downloaded == null || downloaded.isEmpty) return;
+        finalBytes = downloaded;
+        await prefs.saveIconBytes(compositeKey, downloaded);
+      }
+
+      final ui.Codec codec = await ui.instantiateImageCodec(finalBytes);
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image decodedImage = frameInfo.image;
+
+      final byteData =
+          await decodedImage.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final mp.MbxImage mbxImage = mp.MbxImage(
+        width: decodedImage.width,
+        height: decodedImage.height,
+        data: pngBytes,
+      );
       await mapboxMapController?.style.addStyleImage(
         iconName,
         1.0,
@@ -251,32 +398,29 @@ class _MajorMapState extends State<MajorMap> {
         [],
         null,
       );
-
       loadedIcons[iconName] = true;
       debugPrint('✅ Иконка $iconName добавлена!');
-    } catch (e, stackTrace) {
-      debugPrint('❌ Ошибка в _loadSingleIcon($iconName): $e');
-      debugPrint('StackTrace: $stackTrace');
+    } catch (e, st) {
+      debugPrint('❌ Ошибка в _loadSingleIcon($iconName): $e\n$st');
     }
   }
 
-  Future<void> _setupPositionTracking() async {
-    bool serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
+  /// Смена стиля
+  Future<void> _updateMapStyle(String newStyle) async {
+    if (mapboxMapController == null) return;
+    debugPrint("🔄 Меняем стиль карты на: $newStyle...");
+    await mapboxMapController!.style.setStyleURI(newStyle);
 
-    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
-    if (permission == gl.LocationPermission.denied) {
-      permission = await gl.Geolocator.requestPermission();
-      if (permission == gl.LocationPermission.denied ||
-          permission == gl.LocationPermission.deniedForever) {
-        return;
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      if (mapboxMapController != null) {
+        debugPrint("✅ Новый стиль загружен! Пересоздаём источники...");
+        await _addSourceAndLayers();
       }
-    }
-
-    gl.Position position = await gl.Geolocator.getCurrentPosition();
-    _moveCameraToPosition(position);
+    });
+    getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
   }
 
+  /// Центрируемся на юзере
   Future<void> _centerOnUserLocation() async {
     gl.LocationPermission permission = await gl.Geolocator.checkPermission();
     if (permission == gl.LocationPermission.denied ||
@@ -286,8 +430,7 @@ class _MajorMapState extends State<MajorMap> {
         return;
       }
     }
-
-    gl.Position position = await gl.Geolocator.getCurrentPosition();
+    final position = await gl.Geolocator.getCurrentPosition();
     _moveCameraToPosition(position);
   }
 
@@ -302,46 +445,94 @@ class _MajorMapState extends State<MajorMap> {
     );
   }
 
-  Future<void> _updateMapStyle(String newStyle) async {
-    if (mapboxMapController == null) return;
+  /// Логика расчёта threshold по zуму (как в JS)
+  double getThresholdByZoom(double zoom) {
+    if (zoom < 6.0) return 3050;
+    else if (zoom < 7.0) return 2850;
+    else if (zoom < 7.5) return 2550;
+    else if (zoom < 8.0) return 2350;
+    else if (zoom < 8.5) return 2050;
+    else if (zoom < 9.0) return 1850;
+    else if (zoom < 9.5) return 1500;
+    else if (zoom < 10.0) return 1200;
+    else if (zoom < 10.5) return 1000;
+    else if (zoom < 11.0) return 700;
+    else if (zoom < 11.5) return 550;
+    else if (zoom < 12.0) return 450;
+    else if (zoom < 12.5) return 400;
+    else if (zoom < 13.0) return 300;
+    else if (zoom < 13.5) return 250;
+    else if (zoom < 14.0) return 200;
+    else if (zoom < 14.5) return 100;
+    else if (zoom < 15.0) return 75;
+    else if (zoom < 15.5) return 50;
+    else if (zoom < 16.0) return 30;
+    else if (zoom < 16.5) return 15;
+    else if (zoom < 17.0) return 12;
+    else if (zoom < 17.5) return 9;
+    else if (zoom < 18.0) return 6;
+    else if (zoom < 18.5) return 4;
+    else if (zoom < 19.0) return 2;
+    else return 0;
+  }
 
-    print("🔄 Меняем стиль карты на: $newStyle...");
-    await mapboxMapController!.style.setStyleURI(newStyle);
+  /// Иконка: если min_dist < threshold => my_dot_icon, иначе subcategory
+  List<Object> buildIconImageExpression(double threshold) {
+    return [
+      "let",
+      "myThreshold",
+      threshold,
+      [
+        "case",
+        [
+          "<",
+          ["to-number", ["coalesce", ["get", "min_dist"], 0]],
+          ["var","myThreshold"]
+        ],
+        "my_dot_icon",
+        ["get","subcategory"]
+      ]
+    ];
+  }
 
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (mapboxMapController != null) {
-        print("✅ Новый стиль загружен! Пересоздаём источники...");
-        await _addSourceAndLayers();
-      }
-    });
-
-    /// ✅ Сохраняем стиль карты в `SharedPreferences`, но не вызываем `setState()`
-    getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
+  /// Текст: если min_dist < threshold => "" (нет текста), иначе => name
+  List<Object> buildTextFieldExpression(double threshold) {
+    return [
+      "let",
+      "myThreshold",
+      threshold,
+      [
+        "case",
+        [
+          "<",
+          ["to-number", ["coalesce", ["get","min_dist"], 0]],
+          ["var","myThreshold"]
+        ],
+        "",
+        ["get","name"]
+      ]
+    ];
   }
 }
 
+/// Класс утилит для скачивания
 class NetworkAssetManager {
   Future<Uint8List?> downloadImage(String imageUrl) async {
     try {
       final uri = Uri.parse(imageUrl);
-      debugPrint('⬇️ Downloading image from: $uri');
+      debugPrint('⬇️ Downloading $uri');
 
       final httpClient = HttpClient();
       final request = await httpClient.getUrl(uri);
       final response = await request.close();
-
       if (response.statusCode != 200) {
-        debugPrint('❌ HTTP Error: ${response.statusCode}');
-        debugPrint('Headers: ${response.headers}');
-        throw Exception('HTTP status: ${response.statusCode}');
+        throw Exception('HTTP error: ${response.statusCode}');
       }
-
       final bytes = await consolidateHttpClientResponseBytes(response);
-      debugPrint('✅ Downloaded ${bytes.length} bytes from $uri');
+      debugPrint('✅ Got ${bytes.length} bytes from $uri');
       return bytes;
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error downloading image: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e, st) {
+      debugPrint('❌ Error: $e\n$st');
       return null;
     }
   }

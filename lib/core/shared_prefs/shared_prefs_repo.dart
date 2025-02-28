@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import 'package:tap_map/core/di/di.dart';
@@ -8,6 +11,67 @@ class SharedPrefsRepository {
   static const String _mapStyleKey = 'selected_map_style';
   static const String _mapStyleIdKey = 'selected_map_style_id';
   final Talker talker = getIt.get<Talker>();
+
+  // Ключ, под которым храним JSON с картой "имя иконки" -> base64-данные"
+  static const String _iconsCacheKey = 'icons_cache_map';
+
+  /// Получаем текущую карту иконок из SharedPreferences
+  Future<Map<String, String>> _getIconsCacheMap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_iconsCacheKey);
+    if (jsonString == null) {
+      return {};
+    }
+    // Парсим JSON в Map<String, String>
+    final Map<String, dynamic> decoded = json.decode(jsonString);
+    // Приводим dynamic к String в значениях
+    return decoded.map((key, value) => MapEntry(key, value as String));
+  }
+
+  /// Сохраняем карту иконок обратно в SharedPreferences
+  Future<void> _saveIconsCacheMap(Map<String, String> map) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = json.encode(map);
+    await prefs.setString(_iconsCacheKey, jsonString);
+  }
+
+  /// Сохраняем (или обновляем) иконку в кэше
+  Future<void> saveIconBytes(String iconName, Uint8List bytes) async {
+    // Преобразуем байты в base64
+    final base64Data = base64Encode(bytes);
+
+    // Получаем текущую карту иконок
+    final cacheMap = await _getIconsCacheMap();
+    // Обновляем запись
+    cacheMap[iconName] = base64Data;
+    // Сохраняем карту обратно
+    await _saveIconsCacheMap(cacheMap);
+  }
+
+  /// Получаем иконку (как байты) по имени из кэша (если есть)
+  Future<Uint8List?> getIconBytes(String iconName) async {
+    final cacheMap = await _getIconsCacheMap();
+    final base64Data = cacheMap[iconName];
+    if (base64Data == null) {
+      return null; // Нет в кэше
+    }
+    return base64Decode(base64Data);
+  }
+
+  /// Удаляем иконку из кэша
+  Future<void> removeIcon(String iconName) async {
+    final cacheMap = await _getIconsCacheMap();
+    if (cacheMap.containsKey(iconName)) {
+      cacheMap.remove(iconName);
+      await _saveIconsCacheMap(cacheMap);
+    }
+  }
+
+  /// Полная очистка кэша иконок
+  Future<void> clearIconsCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_iconsCacheKey);
+  }
 
   // ✅ Универсальный метод для сохранения строки
   Future<void> setString(String key, String value) async {
