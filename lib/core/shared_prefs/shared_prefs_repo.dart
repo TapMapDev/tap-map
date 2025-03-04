@@ -165,4 +165,15 @@ class SharedPrefsRepository {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_mapStyleIdKey);
   }
+   /// Сохраняем шрифт пользователя
+  Future<void> saveSelectedFont(String fontName) async {
+     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("selectedFontName", fontName);
+  }
+
+  /// Получаем сохранённый шрифт
+  Future<String?> getSelectedFont() async {
+     final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("selectedFontName");
+  }
 }

@@ -9,9 +9,13 @@ class IconsLoading extends IconsState {}
 class IconsSuccess extends IconsState {
   final List<IconsResponseModel> icons;
   final int styleId;
+  final Map<String, String> textColors; // Новый параметр
 
-  IconsSuccess({required List<IconsResponseModel> icons, required this.styleId})
-      : icons = List.unmodifiable(icons); // Неизменяемый список
+  IconsSuccess(
+      {required this.icons, required this.styleId, required this.textColors});
+
+  @override
+  List<Object?> get props => [icons, styleId, textColors];
 }
 
 class IconsError extends IconsState {

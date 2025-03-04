@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
@@ -21,13 +20,18 @@ class IconsBloc extends Bloc<IconsEvent, IconsState> {
       final icons = await iconsRepository.fetchIcons(event.styleId);
 
       if (icons.isEmpty) {
-        // Если API вернул пустой список
         emit(IconsError(message: "Нет доступных иконок для этого стиля"));
       } else {
-        emit(IconsSuccess(icons: icons, styleId: event.styleId));
+        // ✅ Формируем Map: { "name" -> "text_color" }
+        final Map<String, String> textColors = {
+          for (var icon in icons)
+            icon.name: icon.textColor
+        };
+
+        emit(IconsSuccess(
+            icons: icons, styleId: event.styleId, textColors: textColors));
       }
     } catch (e) {
-      debugPrint('❌ Ошибка загрузки иконок: $e');
       emit(IconsError(message: "Ошибка загрузки иконок"));
     }
   }

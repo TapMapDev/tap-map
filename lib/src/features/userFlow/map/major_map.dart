@@ -45,8 +45,8 @@ class _MajorMapState extends State<MajorMap> {
   @override
   void initState() {
     super.initState();
-    _loadSavedMapStyle();        // 1) Грузим стиль
-    _setupPositionTracking();    // 2) Локация
+    _loadSavedMapStyle(); // 1) Грузим стиль
+    _setupPositionTracking(); // 2) Локация
     // 3) Запрашиваем список стилей
     Future.microtask(() {
       context.read<MapStyleBloc>().add(FetchMapStylesEvent());
@@ -71,8 +71,74 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
+  Future<void> _updateTextStyleFromJson(List<Map<String, dynamic>> data) async {
+    if (mapboxMapController == null) return;
+
+    for (var item in data) {
+      final String textColor =
+          item["text_color"] ?? "#FFFFFF"; // Дефолтный белый цвет
+      final String name = item["name"] ?? "unknown"; // Название иконки
+
+      final hasLayer = await _checkLayerExists("places_symbol_layer");
+      if (!hasLayer) {
+        debugPrint(
+            "⚠️ Layer places_symbol_layer не найден! Попытка повторного добавления...");
+        await _addSourceAndLayers();
+        return;
+      }
+
+      try {
+        // ✅ Устанавливаем цвет ТОЛЬКО для меток с соответствующим именем
+        await mapboxMapController?.style.setStyleLayerProperty(
+          "places_symbol_layer",
+          "text-color",
+          [
+            "match",
+            ["get", "name"], // Поле, по которому мы сравниваем
+            name,
+            _convertHexToRGBA(textColor), // Цвет для совпадающего name
+            // ["rgba", 255, 255, 255, 1.0] // Дефолтный белый
+          ],
+        );
+
+        debugPrint("✅ Цвет текста обновлён для $name: $textColor");
+      } catch (e, st) {
+        debugPrint("❌ Ошибка обновления цвета текста ($name): $e\n$st");
+      }
+    }
+  }
+
+  /// Проверка существования слоя
+  Future<bool> _checkLayerExists(String layerId) async {
+    try {
+      final result = await mapboxMapController?.style
+          .getStyleLayerProperty(layerId, "visibility");
+      return result != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  List<Object> _convertHexToRGBA(String hexColor) {
+    hexColor = hexColor.replaceFirst('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor'; // Добавляем альфа-канал (100% непрозрачность)
+    }
+    int hexValue = int.parse(hexColor, radix: 16);
+    Color color = Color(hexValue);
+    return ["rgba", color.red, color.green, color.blue, 1.0];
+  }
+
+  /// Конвертируем HEX в RGBA (если требуется)
+
+  /// Преобразует HEX-цвет в Mapbox Expression
+  List<Object> _parseColorExpression(String hexColor) {
+    return ["literal", hexColor]; // Mapbox ожидает color в виде строки HEX
+  }
+
   /// Запрашиваем геолокацию
   Future<void> _setupPositionTracking() async {
+    await Future.delayed(Duration(milliseconds: 500));
     final serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
@@ -103,14 +169,26 @@ class _MajorMapState extends State<MajorMap> {
       listeners: [
         // Ловим события IconsBloc (загрузка иконок)
         BlocListener<IconsBloc, IconsState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is IconsLoading) {
               debugPrint('🔄 Загрузка иконок...');
             } else if (state is IconsSuccess) {
               debugPrint('✅ Иконки получены. Загружаем в MapBox...');
               _loadIcons(state.icons, styleId: state.styleId);
-            } else if (state is IconsError) {
-              debugPrint('❌ Ошибка загрузки иконок: ${state.message}');
+
+              final textColorExpression =
+                  buildTextColorExpression(state.textColors);
+
+              try {
+                await mapboxMapController?.style.setStyleLayerProperty(
+                  "places_symbol_layer",
+                  "text-color",
+                  textColorExpression,
+                );
+                debugPrint("✅ Цвет текста обновлён!");
+              } catch (e, st) {
+                debugPrint("❌ Ошибка обновления цвета текста: $e\n$st");
+              }
             }
           },
         ),
@@ -214,7 +292,7 @@ class _MajorMapState extends State<MajorMap> {
   /// Когда стиль загружен
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null) return;
-
+    debugPrint("🗺️ Стиль загружен! Добавляем слои...");
     // Добавляем источники и слой
     await _addSourceAndLayers();
     // Загружаем my_dot_icon
@@ -246,14 +324,29 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
+  List<Object> buildTextColorExpression(Map<String, String> textColors) {
+    List<Object> matchExpression = [
+      "match",
+      ["get", "subcategory"], // Берём значение subcategory
+    ];
+
+    textColors.forEach((subcategory, color) {
+      matchExpression.add(subcategory);
+      matchExpression.add(_convertHexToRGBA(color)); // Конвертируем HEX в RGBA
+    });
+
+    matchExpression
+        .add(["rgba", 255, 255, 255, 1.0]); // Белый цвет по умолчанию
+
+    return matchExpression;
+  }
+
   /// Добавляем источник + SymbolLayer (заглушка)
   Future<void> _addSourceAndLayers() async {
     await mapboxMapController?.style.addSource(
       mp.VectorSource(
         id: "places_source",
-        tiles: [
-          "https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"
-        ],
+        tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
         minzoom: 0,
         maxzoom: 20,
       ),
@@ -275,7 +368,30 @@ class _MajorMapState extends State<MajorMap> {
         // Тоже заглушка
         textField: "",
         textFont: ["DIN Offc Pro Medium"],
-        textSize: 12.0,
+        textSizeExpression: <Object>[
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          5, 3, // При зуме 5, размер текста 3
+          18, 14 // При зуме 18, размер текста 14
+        ],
+        textOffsetExpression: <Object>[
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          5,
+          [
+            'literal',
+            // [0, 1.0]
+            [0, 1.85]
+          ],
+          18,
+          [
+            'literal',
+            [0, 0.75]
+            // [0, 1.55]
+          ]
+        ],
         textAnchor: mp.TextAnchor.TOP,
         textColor: Colors.white.value,
         textHaloColor: Colors.black.withOpacity(0.75).value,
@@ -447,33 +563,60 @@ class _MajorMapState extends State<MajorMap> {
 
   /// Логика расчёта threshold по zуму (как в JS)
   double getThresholdByZoom(double zoom) {
-    if (zoom < 6.0) return 3050;
-    else if (zoom < 7.0) return 2850;
-    else if (zoom < 7.5) return 2550;
-    else if (zoom < 8.0) return 2350;
-    else if (zoom < 8.5) return 2050;
-    else if (zoom < 9.0) return 1850;
-    else if (zoom < 9.5) return 1500;
-    else if (zoom < 10.0) return 1200;
-    else if (zoom < 10.5) return 1000;
-    else if (zoom < 11.0) return 700;
-    else if (zoom < 11.5) return 550;
-    else if (zoom < 12.0) return 450;
-    else if (zoom < 12.5) return 400;
-    else if (zoom < 13.0) return 300;
-    else if (zoom < 13.5) return 250;
-    else if (zoom < 14.0) return 200;
-    else if (zoom < 14.5) return 100;
-    else if (zoom < 15.0) return 75;
-    else if (zoom < 15.5) return 50;
-    else if (zoom < 16.0) return 30;
-    else if (zoom < 16.5) return 15;
-    else if (zoom < 17.0) return 12;
-    else if (zoom < 17.5) return 9;
-    else if (zoom < 18.0) return 6;
-    else if (zoom < 18.5) return 4;
-    else if (zoom < 19.0) return 2;
-    else return 0;
+    if (zoom < 6.0)
+      return 3050;
+    else if (zoom < 7.0)
+      return 2850;
+    else if (zoom < 7.5)
+      return 2550;
+    else if (zoom < 8.0)
+      return 2350;
+    else if (zoom < 8.5)
+      return 2050;
+    else if (zoom < 9.0)
+      return 1850;
+    else if (zoom < 9.5)
+      return 1500;
+    else if (zoom < 10.0)
+      return 1200;
+    else if (zoom < 10.5)
+      return 1000;
+    else if (zoom < 11.0)
+      return 700;
+    else if (zoom < 11.5)
+      return 550;
+    else if (zoom < 12.0)
+      return 450;
+    else if (zoom < 12.5)
+      return 400;
+    else if (zoom < 13.0)
+      return 300;
+    else if (zoom < 13.5)
+      return 250;
+    else if (zoom < 14.0)
+      return 200;
+    else if (zoom < 14.5)
+      return 100;
+    else if (zoom < 15.0)
+      return 75;
+    else if (zoom < 15.5)
+      return 50;
+    else if (zoom < 16.0)
+      return 30;
+    else if (zoom < 16.5)
+      return 15;
+    else if (zoom < 17.0)
+      return 12;
+    else if (zoom < 17.5)
+      return 9;
+    else if (zoom < 18.0)
+      return 6;
+    else if (zoom < 18.5)
+      return 4;
+    else if (zoom < 19.0)
+      return 2;
+    else
+      return 0;
   }
 
   /// Иконка: если min_dist < threshold => my_dot_icon, иначе subcategory
@@ -486,11 +629,18 @@ class _MajorMapState extends State<MajorMap> {
         "case",
         [
           "<",
-          ["to-number", ["coalesce", ["get", "min_dist"], 0]],
-          ["var","myThreshold"]
+          [
+            "to-number",
+            [
+              "coalesce",
+              ["get", "min_dist"],
+              0
+            ]
+          ],
+          ["var", "myThreshold"]
         ],
         "my_dot_icon",
-        ["get","subcategory"]
+        ["get", "subcategory"]
       ]
     ];
   }
@@ -505,11 +655,18 @@ class _MajorMapState extends State<MajorMap> {
         "case",
         [
           "<",
-          ["to-number", ["coalesce", ["get","min_dist"], 0]],
-          ["var","myThreshold"]
+          [
+            "to-number",
+            [
+              "coalesce",
+              ["get", "min_dist"],
+              0
+            ]
+          ],
+          ["var", "myThreshold"]
         ],
         "",
-        ["get","name"]
+        ["get", "name"]
       ]
     ];
   }

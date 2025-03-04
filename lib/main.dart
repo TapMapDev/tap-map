@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:geolocator/geolocator.dart' as gl;
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
@@ -22,29 +21,13 @@ import 'package:tap_map/src/features/registration/registration_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-   setup();
+  setup();
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
- 
+
   runApp(const MyApp());
-  await _setupPositionTracking();
-}
-
-Future<void> _setupPositionTracking() async {
-  bool serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) return;
-
-  gl.LocationPermission permission = await gl.Geolocator.checkPermission();
-  if (permission == gl.LocationPermission.denied) {
-    permission = await gl.Geolocator.requestPermission();
-    if (permission == gl.LocationPermission.denied ||
-        permission == gl.LocationPermission.deniedForever) {
-      return;
-    }
-  }
-
-  // gl.Position position = await gl.Geolocator.getCurrentPosition();
+  // await _setupPositionTracking();
 }
 
 class MyApp extends StatelessWidget {
