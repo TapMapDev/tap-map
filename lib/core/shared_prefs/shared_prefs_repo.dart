@@ -112,7 +112,7 @@ class SharedPrefsRepository {
     }
   }
 
-  // ✅ Методы для refresh_token
+  // // ✅ Методы для refresh_token
   Future<void> saveRefreshToken(String token) =>
       setString(_refreshTokenKey, token);
   Future<String?> getRefreshToken() => getString(_refreshTokenKey);
@@ -165,15 +165,16 @@ class SharedPrefsRepository {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_mapStyleIdKey);
   }
-   /// Сохраняем шрифт пользователя
+
+  /// Сохраняем шрифт пользователя
   Future<void> saveSelectedFont(String fontName) async {
-     final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setString("selectedFontName", fontName);
   }
 
   /// Получаем сохранённый шрифт
   Future<String?> getSelectedFont() async {
-     final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     return prefs.getString("selectedFontName");
   }
 }

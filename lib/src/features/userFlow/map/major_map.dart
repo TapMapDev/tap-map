@@ -23,6 +23,8 @@ class MajorMap extends StatefulWidget {
 
 class _MajorMapState extends State<MajorMap> {
   mp.MapboxMap? mapboxMapController;
+  // Используем константу для ID слоя
+  static const String placesLayerId = "places_symbol_layer";
 
   /// Позиция пользователя до создания карты
   gl.Position? _initialUserPosition;
@@ -65,42 +67,39 @@ class _MajorMapState extends State<MajorMap> {
       isStyleLoaded = true;
     });
 
-    // Если надо "прогреть" иконки заранее
+    // Если нужно загрузить иконки заранее
     if (currentStyleId != null) {
       context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
     }
   }
 
+  /// Обновление цвета текста. Если слой отсутствует – сначала добавляем его.
   Future<void> _updateTextStyleFromJson(List<Map<String, dynamic>> data) async {
     if (mapboxMapController == null) return;
 
-    for (var item in data) {
-      final String textColor =
-          item["text_color"] ?? "#FFFFFF"; // Дефолтный белый цвет
-      final String name = item["name"] ?? "unknown"; // Название иконки
+    // Проверяем наличие слоя
+    bool layerExists = await _checkLayerExists(placesLayerId);
+    if (!layerExists) {
+      debugPrint("⚠️ Layer $placesLayerId не найден! Добавляем его...");
+      await _addSourceAndLayers();
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
 
-      final hasLayer = await _checkLayerExists("places_symbol_layer");
-      if (!hasLayer) {
-        debugPrint(
-            "⚠️ Layer places_symbol_layer не найден! Попытка повторного добавления...");
-        await _addSourceAndLayers();
-        return;
-      }
+    for (var item in data) {
+      final String textColor = item["text_color"] ?? "#FFFFFF";
+      final String name = item["name"] ?? "unknown";
 
       try {
-        // ✅ Устанавливаем цвет ТОЛЬКО для меток с соответствующим именем
         await mapboxMapController?.style.setStyleLayerProperty(
-          "places_symbol_layer",
+          placesLayerId,
           "text-color",
           [
             "match",
-            ["get", "name"], // Поле, по которому мы сравниваем
+            ["get", "name"],
             name,
-            _convertHexToRGBA(textColor), // Цвет для совпадающего name
-            // ["rgba", 255, 255, 255, 1.0] // Дефолтный белый
+            _convertHexToRGBA(textColor),
           ],
         );
-
         debugPrint("✅ Цвет текста обновлён для $name: $textColor");
       } catch (e, st) {
         debugPrint("❌ Ошибка обновления цвета текста ($name): $e\n$st");
@@ -108,11 +107,10 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
-  /// Проверка существования слоя
+  /// Проверка существования слоя по его ID
   Future<bool> _checkLayerExists(String layerId) async {
     try {
-      final result = await mapboxMapController?.style
-          .getStyleLayerProperty(layerId, "visibility");
+      final result = await mapboxMapController?.style.getStyleLayerProperty(layerId, "visibility");
       return result != null;
     } catch (e) {
       return false;
@@ -122,21 +120,14 @@ class _MajorMapState extends State<MajorMap> {
   List<Object> _convertHexToRGBA(String hexColor) {
     hexColor = hexColor.replaceFirst('#', '');
     if (hexColor.length == 6) {
-      hexColor = 'FF$hexColor'; // Добавляем альфа-канал (100% непрозрачность)
+      hexColor = 'FF$hexColor';
     }
     int hexValue = int.parse(hexColor, radix: 16);
     Color color = Color(hexValue);
     return ["rgba", color.red, color.green, color.blue, 1.0];
   }
 
-  /// Конвертируем HEX в RGBA (если требуется)
-
-  /// Преобразует HEX-цвет в Mapbox Expression
-  List<Object> _parseColorExpression(String hexColor) {
-    return ["literal", hexColor]; // Mapbox ожидает color в виде строки HEX
-  }
-
-  /// Запрашиваем геолокацию
+  /// Запрос геолокации
   Future<void> _setupPositionTracking() async {
     await Future.delayed(Duration(milliseconds: 500));
     final serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
@@ -160,28 +151,24 @@ class _MajorMapState extends State<MajorMap> {
 
   @override
   Widget build(BuildContext context) {
-    // Ждём, пока карта готова и локация получена
     if (!isStyleLoaded || !isLocationLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return MultiBlocListener(
       listeners: [
-        // Ловим события IconsBloc (загрузка иконок)
         BlocListener<IconsBloc, IconsState>(
           listener: (context, state) async {
             if (state is IconsLoading) {
               debugPrint('🔄 Загрузка иконок...');
             } else if (state is IconsSuccess) {
               debugPrint('✅ Иконки получены. Загружаем в MapBox...');
-              _loadIcons(state.icons, styleId: state.styleId);
+              await _loadIcons(state.icons, styleId: state.styleId);
 
-              final textColorExpression =
-                  buildTextColorExpression(state.textColors);
-
+              final textColorExpression = buildTextColorExpression(state.textColors);
               try {
                 await mapboxMapController?.style.setStyleLayerProperty(
-                  "places_symbol_layer",
+                  placesLayerId,
                   "text-color",
                   textColorExpression,
                 );
@@ -192,16 +179,13 @@ class _MajorMapState extends State<MajorMap> {
             }
           },
         ),
-        // Ловим события MapStyleBloc (смена стиля)
         BlocListener<MapStyleBloc, MapStyleState>(
           listener: (context, state) async {
             if (state is MapStyleUpdateSuccess) {
-              _updateMapStyle(state.styleUri);
+              await _updateMapStyle(state.styleUri);
               currentStyleId = state.newStyleId;
-              await _clearIcons(); // чистим старые иконки
-              context
-                  .read<IconsBloc>()
-                  .add(FetchIconsEvent(styleId: state.newStyleId));
+              await _clearIcons();
+              context.read<IconsBloc>().add(FetchIconsEvent(styleId: state.newStyleId));
             }
           },
         ),
@@ -224,46 +208,40 @@ class _MajorMapState extends State<MajorMap> {
               ),
               onMapCreated: _onMapCreated,
               onMapLoadedListener: _onStyleLoadedCallback,
-
-              /// Подписываемся на изменение камеры
               onCameraChangeListener: (eventData) async {
-                // Запрашиваем текущее состояние камеры
                 final cameraState = await mapboxMapController?.getCameraState();
                 if (cameraState == null) return;
 
                 final zoom = cameraState.zoom;
-                // Считаем threshold
                 final threshold = getThresholdByZoom(zoom);
-
-                // Формируем icon-image expression
                 final iconExpression = buildIconImageExpression(threshold);
-
-                // Формируем text-field expression
                 final textExpression = buildTextFieldExpression(threshold);
 
-                // Обновляем icon-image
-                mapboxMapController?.style.setStyleLayerProperty(
-                  "places_symbol_layer",
-                  "icon-image",
-                  iconExpression,
-                );
-                // Обновляем text-field
-                mapboxMapController?.style.setStyleLayerProperty(
-                  "places_symbol_layer",
-                  "text-field",
-                  textExpression,
-                );
+                try {
+                  await mapboxMapController?.style.setStyleLayerProperty(
+                    placesLayerId,
+                    "icon-image",
+                    iconExpression,
+                  );
+                } catch (e, st) {
+                  debugPrint("❌ Ошибка обновления icon-image: $e\n$st");
+                }
+                try {
+                  await mapboxMapController?.style.setStyleLayerProperty(
+                    placesLayerId,
+                    "text-field",
+                    textExpression,
+                  );
+                } catch (e, st) {
+                  debugPrint("❌ Ошибка обновления text-field: $e\n$st");
+                }
               },
             ),
-
-            // Кнопки выбора стиля
             const Positioned(
               bottom: 80,
               left: 20,
               child: MapStyleButtons(),
             ),
-
-            // Кнопка "центр"
             Positioned(
               bottom: 20,
               right: 20,
@@ -279,46 +257,44 @@ class _MajorMapState extends State<MajorMap> {
     );
   }
 
-  /// Когда карта создана
   void _onMapCreated(mp.MapboxMap controller) {
     mapboxMapController = controller;
-
-    // Включаем "синюю точку"
     mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
   }
 
-  /// Когда стиль загружен
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null) return;
     debugPrint("🗺️ Стиль загружен! Добавляем слои...");
-    // Добавляем источники и слой
     await _addSourceAndLayers();
-    // Загружаем my_dot_icon
     await _loadMyDotIconFromUrl();
 
-    // Однократно инициализируем icon-image и text-field
     final camState = await mapboxMapController?.getCameraState();
     final currentZoom = camState?.zoom ?? 14.0;
     final threshold = getThresholdByZoom(currentZoom);
-
     final iconExpr = buildIconImageExpression(threshold);
     final textExpr = buildTextFieldExpression(threshold);
 
-    // Устанавливаем свойства
-    mapboxMapController?.style.setStyleLayerProperty(
-      "places_symbol_layer",
-      "icon-image",
-      iconExpr,
-    );
-    mapboxMapController?.style.setStyleLayerProperty(
-      "places_symbol_layer",
-      "text-field",
-      textExpr,
-    );
+    try {
+      await mapboxMapController?.style.setStyleLayerProperty(
+        placesLayerId,
+        "icon-image",
+        iconExpr,
+      );
+    } catch (e, st) {
+      debugPrint("❌ Ошибка установки icon-image: $e\n$st");
+    }
+    try {
+      await mapboxMapController?.style.setStyleLayerProperty(
+        placesLayerId,
+        "text-field",
+        textExpr,
+      );
+    } catch (e, st) {
+      debugPrint("❌ Ошибка установки text-field: $e\n$st");
+    }
 
-    // Если есть styleId -> грузим иконки
     if (currentStyleId != null) {
       context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
     }
@@ -327,98 +303,86 @@ class _MajorMapState extends State<MajorMap> {
   List<Object> buildTextColorExpression(Map<String, String> textColors) {
     List<Object> matchExpression = [
       "match",
-      ["get", "subcategory"], // Берём значение subcategory
+      ["get", "subcategory"],
     ];
 
     textColors.forEach((subcategory, color) {
       matchExpression.add(subcategory);
-      matchExpression.add(_convertHexToRGBA(color)); // Конвертируем HEX в RGBA
+      matchExpression.add(_convertHexToRGBA(color));
     });
-
-    matchExpression
-        .add(["rgba", 255, 255, 255, 1.0]); // Белый цвет по умолчанию
-
+    matchExpression.add(["rgba", 255, 255, 255, 1.0]);
     return matchExpression;
   }
 
-  /// Добавляем источник + SymbolLayer (заглушка)
+  /// Добавляем источник и SymbolLayer, если его ещё нет
   Future<void> _addSourceAndLayers() async {
-    await mapboxMapController?.style.addSource(
-      mp.VectorSource(
-        id: "places_source",
-        tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
-        minzoom: 0,
-        maxzoom: 20,
-      ),
-    );
+    if (mapboxMapController == null) return;
+    try {
+      await mapboxMapController?.style.addSource(
+        mp.VectorSource(
+          id: "places_source",
+          tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
+          minzoom: 0,
+          maxzoom: 20,
+        ),
+      );
 
-    // Логика icon-image / text-field теперь обновляется динамически,
-    // так что просто задаём заглушку
-    await mapboxMapController?.style.addLayer(
-      mp.SymbolLayer(
-        id: "places_symbol_layer",
-        sourceId: "places_source",
-        sourceLayer: "mylayer",
-
-        iconImage: "my_dot_icon", // Заглушка
-        iconSize: 0.3,
-        iconAllowOverlap: true,
-        iconIgnorePlacement: true,
-
-        // Тоже заглушка
-        textField: "",
-        textFont: ["DIN Offc Pro Medium"],
-        textSizeExpression: <Object>[
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5, 3, // При зуме 5, размер текста 3
-          18, 14 // При зуме 18, размер текста 14
-        ],
-        textOffsetExpression: <Object>[
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          5,
-          [
-            'literal',
-            // [0, 1.0]
-            [0, 1.85]
+      await mapboxMapController?.style.addLayer(
+        mp.SymbolLayer(
+          id: placesLayerId,
+          sourceId: "places_source",
+          sourceLayer: "mylayer",
+          iconImage: "my_dot_icon",
+          iconSize: 0.3,
+          iconAllowOverlap: true,
+          iconIgnorePlacement: true,
+          textField: "",
+          textFont: ["DIN Offc Pro Medium"],
+          textSizeExpression: <Object>[
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            5, 3,
+            18, 14
           ],
-          18,
-          [
-            'literal',
-            [0, 0.75]
-            // [0, 1.55]
-          ]
-        ],
-        textAnchor: mp.TextAnchor.TOP,
-        textColor: Colors.white.value,
-        textHaloColor: Colors.black.withOpacity(0.75).value,
-        textHaloWidth: 2.0,
-        textHaloBlur: 0.5,
-      ),
-    );
+          textOffsetExpression: <Object>[
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            5,
+            ['literal', [0, 1.85]],
+            18,
+            ['literal', [0, 0.75]]
+          ],
+          textAnchor: mp.TextAnchor.TOP,
+          textColor: Colors.white.value,
+          textHaloColor: Colors.black.withOpacity(0.75).value,
+          textHaloWidth: 2.0,
+          textHaloBlur: 0.5,
+        ),
+      );
+      debugPrint("✅ Источник и слой $placesLayerId добавлены");
+    } catch (e, st) {
+      debugPrint("❌ Ошибка при добавлении источника и слоя: $e\n$st");
+    }
   }
 
-  /// Очищаем старые иконки
   Future<void> _clearIcons() async {
     if (mapboxMapController == null) return;
     debugPrint('🔄 Удаляем старые иконки...');
     for (final iconKey in loadedIcons.keys) {
-      await mapboxMapController?.style.removeStyleImage(iconKey);
+      try {
+        await mapboxMapController?.style.removeStyleImage(iconKey);
+      } catch (e) {
+        debugPrint("Ошибка удаления иконки $iconKey: $e");
+      }
     }
     loadedIcons.clear();
     debugPrint('✅ Все старые иконки удалены!');
   }
 
-  /// Загружаем иконки из API
-  Future<void> _loadIcons(
-    List<IconsResponseModel> icons, {
-    required int styleId,
-  }) async {
+  Future<void> _loadIcons(List<IconsResponseModel> icons, {required int styleId}) async {
     if (mapboxMapController == null) return;
-
     debugPrint('🔄 Загружаем ${icons.length} иконок для styleId=$styleId...');
     final tasks = <Future<void>>[];
     for (final icon in icons) {
@@ -434,7 +398,6 @@ class _MajorMapState extends State<MajorMap> {
     debugPrint('✅ Все иконки загружены для styleId=$styleId!');
   }
 
-  /// Загружаем my_dot_icon
   Future<void> _loadMyDotIconFromUrl() async {
     if (mapboxMapController == null) return;
     try {
@@ -442,15 +405,12 @@ class _MajorMapState extends State<MajorMap> {
           "https://tap-maptravel.s3.ap-southeast-2.amazonaws.com/media/svgs/circle/%D0%9A%D1%80%D1%83%D0%B3_rdr.png";
       final downloaded = await NetworkAssetManager().downloadImage(iconUrl);
       if (downloaded == null || downloaded.isEmpty) return;
-
       final ui.Codec codec = await ui.instantiateImageCodec(downloaded);
       final ui.FrameInfo frameInfo = await codec.getNextFrame();
       final ui.Image decodedImage = frameInfo.image;
-
       final byteData =
           await decodedImage.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
-
       final Uint8List pngBytes = byteData.buffer.asUint8List();
       final mp.MbxImage mbxImage = mp.MbxImage(
         width: decodedImage.width,
@@ -472,7 +432,6 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
-  /// Загружаем одну иконку (API)
   Future<void> _loadSingleIcon(String iconName, String url, int styleId) async {
     if (mapboxMapController == null) return;
     try {
@@ -494,11 +453,9 @@ class _MajorMapState extends State<MajorMap> {
       final ui.Codec codec = await ui.instantiateImageCodec(finalBytes);
       final ui.FrameInfo frameInfo = await codec.getNextFrame();
       final ui.Image decodedImage = frameInfo.image;
-
       final byteData =
           await decodedImage.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
-
       final Uint8List pngBytes = byteData.buffer.asUint8List();
       final mp.MbxImage mbxImage = mp.MbxImage(
         width: decodedImage.width,
@@ -521,12 +478,14 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
-  /// Смена стиля
   Future<void> _updateMapStyle(String newStyle) async {
     if (mapboxMapController == null) return;
     debugPrint("🔄 Меняем стиль карты на: $newStyle...");
-    await mapboxMapController!.style.setStyleURI(newStyle);
-
+    try {
+      await mapboxMapController!.style.setStyleURI(newStyle);
+    } catch (e, st) {
+      debugPrint("❌ Ошибка смены стиля: $e\n$st");
+    }
     Future.delayed(const Duration(milliseconds: 500), () async {
       if (mapboxMapController != null) {
         debugPrint("✅ Новый стиль загружен! Пересоздаём источники...");
@@ -536,7 +495,6 @@ class _MajorMapState extends State<MajorMap> {
     getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
   }
 
-  /// Центрируемся на юзере
   Future<void> _centerOnUserLocation() async {
     gl.LocationPermission permission = await gl.Geolocator.checkPermission();
     if (permission == gl.LocationPermission.denied ||
@@ -561,7 +519,6 @@ class _MajorMapState extends State<MajorMap> {
     );
   }
 
-  /// Логика расчёта threshold по zуму (как в JS)
   double getThresholdByZoom(double zoom) {
     if (zoom < 6.0)
       return 3050;
@@ -619,7 +576,6 @@ class _MajorMapState extends State<MajorMap> {
       return 0;
   }
 
-  /// Иконка: если min_dist < threshold => my_dot_icon, иначе subcategory
   List<Object> buildIconImageExpression(double threshold) {
     return [
       "let",
@@ -631,11 +587,7 @@ class _MajorMapState extends State<MajorMap> {
           "<",
           [
             "to-number",
-            [
-              "coalesce",
-              ["get", "min_dist"],
-              0
-            ]
+            ["coalesce", ["get", "min_dist"], 0]
           ],
           ["var", "myThreshold"]
         ],
@@ -645,7 +597,6 @@ class _MajorMapState extends State<MajorMap> {
     ];
   }
 
-  /// Текст: если min_dist < threshold => "" (нет текста), иначе => name
   List<Object> buildTextFieldExpression(double threshold) {
     return [
       "let",
@@ -657,11 +608,7 @@ class _MajorMapState extends State<MajorMap> {
           "<",
           [
             "to-number",
-            [
-              "coalesce",
-              ["get", "min_dist"],
-              0
-            ]
+            ["coalesce", ["get", "min_dist"], 0]
           ],
           ["var", "myThreshold"]
         ],
@@ -672,13 +619,12 @@ class _MajorMapState extends State<MajorMap> {
   }
 }
 
-/// Класс утилит для скачивания
+/// Класс для скачивания изображений
 class NetworkAssetManager {
   Future<Uint8List?> downloadImage(String imageUrl) async {
     try {
       final uri = Uri.parse(imageUrl);
       debugPrint('⬇️ Downloading $uri');
-
       final httpClient = HttpClient();
       final request = await httpClient.getUrl(uri);
       final response = await request.close();

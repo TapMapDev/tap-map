@@ -113,7 +113,7 @@ class ApiService {
 
     try {
       final response = await dioClient.client.post(
-        '/token/refresh',
+        '/auth/jwt/refresh/',
         data: {'refresh': refreshToken},
          options: Options(headers: {'Content-Type': 'application/json'}),
       );
