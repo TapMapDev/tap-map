@@ -73,50 +73,6 @@ class _MajorMapState extends State<MajorMap> {
     }
   }
 
-  /// Обновление цвета текста. Если слой отсутствует – сначала добавляем его.
-  Future<void> _updateTextStyleFromJson(List<Map<String, dynamic>> data) async {
-    if (mapboxMapController == null) return;
-
-    // Проверяем наличие слоя
-    bool layerExists = await _checkLayerExists(placesLayerId);
-    if (!layerExists) {
-      debugPrint("⚠️ Layer $placesLayerId не найден! Добавляем его...");
-      await _addSourceAndLayers();
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-
-    for (var item in data) {
-      final String textColor = item["text_color"] ?? "#FFFFFF";
-      final String name = item["name"] ?? "unknown";
-
-      try {
-        await mapboxMapController?.style.setStyleLayerProperty(
-          placesLayerId,
-          "text-color",
-          [
-            "match",
-            ["get", "name"],
-            name,
-            _convertHexToRGBA(textColor),
-          ],
-        );
-        debugPrint("✅ Цвет текста обновлён для $name: $textColor");
-      } catch (e, st) {
-        debugPrint("❌ Ошибка обновления цвета текста ($name): $e\n$st");
-      }
-    }
-  }
-
-  /// Проверка существования слоя по его ID
-  Future<bool> _checkLayerExists(String layerId) async {
-    try {
-      final result = await mapboxMapController?.style.getStyleLayerProperty(layerId, "visibility");
-      return result != null;
-    } catch (e) {
-      return false;
-    }
-  }
-
   List<Object> _convertHexToRGBA(String hexColor) {
     hexColor = hexColor.replaceFirst('#', '');
     if (hexColor.length == 6) {
@@ -165,7 +121,8 @@ class _MajorMapState extends State<MajorMap> {
               debugPrint('✅ Иконки получены. Загружаем в MapBox...');
               await _loadIcons(state.icons, styleId: state.styleId);
 
-              final textColorExpression = buildTextColorExpression(state.textColors);
+              final textColorExpression =
+                  buildTextColorExpression(state.textColors);
               try {
                 await mapboxMapController?.style.setStyleLayerProperty(
                   placesLayerId,
@@ -185,7 +142,9 @@ class _MajorMapState extends State<MajorMap> {
               await _updateMapStyle(state.styleUri);
               currentStyleId = state.newStyleId;
               await _clearIcons();
-              context.read<IconsBloc>().add(FetchIconsEvent(styleId: state.newStyleId));
+              context
+                  .read<IconsBloc>()
+                  .add(FetchIconsEvent(styleId: state.newStyleId));
             }
           },
         ),
@@ -216,7 +175,15 @@ class _MajorMapState extends State<MajorMap> {
                 final threshold = getThresholdByZoom(zoom);
                 final iconExpression = buildIconImageExpression(threshold);
                 final textExpression = buildTextFieldExpression(threshold);
-
+                final layers =
+                    await mapboxMapController!.style.getStyleLayers();
+                final layerExists =
+                    layers.any((layer) => layer?.id == placesLayerId);
+                if (!layerExists) {
+                  debugPrint(
+                      "Слой $placesLayerId не найден. Пропускаем обновление.");
+                  return;
+                }
                 try {
                   await mapboxMapController?.style.setStyleLayerProperty(
                     placesLayerId,
@@ -333,32 +300,42 @@ class _MajorMapState extends State<MajorMap> {
           sourceId: "places_source",
           sourceLayer: "mylayer",
           iconImage: "my_dot_icon",
-          iconSize: 0.3,
+          iconSize: 0.25,
           iconAllowOverlap: true,
           iconIgnorePlacement: true,
+          // iconAllowOverlapExpression: ["literal", true],
           textField: "",
           textFont: ["DIN Offc Pro Medium"],
           textSizeExpression: <Object>[
             "interpolate",
             ["linear"],
             ["zoom"],
-            5, 3,
-            18, 14
+            5,
+            3,
+            18,
+            14
           ],
           textOffsetExpression: <Object>[
             'interpolate',
             ['linear'],
             ['zoom'],
             5,
-            ['literal', [0, 1.85]],
+            [
+              'literal',
+              [0, 1.85]
+            ],
             18,
-            ['literal', [0, 0.75]]
+            [
+              'literal',
+              [0, 0.75]
+            ]
           ],
           textAnchor: mp.TextAnchor.TOP,
           textColor: Colors.white.value,
           textHaloColor: Colors.black.withOpacity(0.75).value,
           textHaloWidth: 2.0,
           textHaloBlur: 0.5,
+
         ),
       );
       debugPrint("✅ Источник и слой $placesLayerId добавлены");
@@ -381,7 +358,8 @@ class _MajorMapState extends State<MajorMap> {
     debugPrint('✅ Все старые иконки удалены!');
   }
 
-  Future<void> _loadIcons(List<IconsResponseModel> icons, {required int styleId}) async {
+  Future<void> _loadIcons(List<IconsResponseModel> icons,
+      {required int styleId}) async {
     if (mapboxMapController == null) return;
     debugPrint('🔄 Загружаем ${icons.length} иконок для styleId=$styleId...');
     final tasks = <Future<void>>[];
@@ -520,60 +498,23 @@ class _MajorMapState extends State<MajorMap> {
   }
 
   double getThresholdByZoom(double zoom) {
-    if (zoom < 6.0)
-      return 3050;
-    else if (zoom < 7.0)
-      return 2850;
-    else if (zoom < 7.5)
-      return 2550;
-    else if (zoom < 8.0)
-      return 2350;
-    else if (zoom < 8.5)
-      return 2050;
-    else if (zoom < 9.0)
-      return 1850;
-    else if (zoom < 9.5)
-      return 1500;
-    else if (zoom < 10.0)
-      return 1200;
-    else if (zoom < 10.5)
-      return 1000;
-    else if (zoom < 11.0)
-      return 700;
-    else if (zoom < 11.5)
-      return 550;
-    else if (zoom < 12.0)
-      return 450;
-    else if (zoom < 12.5)
-      return 400;
-    else if (zoom < 13.0)
-      return 300;
-    else if (zoom < 13.5)
-      return 250;
-    else if (zoom < 14.0)
-      return 200;
-    else if (zoom < 14.5)
-      return 100;
-    else if (zoom < 15.0)
-      return 75;
-    else if (zoom < 15.5)
-      return 50;
-    else if (zoom < 16.0)
-      return 30;
-    else if (zoom < 16.5)
-      return 15;
-    else if (zoom < 17.0)
-      return 12;
-    else if (zoom < 17.5)
-      return 9;
-    else if (zoom < 18.0)
-      return 6;
-    else if (zoom < 18.5)
-      return 4;
-    else if (zoom < 19.0)
-      return 2;
-    else
-      return 0;
+    // Определяем диапазон зума, где будет происходить переход (например, от 14 до 16)
+    const double zoomStart = 14.0;
+    const double zoomEnd = 16.0;
+    // Порог, при котором объекты полностью скрыты (при минимальном зуме)
+    const double maxThreshold = 500.0;
+    // Порог, при котором объекты полностью отображаются (при максимальном зуме)
+    const double minThreshold = 0.0;
+
+    if (zoom <= zoomStart) {
+      return maxThreshold;
+    } else if (zoom >= zoomEnd) {
+      return minThreshold;
+    } else {
+      // Линейная интерполяция между maxThreshold и minThreshold
+      final t = (zoom - zoomStart) / (zoomEnd - zoomStart);
+      return maxThreshold * (1 - t) + minThreshold * t;
+    }
   }
 
   List<Object> buildIconImageExpression(double threshold) {
@@ -584,7 +525,7 @@ class _MajorMapState extends State<MajorMap> {
       [
         "case",
         [
-          "<",
+        "<",
           [
             "to-number",
             ["coalesce", ["get", "min_dist"], 0]
@@ -597,7 +538,7 @@ class _MajorMapState extends State<MajorMap> {
     ];
   }
 
-  List<Object> buildTextFieldExpression(double threshold) {
+ List<Object> buildTextFieldExpression(double threshold) {
     return [
       "let",
       "myThreshold",
