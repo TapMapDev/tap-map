@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
@@ -234,8 +235,8 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null) return;
     debugPrint("🗺️ Стиль загружен! Добавляем слои...");
-    await _addSourceAndLayers();
     await _loadMyDotIconFromUrl();
+    await _addSourceAndLayers();
 
     final camState = await mapboxMapController?.getCameraState();
     final currentZoom = camState?.zoom ?? 14.0;
@@ -300,11 +301,14 @@ class _MajorMapState extends State<MajorMap> {
           sourceId: "places_source",
           sourceLayer: "mylayer",
           iconImage: "my_dot_icon",
-          iconSize: 0.25,
+          iconSize: 0.3,
           iconAllowOverlap: true,
-          iconIgnorePlacement: true,
+          // iconIgnorePlacement: true,
+          // textField: jsonEncode(["get", "name"]),
+          textAllowOverlap: false,
+          // textIgnorePlacement: false,
+          textOptional: true,
           // iconAllowOverlapExpression: ["literal", true],
-          textField: "",
           textFont: ["DIN Offc Pro Medium"],
           textSizeExpression: <Object>[
             "interpolate",
@@ -335,7 +339,6 @@ class _MajorMapState extends State<MajorMap> {
           textHaloColor: Colors.black.withOpacity(0.75).value,
           textHaloWidth: 2.0,
           textHaloBlur: 0.5,
-
         ),
       );
       debugPrint("✅ Источник и слой $placesLayerId добавлены");
@@ -498,23 +501,60 @@ class _MajorMapState extends State<MajorMap> {
   }
 
   double getThresholdByZoom(double zoom) {
-    // Определяем диапазон зума, где будет происходить переход (например, от 14 до 16)
-    const double zoomStart = 14.0;
-    const double zoomEnd = 16.0;
-    // Порог, при котором объекты полностью скрыты (при минимальном зуме)
-    const double maxThreshold = 500.0;
-    // Порог, при котором объекты полностью отображаются (при максимальном зуме)
-    const double minThreshold = 0.0;
-
-    if (zoom <= zoomStart) {
-      return maxThreshold;
-    } else if (zoom >= zoomEnd) {
-      return minThreshold;
-    } else {
-      // Линейная интерполяция между maxThreshold и minThreshold
-      final t = (zoom - zoomStart) / (zoomEnd - zoomStart);
-      return maxThreshold * (1 - t) + minThreshold * t;
-    }
+    if (zoom < 6.0)
+      return 3050;
+    else if (zoom < 7.0)
+      return 2850;
+    else if (zoom < 7.5)
+      return 2550;
+    else if (zoom < 8.0)
+      return 2350;
+    else if (zoom < 8.5)
+      return 2050;
+    else if (zoom < 9.0)
+      return 1850;
+    else if (zoom < 9.5)
+      return 1500;
+    else if (zoom < 10.0)
+      return 1200;
+    else if (zoom < 10.5)
+      return 1000;
+    else if (zoom < 11.0)
+      return 700;
+    else if (zoom < 11.5)
+      return 550;
+    else if (zoom < 12.0)
+      return 450;
+    else if (zoom < 12.5)
+      return 400;
+    else if (zoom < 13.0)
+      return 300;
+    else if (zoom < 13.5)
+      return 250;
+    else if (zoom < 14.0)
+      return 200;
+    else if (zoom < 14.5)
+      return 100;
+    else if (zoom < 15.0)
+      return 75;
+    else if (zoom < 15.5)
+      return 50;
+    else if (zoom < 16.0)
+      return 30;
+    else if (zoom < 16.5)
+      return 15;
+    else if (zoom < 17.0)
+      return 12;
+    else if (zoom < 17.5)
+      return 9;
+    else if (zoom < 18.0)
+      return 6;
+    else if (zoom < 18.5)
+      return 4;
+    else if (zoom < 19.0)
+      return 2;
+    else
+      return 0;
   }
 
   List<Object> buildIconImageExpression(double threshold) {
@@ -525,20 +565,29 @@ class _MajorMapState extends State<MajorMap> {
       [
         "case",
         [
-        "<",
+          "<",
           [
             "to-number",
-            ["coalesce", ["get", "min_dist"], 0]
+            [
+              "coalesce",
+              ["get", "min_dist"],
+              0
+            ]
           ],
           ["var", "myThreshold"]
         ],
-        "my_dot_icon",
-        ["get", "subcategory"]
+        "my_dot_icon", // Если условие истинно, используем my_dot_icon
+        // Если нет, пытаемся получить значение subcategory, а если его нет, то тоже my_dot_icon
+        [
+          "coalesce",
+          ["get", "subcategory"],
+          "my_dot_icon"
+        ]
       ]
     ];
   }
 
- List<Object> buildTextFieldExpression(double threshold) {
+  List<Object> buildTextFieldExpression(double threshold) {
     return [
       "let",
       "myThreshold",
@@ -549,7 +598,11 @@ class _MajorMapState extends State<MajorMap> {
           "<",
           [
             "to-number",
-            ["coalesce", ["get", "min_dist"], 0]
+            [
+              "coalesce",
+              ["get", "min_dist"],
+              0
+            ]
           ],
           ["var", "myThreshold"]
         ],
