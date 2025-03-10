@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,13 +11,15 @@ import 'package:geolocator/geolocator.dart' as gl;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/geo_location.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
 
 class MajorMap extends StatefulWidget {
-  const MajorMap({Key? key}) : super(key: key);
+  const MajorMap({super.key});
 
   @override
   State<MajorMap> createState() => _MajorMapState();
@@ -45,15 +48,36 @@ class _MajorMapState extends State<MajorMap> {
   /// Сохранённый styleUri
   late String mapStyleUri;
 
+  // late GifMarkerManager _gifMarkerManager;
+
   @override
   void initState() {
     super.initState();
     _loadSavedMapStyle(); // 1) Грузим стиль
-    _setupPositionTracking(); // 2) Локация
+    Future.delayed(const Duration(milliseconds: 500)).then((_) async {
+      final position = await LocationService.getUserPosition();
+      if (position != null && mounted) {
+        setState(() {
+          _initialUserPosition = position;
+          isLocationLoaded = true;
+        });
+      }
+    });
     // 3) Запрашиваем список стилей
     Future.microtask(() {
       context.read<MapStyleBloc>().add(FetchMapStylesEvent());
     });
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _gifMarkerManager = GifMarkerManager(mapboxMap: mapboxMapController!);
+    //   _gifMarkerManager.initialize();
+    // });
+  }
+
+  @override
+  void dispose() {
+    // _gifMarkerManager.dispose();
+    super.dispose();
   }
 
   /// Грузим сохранённый стиль (URL + ID) из SharedPrefs
@@ -82,28 +106,6 @@ class _MajorMapState extends State<MajorMap> {
     int hexValue = int.parse(hexColor, radix: 16);
     Color color = Color(hexValue);
     return ["rgba", color.red, color.green, color.blue, 1.0];
-  }
-
-  /// Запрос геолокации
-  Future<void> _setupPositionTracking() async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
-    if (permission == gl.LocationPermission.denied) {
-      permission = await gl.Geolocator.requestPermission();
-      if (permission == gl.LocationPermission.denied ||
-          permission == gl.LocationPermission.deniedForever) {
-        return;
-      }
-    }
-
-    final position = await gl.Geolocator.getCurrentPosition();
-    setState(() {
-      _initialUserPosition = position;
-      isLocationLoaded = true;
-    });
   }
 
   @override
@@ -143,6 +145,10 @@ class _MajorMapState extends State<MajorMap> {
               await _updateMapStyle(state.styleUri);
               currentStyleId = state.newStyleId;
               await _clearIcons();
+
+              Future.delayed(const Duration(milliseconds: 500), () {
+                context.read<MapStyleBloc>().add(ResetMapStyleEvent());
+              });
               context
                   .read<IconsBloc>()
                   .add(FetchIconsEvent(styleId: state.newStyleId));
@@ -185,6 +191,7 @@ class _MajorMapState extends State<MajorMap> {
                       "Слой $placesLayerId не найден. Пропускаем обновление.");
                   return;
                 }
+                // await updateOpenCloseStates();
                 try {
                   await mapboxMapController?.style.setStyleLayerProperty(
                     placesLayerId,
@@ -194,6 +201,7 @@ class _MajorMapState extends State<MajorMap> {
                 } catch (e, st) {
                   debugPrint("❌ Ошибка обновления icon-image: $e\n$st");
                 }
+
                 try {
                   await mapboxMapController?.style.setStyleLayerProperty(
                     placesLayerId,
@@ -206,19 +214,16 @@ class _MajorMapState extends State<MajorMap> {
               },
             ),
             const Positioned(
-              bottom: 80,
-              left: 20,
-              child: MapStyleButtons(),
+              top: 30,
+              right: 13,
+              child: MapStyleButton(),
             ),
-            Positioned(
-              bottom: 20,
-              right: 20,
-              child: FloatingActionButton(
-                onPressed: _centerOnUserLocation,
-                backgroundColor: Colors.white,
-                child: const Icon(Icons.my_location, color: Colors.blue),
-              ),
-            ),
+            if (mapboxMapController != null)
+              Positioned(
+                  bottom: 14,
+                  right: 13,
+                  child: GeoLocationButton(
+                      mapboxMapController: mapboxMapController)),
           ],
         ),
       ),
@@ -226,18 +231,67 @@ class _MajorMapState extends State<MajorMap> {
   }
 
   void _onMapCreated(mp.MapboxMap controller) {
-    mapboxMapController = controller;
+    setState(() {
+      // ✅ Обновляем UI после инициализации контроллера
+      mapboxMapController = controller;
+    });
     mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
+    mapboxMapController?.scaleBar.updateSettings(
+      mp.ScaleBarSettings(enabled: false),
+    );
+    mapboxMapController?.compass.updateSettings(
+      mp.CompassSettings(enabled: false),
+    );
+    mapboxMapController?.attribution.updateSettings(
+      mp.AttributionSettings(enabled: false),
+    );
   }
+
+  /// Обработчик тапа по карте: асинхронно запрашиваем фичи, выводим свойства
+// Future<void> _handleMapTap(mp.ScreenCoordinate point) async {
+//   if (mapboxMapController == null) return;
+
+//   try {
+//     final features = await mapboxMapController!.queryRenderedFeatures(
+//       point,
+//       mp.RenderedQueryOptions(
+//         layers: ['places_symbol_layer'],
+//         filter: null,
+//       ),
+//     );
+
+//     if (features.isNotEmpty) {
+//       for (final feature in features) {
+//         final featureId = feature.id ?? 'no_id';
+//         final props = feature.properties;
+//         debugPrint('Тап по фиче: id=$featureId');
+//         debugPrint('Свойства: $props');
+//       }
+//     } else {
+//       debugPrint('Никаких фич на точке тапа не найдено.');
+//     }
+//   } catch (e, st) {
+//     debugPrint('Ошибка при обработке тапа: $e\n$st');
+//   }
+// }
+// }
 
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null) return;
     debugPrint("🗺️ Стиль загружен! Добавляем слои...");
     await _loadMyDotIconFromUrl();
     await _addSourceAndLayers();
+    final styleLayers = await mapboxMapController?.style.getStyleLayers();
+    final layerExists =
+        styleLayers?.any((layer) => layer?.id == placesLayerId) ?? false;
+    if (!layerExists) {
+      debugPrint("Слой $placesLayerId не появился!");
+      return;
+    }
 
+    // await updateOpenCloseStates();
     final camState = await mapboxMapController?.getCameraState();
     final currentZoom = camState?.zoom ?? 14.0;
     final threshold = getThresholdByZoom(currentZoom);
@@ -300,15 +354,42 @@ class _MajorMapState extends State<MajorMap> {
           id: placesLayerId,
           sourceId: "places_source",
           sourceLayer: "mylayer",
-          iconImage: "my_dot_icon",
+          iconOpacityExpression: [
+            "case",
+            [
+              "==",
+              ["feature-state", "closed"],
+              'true'
+            ], // Булево значение
+            0.3, // Полупрозрачный
+            1.0 // Полностью непрозрачный
+          ],
+          iconImageExpression: <Object>[
+            "let",
+            "myThreshold",
+            500,
+            [
+              "case",
+              [
+                "<",
+                [
+                  "to-number",
+                  [
+                    "coalesce",
+                    ["get", "min_dist"],
+                    0
+                  ]
+                ],
+                ["var", "myThreshold"]
+              ],
+              "my_dot_icon",
+              ["get", "subcategory"]
+            ]
+          ],
           iconSize: 0.3,
           iconAllowOverlap: true,
-          // iconIgnorePlacement: true,
-          // textField: jsonEncode(["get", "name"]),
           textAllowOverlap: false,
-          // textIgnorePlacement: false,
           textOptional: true,
-          // iconAllowOverlapExpression: ["literal", true],
           textFont: ["DIN Offc Pro Medium"],
           textSizeExpression: <Object>[
             "interpolate",
@@ -454,6 +535,27 @@ class _MajorMapState extends State<MajorMap> {
       );
       loadedIcons[iconName] = true;
       debugPrint('✅ Иконка $iconName добавлена!');
+      final styleLayers = await mapboxMapController?.style.getStyleLayers();
+      final layerExists =
+          styleLayers?.any((layer) => layer?.id == placesLayerId) ?? false;
+      if (!layerExists) {
+        debugPrint("Слой $placesLayerId не найден, пропускаем icon-opacity.");
+        return;
+      }
+
+      await mapboxMapController?.style.setStyleLayerProperty(
+          placesLayerId, // Используйте константу
+          'icon-opacity',
+          [
+            "case",
+            [
+              '==',
+              ["feature-state", "closed"],
+              'false'
+            ],
+            0.7,
+            1.0
+          ]);
     } catch (e, st) {
       debugPrint('❌ Ошибка в _loadSingleIcon($iconName): $e\n$st');
     }
@@ -462,43 +564,165 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _updateMapStyle(String newStyle) async {
     if (mapboxMapController == null) return;
     debugPrint("🔄 Меняем стиль карты на: $newStyle...");
+
     try {
+      await _clearStyleBeforeChange();
       await mapboxMapController!.style.setStyleURI(newStyle);
+
+      // Wait for style to be loaded
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Reset location component
+      await mapboxMapController?.location.updateSettings(
+        mp.LocationComponentSettings(enabled: false),
+      );
+
+      await _addSourceAndLayers();
+
+      // Re-enable location after layers are added
+      await Future.delayed(const Duration(milliseconds: 300));
+      await mapboxMapController?.location.updateSettings(
+        mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
+      );
+
+      getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
     } catch (e, st) {
       debugPrint("❌ Ошибка смены стиля: $e\n$st");
     }
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (mapboxMapController != null) {
-        debugPrint("✅ Новый стиль загружен! Пересоздаём источники...");
-        await _addSourceAndLayers();
-      }
-    });
-    getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
   }
 
-  Future<void> _centerOnUserLocation() async {
-    gl.LocationPermission permission = await gl.Geolocator.checkPermission();
-    if (permission == gl.LocationPermission.denied ||
-        permission == gl.LocationPermission.deniedForever) {
-      permission = await gl.Geolocator.requestPermission();
-      if (permission == gl.LocationPermission.denied) {
-        return;
+  int _parseTime(String time) {
+    final parts = time.split(':').map(int.parse).toList();
+    return parts[0] * 60 + parts[1];
+  }
+
+// Функция проверки времени работы
+  bool isPointClosedNow(String? workingHoursRaw, DateTime now) {
+    if (workingHoursRaw == null || workingHoursRaw.isEmpty) return false;
+
+    try {
+      final workingHours = jsonDecode(workingHoursRaw) as Map<String, dynamic>;
+      final dayOfWeek = now.weekday % 7; // 0=Monday, 6=Sunday (адаптируем к JS)
+      final days = [
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday'
+      ];
+      final dayKey = days[dayOfWeek];
+
+      final schedule = workingHours[dayKey];
+      if (schedule == null) return true; // Нет расписания - закрыто
+
+      if (schedule['is_closed'] == true) return true;
+      if (schedule['is_24'] == true) return false;
+
+      final openTimes = List<String>.from(schedule['open_times'] ?? []);
+      final closeTimes = List<String>.from(schedule['close_times'] ?? []);
+
+      final nowMinutes = now.hour * 60 + now.minute;
+
+      for (var i = 0; i < openTimes.length; i++) {
+        final open = _parseTime(openTimes[i]);
+        final close = _parseTime(closeTimes[i]);
+
+        if (open < close) {
+          if (nowMinutes >= open && nowMinutes < close) return false;
+        } else {
+          if (nowMinutes >= open || nowMinutes < close) return false;
+        }
       }
+
+      return true; // Ни один интервал не подошел
+    } catch (e) {
+      print('Ошибка обработки working_hours: $e');
+      return false;
     }
-    final position = await gl.Geolocator.getCurrentPosition();
-    _moveCameraToPosition(position);
   }
 
-  void _moveCameraToPosition(gl.Position position) {
-    mapboxMapController?.setCamera(
-      mp.CameraOptions(
-        zoom: 14,
-        center: mp.Point(
-          coordinates: mp.Position(position.longitude, position.latitude),
-        ),
-      ),
-    );
+  Future<void> _clearStyleBeforeChange() async {
+    if (mapboxMapController == null) return;
+
+    try {
+      debugPrint("🗑️ Очищаем старый стиль перед сменой...");
+
+      final style = mapboxMapController!.style;
+      final layers = await style.getStyleLayers();
+
+      for (final layer in layers) {
+        if (layer != null) {
+          await style.removeStyleLayer(layer.id);
+          debugPrint("🚮 Удален слой: ${layer.id}");
+        }
+      }
+
+      final sources = await style.getStyleSources();
+      for (final source in sources) {
+        if (source != null) {
+          await style.removeStyleSource(source.id);
+          debugPrint("🚮 Удален источник: ${source.id}");
+        }
+      }
+
+      debugPrint("✅ Все слои и источники очищены!");
+    } catch (e, st) {
+      debugPrint("❌ Ошибка очистки стиля: $e\n$st");
+    }
   }
+// Исправленная функция обновления состояний
+  // Future<void> updateOpenCloseStates() async {
+  //   if (mapboxMapController == null) return;
+
+  //   try {
+  //     final now = DateTime.now();
+  //     final queryOptions = mp.SourceQueryOptions(
+  //       sourceLayerIds: ['mylayer'],
+  //       filter: '',
+  //     );
+
+  //     final List<dynamic>? rawFeatures = await mapboxMapController!
+  //         .querySourceFeatures('places_source', queryOptions);
+
+  //     final validFeatures = rawFeatures
+  //         ?.whereType<Map<String, dynamic>>()
+  //         .where((f) => f.containsKey('id') && f.containsKey('properties'))
+  //         .toList();
+
+  //     if (validFeatures == null || validFeatures.isEmpty) return;
+
+  //     for (final feature in validFeatures) {
+  //       try {
+  //         final String? featureId = feature['id'];
+  //         final Map<String, dynamic>? properties = feature['properties'];
+
+  //         if (featureId == null || properties == null) continue;
+
+  //         final String? wh = properties['working_hours'];
+  //         final bool isClosed = isPointClosedNow(wh, now);
+
+  //         // Отладочный вывод
+  //         debugPrint("Feature ID: $featureId | Closed: $isClosed");
+
+  //         await mapboxMapController!.setFeatureState(
+  //           'places_source',
+  //           'mylayer',
+  //           featureId,
+  //           jsonEncode({"closed": isClosed}), // Map вместо JSON-строки
+  //         );
+  //       } catch (e) {
+  //         debugPrint("Ошибка обработки feature: $e");
+  //       }
+  //     }
+
+  //     // Критически важно для обновления отображения
+  //     // await mapboxMapController!.style.triggerRepaint();
+  //   } catch (e) {
+  //     debugPrint("Глобальная ошибка: $e");
+  //   }
+  // }
 
   double getThresholdByZoom(double zoom) {
     if (zoom < 6.0)

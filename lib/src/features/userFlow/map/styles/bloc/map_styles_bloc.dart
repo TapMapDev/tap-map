@@ -9,6 +9,7 @@ class MapStyleBloc extends Bloc<MapStyleEvent, MapStyleState> {
   final MapStyleRepository repository;
 
   MapStyleBloc(this.repository) : super(MapStyleLoading()) {
+    /// Загружаем список доступных стилей
     on<FetchMapStylesEvent>((event, emit) async {
       try {
         final styles = await repository.fetchMapStyles();
@@ -17,12 +18,33 @@ class MapStyleBloc extends Bloc<MapStyleEvent, MapStyleState> {
         emit(MapStyleError(message: e.toString()));
       }
     });
+
+    /// Обновляем стиль карты
     on<UpdateMapStyleEvent>((event, emit) async {
       emit(MapStyleUpdateSuccess(newStyleId: event.newStyleId, styleUri: event.uriStyle));
+
+      /// Добавляем задержку перед сбросом состояния
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      /// После обновления стиля отправляем `ResetMapStyleEvent`
+      add(ResetMapStyleEvent());
     });
-    @override
-    Future<void> close() {
-      return super.close();
-    }
+
+    /// Сбрасываем состояние после успешного обновления стиля
+    on<ResetMapStyleEvent>((event, emit) {
+      /// Проверяем, было ли состояние `MapStyleUpdateSuccess`
+      if (state is MapStyleUpdateSuccess) {
+        final successState = state as MapStyleUpdateSuccess;
+        emit(MapStyleSuccess(
+          selectedStyleId: successState.newStyleId,
+          mapStyles: repository.getCachedMapStyles(), // ✅ Теперь кэшируем стили
+        ));
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    return super.close();
   }
 }

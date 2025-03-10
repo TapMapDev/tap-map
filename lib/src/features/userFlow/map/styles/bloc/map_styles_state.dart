@@ -11,8 +11,9 @@ class MapStyleError extends MapStyleState {
 
 class MapStyleSuccess extends MapStyleState {
   final List<MapStyleResponceModel> mapStyles;
+   final int? selectedStyleId;
 
-  MapStyleSuccess({required this.mapStyles});
+  MapStyleSuccess({required this.mapStyles, this.selectedStyleId});
 }
 
 class UserMapStyleSuccess extends MapStyleState {

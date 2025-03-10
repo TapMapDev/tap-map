@@ -10,3 +10,5 @@ class UpdateMapStyleEvent extends MapStyleEvent {
 
   UpdateMapStyleEvent({required this.newStyleId, required this.uriStyle});
 }
+
+class ResetMapStyleEvent extends MapStyleEvent {}
