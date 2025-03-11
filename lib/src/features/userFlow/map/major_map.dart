@@ -473,16 +473,6 @@ class _MajorMapState extends State<MajorMap> {
       } else {
         debugPrint("ℹ️ Слой $placesLayerId уже существует");
       }
-
-      // Обновляем opacity для существующего слоя
-      if (layerExists) {
-        await mapboxMapController?.style.setStyleLayerProperty(
-          placesLayerId,
-          'icon-opacity',
-          buildIconOpacityExpression(),
-        );
-        debugPrint("✅ Opacity слоя обновлен");
-      }
     } catch (e, st) {
       debugPrint("❌ Ошибка при добавлении источника и слоя: $e\n$st");
     }
@@ -504,7 +494,6 @@ class _MajorMapState extends State<MajorMap> {
 
   Future<void> _loadIcons(List<IconsResponseModel> icons,
       {required int styleId}) async {
-    if (mapboxMapController == null) return;
     debugPrint('🔄 Загружаем ${icons.length} иконок для styleId=$styleId...');
     final tasks = <Future<void>>[];
     for (final icon in icons) {
@@ -516,8 +505,24 @@ class _MajorMapState extends State<MajorMap> {
       }
       tasks.add(_loadSingleIcon(iconName, iconUrl, styleId));
     }
+
+    // Ждем загрузки всех иконок
     await Future.wait(tasks);
     debugPrint('✅ Все иконки загружены для styleId=$styleId!');
+
+    // Только после загрузки всех иконок обновляем opacity
+    if (mapboxMapController != null) {
+      try {
+        await mapboxMapController?.style.setStyleLayerProperty(
+          placesLayerId,
+          'icon-opacity',
+          buildIconOpacityExpression(),
+        );
+        debugPrint('✅ Opacity обновлен после загрузки всех иконок');
+      } catch (e) {
+        debugPrint('❌ Ошибка при обновлении opacity: $e');
+      }
+    }
   }
 
   Future<void> _loadMyDotIconFromUrl() async {
@@ -595,19 +600,6 @@ class _MajorMapState extends State<MajorMap> {
       );
       loadedIcons[iconName] = true;
       debugPrint('✅ Иконка $iconName добавлена!');
-
-      // Обновляем opacity для иконок
-      await mapboxMapController?.style
-          .setStyleLayerProperty(placesLayerId, 'icon-opacity', [
-        "case",
-        [
-          "boolean",
-          ["feature-state", "closed"],
-          false
-        ],
-        0.7, // если closed = true
-        1.0 // если closed = false
-      ]);
     } catch (e, st) {
       debugPrint('❌ Ошибка в _loadSingleIcon($iconName): $e\n$st');
     }
@@ -761,9 +753,9 @@ class _MajorMapState extends State<MajorMap> {
           sourceIdValue = sourceId.value?.toString();
           sourceLayerValue = sourceLayer.value?.toString();
 
-          debugPrint("\n🔍 Конфигурация слоя:");
-          debugPrint("Source ID: $sourceIdValue");
-          debugPrint("Source Layer: $sourceLayerValue");
+          // debugPrint("\n🔍 Конфигурация слоя:");
+          // debugPrint("Source ID: $sourceIdValue");
+          // debugPrint("Source Layer: $sourceLayerValue");
 
           // Пробуем получить информацию о векторных слоях
           final vectorLayers = await mapboxMapController!.style
@@ -798,51 +790,58 @@ class _MajorMapState extends State<MajorMap> {
         try {
           if (feature == null) continue;
 
-          // Добавляем больше отладочной информации
-          // debugPrint("\n📌 Анализ feature:");
-          // debugPrint("Type: ${feature.runtimeType}");
+          debugPrint("\n📌 Анализ feature:");
+          debugPrint("Type: ${feature.runtimeType}");
 
-          // Получаем данные из feature
-          final featureData = feature.queriedFeature;
-          debugPrint("Feature source: ${featureData.source}");
+          // Получаем свойства feature
+          final featureData = feature.queriedFeature.feature;
 
-          // Пробуем получить свойства из source
+          debugPrint("\n🔍 Raw Feature Data: $featureData");
+
+          // Преобразуем Map в правильный тип и получаем все свойства
+          final Map<dynamic, dynamic> properties;
           try {
-            final sourceJson =
-                jsonDecode(featureData.source) as Map<String, dynamic>;
-            final properties =
-                sourceJson['properties'] as Map<String, dynamic>?;
-            final id = sourceJson['id']?.toString();
-
-            debugPrint("ID from source: $id");
-            debugPrint("Properties from source: $properties");
-
-            if (id == null) {
-              debugPrint("⚠️ ID не найден в source");
-              continue;
-            }
-
-            final workingHours = properties?['working_hours']?.toString();
-            final isClosed = isPointClosedNow(workingHours, now);
-            debugPrint("🕒 Feature $id is ${isClosed ? 'closed' : 'open'}");
-
-            // Устанавливаем новое состояние
-            if (sourceIdValue != null && sourceLayerValue != null) {
-              await mapboxMapController!.setFeatureState(
-                sourceIdValue,
-                sourceLayerValue,
-                id,
-                jsonEncode({"closed": isClosed}),
-              );
-              debugPrint("✅ Состояние обновлено для $id: closed = $isClosed");
-            } else {
-              debugPrint(
-                  "⚠️ Не удалось обновить состояние: source ID или layer не определены");
-            }
+            properties = featureData;
           } catch (e) {
-            debugPrint("❌ Ошибка при разборе source: $e");
+            debugPrint("⚠️ Error converting feature data: $e");
             continue;
           }
+
+          debugPrint("📦 All Properties: $properties");
+
+          // Получаем ID и working_hours из вложенного объекта properties
+          final id = properties['id']?.toString();
+          final nestedProperties =
+              properties['properties'] as Map<dynamic, dynamic>?;
+          String? workingHours;
+
+          if (nestedProperties != null) {
+            workingHours = nestedProperties['working_hours']?.toString();
+            if (workingHours != null) {
+              // Удаляем экранированные кавычки, если они есть
+              workingHours = workingHours.replaceAll('\\"', '"');
+            }
+          }
+
+          debugPrint("ID: $id");
+          debugPrint("Working Hours: $workingHours");
+
+          if (id == null) {
+            debugPrint("⚠️ ID не найден в свойствах");
+            continue;
+          }
+
+          final isClosed = isPointClosedNow(workingHours, now);
+          debugPrint("🕒 Feature $id is ${isClosed ? 'closed' : 'open'}");
+
+          // Устанавливаем состояние feature
+          await mapboxMapController!.setFeatureState(
+            "places_source",
+            "mylayer",
+            id,
+            jsonEncode({"closed": isClosed}),
+          );
+          debugPrint("✅ Состояние обновлено для $id: closed = $isClosed");
         } catch (e, st) {
           debugPrint("❌ Ошибка обработки feature: $e");
           debugPrint("Stack trace: $st");
@@ -927,6 +926,7 @@ class _MajorMapState extends State<MajorMap> {
       threshold,
       [
         "case",
+        // Если расстояние меньше порога, используем my_dot_icon
         [
           "<",
           [
@@ -939,13 +939,20 @@ class _MajorMapState extends State<MajorMap> {
           ],
           ["var", "myThreshold"]
         ],
-        "my_dot_icon", // Если условие истинно, используем my_dot_icon
-        // Если нет, пытаемся получить значение subcategory, а если его нет, то тоже my_dot_icon
+        "my_dot_icon",
+        // Если заведение закрыто, используем закрытую версию иконки
         [
-          "coalesce",
-          ["get", "subcategory"],
-          "my_dot_icon"
-        ]
+          "==",
+          ["feature-state", "closed"],
+          true
+        ],
+        [
+          "concat",
+          ["get", "subca tegory"],
+          "_closed"
+        ],
+        // В остальных случаях используем обычную иконку
+        ["get", "subcategory"]
       ]
     ];
   }
@@ -983,7 +990,7 @@ class _MajorMapState extends State<MajorMap> {
         ["feature-state", "closed"],
         true
       ],
-      0.7, // если closed = true, opacity = 0.7
+      0.6, // если closed = true, opacity = 0.7
       1.0 // в остальных случаях opacity = 1.0
     ];
   }
