@@ -1,9 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-
 import 'package:talker/talker.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/main.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/registration/registration_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
@@ -12,6 +13,9 @@ import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.d
 final GetIt getIt = GetIt.instance;
 
 void setup() {
+  // Регистрация навигатора
+  getIt.registerSingleton<GlobalKey<NavigatorState>>(navigatorKey);
+
   // Регистрация DioClient
   getIt.registerLazySingleton<DioClient>(() => DioClient());
 

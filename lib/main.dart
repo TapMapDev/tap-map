@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
-import 'package:tap_map/core/common/styles.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
-
-import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/registration/registration_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   setup();
@@ -37,43 +38,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthorizationBloc>(
-            create: (_) =>
-                AuthorizationBloc(getIt<AuthorizationRepositoryImpl>())),
-        BlocProvider<RegistrationBloc>(
-            create: (_) => RegistrationBloc(
-                getIt<RegistrationRepositoryImpl>())), // Регистрация AuthBloc
-        BlocProvider<MapStyleBloc>(
-            create: (_) => MapStyleBloc(
-                  getIt<MapStyleRepository>(),
-                )),
-        BlocProvider<IconsBloc>(
-            create: (_) => IconsBloc(
-                  getIt<IconsRepository>(),
-                )),
+        BlocProvider(
+          create: (context) =>
+              AuthorizationBloc(getIt.get<AuthorizationRepositoryImpl>()),
+        ),
+        BlocProvider(
+          create: (context) =>
+              RegistrationBloc(getIt.get<RegistrationRepositoryImpl>()),
+        ),
+        BlocProvider(
+          create: (context) => MapStyleBloc(getIt.get<MapStyleRepository>()),
+        ),
+        BlocProvider(
+          create: (context) => IconsBloc(getIt.get<IconsRepository>()),
+        ),
       ],
       child: GetMaterialApp(
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
+        title: 'Tap Map',
+        routes: {
+          '/authorization': (context) => const AuthorizationPage(),
+          '/registration': (context) => const RegistrationPage(),
+          '/homepage': (context) => const BottomNavbar(),
+        },
         home: FutureBuilder<Widget>(
           future: _getInitialPage(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return const Center(child: Text("Ошибка загрузки данных"));
-            } else {
+            if (snapshot.hasData) {
               return snapshot.data!;
             }
+            return const Center(child: CircularProgressIndicator());
           },
         ),
-        routes: {
-          // '/': (context) => const MajorMap(),
-          '/authorization': (context) => AuthorizationPage(),
-
-          '/homepage': (context) =>
-              const BottomNavbar(), // Ваш основной экран с BottomNavigationBar
-          '/registration': (context) => const RegistrationPage(),
-        },
         theme: ThemeData(
           appBarTheme: const AppBarTheme(surfaceTintColor: Colors.transparent),
           elevatedButtonTheme: ElevatedButtonThemeData(
@@ -89,15 +86,14 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  // Проверка, залогинен ли пользователь
   Future<Widget> _getInitialPage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? access = prefs.getString('access_token');
     debugPrint("🔍 Читаем access_token: $access");
     if (access != null) {
-      return const BottomNavbar(); // Если пользователь авторизован
+      return const BottomNavbar();
     } else {
-      return AuthorizationPage(); // Если не авторизован
+      return const AuthorizationPage();
     }
   }
 }
