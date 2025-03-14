@@ -93,22 +93,30 @@ class _MajorMapState extends State<MajorMap> {
           '🗺️ MajorMap: Widget was inactive, reinitializing GifMarkerManager');
       _wasInactive = false;
 
-      // Пересоздаем GifMarkerManager
-      setState(() {
-        _gifMarkerManager = null;
-      });
+      // Если GifMarkerManager уже существует, вызываем forceUpdate
+      if (_gifMarkerManager != null) {
+        debugPrint(
+            '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager');
+        GifMarkerManager.updateMarkers();
+      } else {
+        // Пересоздаем GifMarkerManager
+        setState(() {
+          _gifMarkerManager = null;
+        });
 
-      // Даем время на обновление состояния
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted && !_isDisposed && mapboxMapController != null) {
-          setState(() {
-            _gifMarkerManager =
-                GifMarkerManager(mapboxMap: mapboxMapController!);
-          });
-          debugPrint(
-              '🗺️ MajorMap: GifMarkerManager recreated after inactivity');
-        }
-      });
+        // Даем время на обновление состояния
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && !_isDisposed && mapboxMapController != null) {
+            setState(() {
+              _gifMarkerManager = GifMarkerManager(
+                  key: GifMarkerManager.globalKey,
+                  mapboxMap: mapboxMapController!);
+            });
+            debugPrint(
+                '🗺️ MajorMap: GifMarkerManager recreated after inactivity');
+          }
+        });
+      }
     }
   }
 
@@ -169,8 +177,9 @@ class _MajorMapState extends State<MajorMap> {
       Future.microtask(() {
         if (mounted && !_isDisposed) {
           setState(() {
-            _gifMarkerManager =
-                GifMarkerManager(mapboxMap: mapboxMapController!);
+            _gifMarkerManager = GifMarkerManager(
+                key: GifMarkerManager.globalKey,
+                mapboxMap: mapboxMapController!);
           });
           debugPrint(
               '🗺️ MajorMap: GifMarkerManager created in build microtask');
@@ -339,19 +348,28 @@ class _MajorMapState extends State<MajorMap> {
     if (_isDisposed) return;
     await updateOpenCloseStates();
 
-    // Пересоздаем GifMarkerManager при загрузке стиля
-    setState(() {
-      _gifMarkerManager = null; // Сначала обнуляем старый менеджер
-    });
-
-    // Даем время на обновление состояния
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (mounted && !_isDisposed && mapboxMapController != null) {
-      debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style loaded");
+    // Если GifMarkerManager уже существует, вызываем forceUpdate
+    if (_gifMarkerManager != null) {
+      debugPrint(
+          '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager after style loaded');
+      GifMarkerManager.updateMarkers();
+    } else {
+      // Пересоздаем GifMarkerManager при загрузке стиля
       setState(() {
-        _gifMarkerManager = GifMarkerManager(mapboxMap: mapboxMapController!);
+        _gifMarkerManager = null; // Сначала обнуляем старый менеджер
       });
+
+      // Даем время на обновление состояния
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (mounted && !_isDisposed && mapboxMapController != null) {
+        debugPrint(
+            "🗺️ MajorMap: Creating GifMarkerManager after style loaded");
+        setState(() {
+          _gifMarkerManager = GifMarkerManager(
+              key: GifMarkerManager.globalKey, mapboxMap: mapboxMapController!);
+        });
+      }
     }
 
     if (_isDisposed) return;
@@ -559,9 +577,6 @@ class _MajorMapState extends State<MajorMap> {
             symbolSortKey: 2, // Размещаем над слоем видео
           ),
         );
-        debugPrint("✅ Слой $placesLayerId добавлен");
-      } else {
-        debugPrint("ℹ️ Слой $placesLayerId уже существует");
       }
 
       // Проверяем, что слой правильно связан с источником
@@ -586,33 +601,23 @@ class _MajorMapState extends State<MajorMap> {
     if (mapboxMapController == null) return;
     debugPrint('🔄 Удаляем старые иконки...');
     for (final iconKey in loadedIcons.keys) {
-      try {
-        await mapboxMapController?.style.removeStyleImage(iconKey);
-      } catch (e) {
-        debugPrint("Ошибка удаления иконки $iconKey: $e");
-      }
+      await mapboxMapController?.style.removeStyleImage(iconKey);
     }
     loadedIcons.clear();
-    debugPrint('✅ Все старые иконки удалены!');
   }
 
   Future<void> _loadIcons(List<IconsResponseModel> icons,
       {required int styleId}) async {
-    debugPrint('🔄 Загружаем ${icons.length} иконок для styleId=$styleId...');
     final tasks = <Future<void>>[];
 
     // Сначала устанавливаем базовый opacity
     if (mapboxMapController != null) {
-      try {
-        await mapboxMapController?.style.setStyleLayerProperty(
-          placesLayerId,
-          'icon-opacity',
-          buildIconOpacityExpression(),
-        );
-        debugPrint('✅ Базовый opacity установлен');
-      } catch (e) {
-        debugPrint('❌ Ошибка при установке базового opacity: $e');
-      }
+      await mapboxMapController?.style.setStyleLayerProperty(
+        placesLayerId,
+        'icon-opacity',
+        buildIconOpacityExpression(),
+      );
+      debugPrint('✅ Базовый opacity установлен');
     }
 
     for (final icon in icons) {
@@ -731,7 +736,8 @@ class _MajorMapState extends State<MajorMap> {
     if (mounted && !_isDisposed && mapboxMapController != null) {
       debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style change");
       setState(() {
-        _gifMarkerManager = GifMarkerManager(mapboxMap: mapboxMapController!);
+        _gifMarkerManager = GifMarkerManager(
+            key: GifMarkerManager.globalKey, mapboxMap: mapboxMapController!);
       });
     }
 
