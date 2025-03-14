@@ -25,6 +25,18 @@ class _GifMarkerManagerState extends State<GifMarkerManager> {
   bool _isDisposed = false;
   bool _isInitialized = false;
 
+  void logProperties(Map<dynamic, dynamic> props, String prefix) {
+    props.forEach((key, value) {
+      if (value is Map) {
+        debugPrint('$prefix$key: {');
+        logProperties(value, '$prefix  ');
+        debugPrint('$prefix}');
+      } else {
+        debugPrint('$prefix$key: $value');
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -177,7 +189,10 @@ class _GifMarkerManagerState extends State<GifMarkerManager> {
         );
 
         if (markerType == null) {
-          debugPrint('🎬 GifMarkerManager: No valid webm URL found');
+          debugPrint(
+              '🎬 GifMarkerManager: No valid webm URL found for feature $id');
+          debugPrint('🎬 Available properties:');
+          logProperties(properties, '  ');
           continue;
         }
 
@@ -190,15 +205,14 @@ class _GifMarkerManagerState extends State<GifMarkerManager> {
 
         final geometry = properties['geometry'] as Map<dynamic, dynamic>?;
         if (geometry == null) {
-          debugPrint(
-              '🎬 GifMarkerManager: Skipping feature - missing geometry');
+          debugPrint('❌ GifMarkerManager: Skipping feature - missing geometry');
           continue;
         }
 
         final coordinates = geometry['coordinates'] as List?;
         if (coordinates == null || coordinates.length < 2) {
           debugPrint(
-              '🎬 GifMarkerManager: Skipping feature - invalid coordinates');
+              '❌ GifMarkerManager: Skipping feature - invalid coordinates');
           continue;
         }
 
