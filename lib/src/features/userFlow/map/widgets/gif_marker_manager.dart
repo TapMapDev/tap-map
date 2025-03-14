@@ -1,10 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:video_player/video_player.dart';
 
@@ -20,74 +17,75 @@ class GifMarkerManager extends StatefulWidget {
   State<GifMarkerManager> createState() => _GifMarkerManagerState();
 }
 
-class _GifMarkerManagerState extends State<GifMarkerManager> {
+class _GifMarkerManagerState extends State<GifMarkerManager>
+    with WidgetsBindingObserver {
   final Map<String, _MarkerData> _markersById = {};
   bool _isDisposed = false;
   bool _isInitialized = false;
-
-  void logProperties(Map<dynamic, dynamic> props, String prefix) {
-    props.forEach((key, value) {
-      if (value is Map) {
-        debugPrint('$prefix$key: {');
-        logProperties(value, '$prefix  ');
-        debugPrint('$prefix}');
-      } else {
-        debugPrint('$prefix$key: $value');
-      }
-    });
-  }
+  Timer? _updatePositionsTimer;
 
   @override
   void initState() {
     super.initState();
     debugPrint('🎬 GifMarkerManager: initState called');
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (!_isDisposed && mounted) {
-        _initializeMarkers();
+    WidgetsBinding.instance.addObserver(this);
+    _initialize();
+
+    // Обновляем позиции маркеров при изменении камеры
+    _updatePositionsTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (mounted && !_isDisposed) {
+        _updateMarkerPositions();
       }
     });
   }
 
   @override
-  void didUpdateWidget(GifMarkerManager oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_isInitialized && !_isDisposed && mounted) {
-      debugPrint('🎬 GifMarkerManager: Map updated, retrying initialization');
-      _initializeMarkers();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('🎬 GifMarkerManager: AppLifecycleState changed to $state');
+    if (state == AppLifecycleState.resumed) {
+      // Приложение вернулось на передний план
+      if (!_isInitialized && mounted && !_isDisposed) {
+        debugPrint('🎬 GifMarkerManager: Reinitializing after resume');
+        reinitialize();
+      }
     }
   }
 
-  @override
-  void dispose() {
-    debugPrint('🎬 GifMarkerManager: dispose called');
-    _isDisposed = true;
-    for (final markerData in _markersById.values) {
-      debugPrint('🎬 GifMarkerManager: disposing controller for marker');
-      markerData.controller.dispose();
-    }
-    super.dispose();
+  // Публичный метод для принудительной переинициализации
+  void reinitialize() {
+    if (_isDisposed) return;
+    _clearMarkers();
+    _isInitialized = false;
+    _initialize();
   }
 
-  Future<void> _initializeMarkers() async {
+  Future<void> _initialize() async {
     if (_isDisposed || _isInitialized) return;
-    debugPrint('🎬 GifMarkerManager: Starting marker initialization');
 
     try {
-      final style = await widget.mapboxMap.style.getStyleURI();
-      debugPrint('🎬 GifMarkerManager: Map style loaded: $style');
+      debugPrint('🎬 GifMarkerManager: Initializing...');
 
+      // Даем карте время загрузиться
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (_isDisposed) return;
+
+      // Создаем тестовый маркер с фиксированным URL
+      debugPrint('🎬 GifMarkerManager: Creating test marker');
+      await _createTestMarker();
+
+      // Проверяем наличие слоя
       final layers = await widget.mapboxMap.style.getStyleLayers();
       final layerExists =
           layers.any((layer) => layer?.id == "places_symbol_layer");
-      debugPrint(
-          '🎬 GifMarkerManager: places_symbol_layer exists: $layerExists');
 
       if (!layerExists) {
         debugPrint('❌ GifMarkerManager: places_symbol_layer not found');
         return;
       }
 
-      debugPrint('🎬 GifMarkerManager: Querying rendered features');
+      // Получаем точки
       final features = await widget.mapboxMap.queryRenderedFeatures(
         mapbox.RenderedQueryGeometry(
           type: mapbox.Type.SCREEN_BOX,
@@ -104,285 +102,312 @@ class _GifMarkerManagerState extends State<GifMarkerManager> {
 
       debugPrint('🎬 GifMarkerManager: Found ${features.length} features');
 
-      if (features.isEmpty) {
-        debugPrint(
-            '🎬 GifMarkerManager: No features found, retrying in 1 second');
-        Future.delayed(const Duration(seconds: 1), () {
-          if (!_isDisposed && mounted) {
-            _initializeMarkers();
-          }
-        });
-        return;
-      }
+      if (features.isEmpty || _isDisposed) return;
 
-      _isInitialized = true;
-
+      // Обрабатываем каждую точку
       for (final feature in features) {
-        if (feature == null) continue;
+        if (feature == null || _isDisposed) continue;
 
         final properties =
             feature.queriedFeature.feature as Map<dynamic, dynamic>;
         final id = properties['id']?.toString();
-        final nestedProperties =
-            properties['properties'] as Map<dynamic, dynamic>?;
 
-        // Добавляем подробное логирование структуры
-        debugPrint('🎬 GifMarkerManager: Processing feature:');
-        debugPrint('  - ID: $id');
-        debugPrint('  - Feature Type: ${properties['type']}');
-        debugPrint(
-            '  - Has Properties: ${properties.containsKey('properties')}');
-        debugPrint('  - Properties Keys: ${properties.keys.join(', ')}');
+        if (id == null) continue;
+        if (_markersById.containsKey(id)) continue;
 
-        if (nestedProperties != null) {
-          debugPrint(
-              '  - Nested Properties Keys: ${nestedProperties.keys.join(', ')}');
-          debugPrint('  - Nested Properties Values:');
-          nestedProperties.forEach((key, value) {
-            debugPrint('    - $key: $value');
-          });
-        }
+        // Ищем URL видео
+        String? videoUrl = _findVideoUrl(properties);
 
-        if (id == null) {
-          debugPrint('🎬 GifMarkerManager: Skipping feature - missing id');
-          continue;
-        }
+        if (videoUrl == null) continue;
 
-        // Проверяем все возможные места, где может быть URL видео
-        final possibleUrls = {
-          'root.marker_type': properties['marker_type']?.toString(),
-          'root.markerType': properties['markerType']?.toString(),
-          'root.marker_url': properties['marker_url']?.toString(),
-          'root.markerUrl': properties['markerUrl']?.toString(),
-          'root.video_url': properties['video_url']?.toString(),
-          'root.videoUrl': properties['videoUrl']?.toString(),
-          'root.url': properties['url']?.toString(),
-          'root.media_url': properties['media_url']?.toString(),
-          'root.mediaUrl': properties['mediaUrl']?.toString(),
-        };
-
-        if (nestedProperties != null) {
-          possibleUrls.addAll({
-            'nested.marker_type': nestedProperties['marker_type']?.toString(),
-            'nested.markerType': nestedProperties['markerType']?.toString(),
-            'nested.marker_url': nestedProperties['marker_url']?.toString(),
-            'nested.markerUrl': nestedProperties['markerUrl']?.toString(),
-            'nested.video_url': nestedProperties['video_url']?.toString(),
-            'nested.videoUrl': nestedProperties['videoUrl']?.toString(),
-            'nested.url': nestedProperties['url']?.toString(),
-            'nested.media_url': nestedProperties['media_url']?.toString(),
-            'nested.mediaUrl': nestedProperties['mediaUrl']?.toString(),
-          });
-        }
-
-        debugPrint('🎬 GifMarkerManager: All possible URLs:');
-        possibleUrls.forEach((key, value) {
-          if (value != null) {
-            debugPrint('  - $key: $value');
-          }
-        });
-
-        // Ищем первый непустой URL, который заканчивается на .webm
-        final markerType = possibleUrls.values.firstWhere(
-          (url) => url != null && url.endsWith('.webm'),
-          orElse: () => null,
-        );
-
-        if (markerType == null) {
-          debugPrint(
-              '🎬 GifMarkerManager: No valid webm URL found for feature $id');
-          debugPrint('🎬 Available properties:');
-          logProperties(properties, '  ');
-          continue;
-        }
-
-        debugPrint('🎬 GifMarkerManager: Found valid webm URL: $markerType');
-
-        if (_markersById.containsKey(id)) {
-          debugPrint('🎬 GifMarkerManager: Marker $id already exists');
-          continue;
-        }
-
+        // Получаем координаты
         final geometry = properties['geometry'] as Map<dynamic, dynamic>?;
-        if (geometry == null) {
-          debugPrint('❌ GifMarkerManager: Skipping feature - missing geometry');
-          continue;
-        }
+        if (geometry == null) continue;
 
         final coordinates = geometry['coordinates'] as List?;
-        if (coordinates == null || coordinates.length < 2) {
-          debugPrint(
-              '❌ GifMarkerManager: Skipping feature - invalid coordinates');
-          continue;
-        }
+        if (coordinates == null || coordinates.length < 2) continue;
 
-        debugPrint(
-            '🎬 GifMarkerManager: Creating video marker for $id at coordinates: $coordinates');
-        await _createVideoMarker(id, coordinates, markerType);
+        // Создаем маркер
+        await _createVideoMarker(id, coordinates, videoUrl);
       }
+
+      _isInitialized = true;
+      debugPrint(
+          '✅ GifMarkerManager: Initialization complete with ${_markersById.length} markers');
     } catch (e) {
-      debugPrint('❌ GifMarkerManager: Error initializing markers: $e');
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!_isDisposed && mounted) {
-          _initializeMarkers();
-        }
-      });
+      debugPrint('❌ GifMarkerManager: Error initializing: $e');
     }
+  }
+
+  String? _findVideoUrl(Map<dynamic, dynamic> properties) {
+    // Проверяем все возможные места, где может быть URL видео
+    final nestedProperties = properties['properties'] as Map<dynamic, dynamic>?;
+
+    debugPrint('🎬 GifMarkerManager: Searching for video URL in properties');
+
+    // Проверяем корневые свойства
+    for (final key in [
+      'marker_type',
+      'markerType',
+      'marker_url',
+      'markerUrl',
+      'video_url',
+      'videoUrl',
+      'url'
+    ]) {
+      final value = properties[key]?.toString();
+      if (value != null &&
+          (value.endsWith('.webm') || value.endsWith('.gif'))) {
+        debugPrint(
+            '🎬 GifMarkerManager: Found URL in root properties: $key = $value');
+        return value;
+      }
+    }
+
+    // Проверяем вложенные свойства
+    if (nestedProperties != null) {
+      for (final key in [
+        'marker_type',
+        'markerType',
+        'marker_url',
+        'markerUrl',
+        'video_url',
+        'videoUrl',
+        'url'
+      ]) {
+        final value = nestedProperties[key]?.toString();
+        if (value != null &&
+            (value.endsWith('.webm') || value.endsWith('.gif'))) {
+          debugPrint(
+              '🎬 GifMarkerManager: Found URL in nested properties: $key = $value');
+          return value;
+        }
+      }
+    }
+
+    // Рекурсивно ищем в любых вложенных объектах
+    String? searchInObject(dynamic obj, String path) {
+      if (obj is String && (obj.endsWith('.webm') || obj.endsWith('.gif'))) {
+        debugPrint('🎬 GifMarkerManager: Found URL in path $path: $obj');
+        return obj;
+      } else if (obj is Map) {
+        for (final entry in obj.entries) {
+          final result = searchInObject(entry.value, '$path.${entry.key}');
+          if (result != null) return result;
+        }
+      } else if (obj is List) {
+        for (var i = 0; i < obj.length; i++) {
+          final result = searchInObject(obj[i], '$path[$i]');
+          if (result != null) return result;
+        }
+      }
+      return null;
+    }
+
+    final result = searchInObject(properties, 'root');
+    if (result != null) {
+      return result;
+    }
+
+    debugPrint('🎬 GifMarkerManager: No video URL found in properties');
+    return null;
+  }
+
+  @override
+  void didUpdateWidget(GifMarkerManager oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    debugPrint('🎬 GifMarkerManager: didUpdateWidget called');
+    if (oldWidget.mapboxMap != widget.mapboxMap) {
+      debugPrint(
+          '🎬 GifMarkerManager: MapboxMap instance changed, reinitializing');
+      _clearMarkers();
+      _isInitialized = false;
+      _initialize();
+    } else if (!_isInitialized) {
+      // Если виджет обновился, но маркеры не инициализированы, попробуем инициализировать
+      debugPrint(
+          '🎬 GifMarkerManager: Widget updated but not initialized, trying to initialize');
+      _initialize();
+    }
+  }
+
+  void _clearMarkers() {
+    debugPrint('🎬 GifMarkerManager: Clearing ${_markersById.length} markers');
+    for (final markerData in _markersById.values) {
+      markerData.controller.dispose();
+    }
+    _markersById.clear();
+  }
+
+  @override
+  void dispose() {
+    debugPrint('🎬 GifMarkerManager: dispose called');
+    _isDisposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _updatePositionsTimer?.cancel();
+    _clearMarkers();
+    super.dispose();
   }
 
   Future<void> _createVideoMarker(
       String id, List coordinates, String videoUrl) async {
     if (_isDisposed) return;
+
     debugPrint(
-        '🎬 GifMarkerManager: Creating video marker for $id with URL: $videoUrl');
+        '🎬 GifMarkerManager ✅: Creating marker $id with URL: $videoUrl');
 
     try {
-      debugPrint('🎬 GifMarkerManager: Initializing video controller');
+      // Создаем контроллер видео
       final controller = VideoPlayerController.network(videoUrl);
-      await controller.initialize();
-      debugPrint('🎬 GifMarkerManager: Video controller initialized');
+
+      // Устанавливаем таймаут для инициализации
+      bool initialized = false;
+      Timer? timeoutTimer;
+
+      timeoutTimer = Timer(const Duration(seconds: 10), () {
+        if (!initialized && !_isDisposed) {
+          debugPrint(
+              '❌ GifMarkerManager: Video initialization timeout for $videoUrl');
+          controller.dispose();
+        }
+      });
+
+      try {
+        await controller.initialize();
+        initialized = true;
+        timeoutTimer.cancel();
+      } catch (e) {
+        debugPrint('❌ GifMarkerManager: Failed to initialize video: $e');
+        controller.dispose();
+        return;
+      }
+
+      if (_isDisposed) {
+        controller.dispose();
+        return;
+      }
 
       controller.setLooping(true);
       controller.setVolume(0.0);
       await controller.play();
-      debugPrint('🎬 GifMarkerManager: Video playback started');
 
-      debugPrint('🎬 GifMarkerManager: Getting video frame');
-      final imageBytes = await _getVideoFrame(controller);
-      debugPrint(
-          '🎬 GifMarkerManager: Got video frame, size: ${imageBytes.length} bytes');
+      if (_isDisposed) {
+        controller.dispose();
+        return;
+      }
 
-      final markerOptions = mapbox.PointAnnotationOptions(
-        geometry: mapbox.Point(
-          coordinates: mapbox.Position(
-            coordinates[0] as double,
-            coordinates[1] as double,
-          ),
-        ),
-        image: imageBytes,
-      );
-
-      debugPrint('🎬 GifMarkerManager: Creating point annotation');
-      final pointAnnotationManager =
-          await widget.mapboxMap.annotations.createPointAnnotationManager();
-      final marker = await pointAnnotationManager.create(markerOptions);
-      debugPrint('🎬 GifMarkerManager: Point annotation created successfully');
+      // Добавляем маркер в список
+      final screenPoint = await _getScreenPoint(coordinates);
 
       setState(() {
         _markersById[id] = _MarkerData(
-          marker: marker,
           controller: controller,
+          coordinates: [coordinates[0] as double, coordinates[1] as double],
+          screenPoint: screenPoint,
         );
       });
-      debugPrint('🎬 GifMarkerManager: Marker added to state');
+
+      debugPrint('✅ GifMarkerManager: Successfully created marker $id');
     } catch (e) {
-      debugPrint('❌ GifMarkerManager: Error creating video marker: $e');
+      debugPrint('❌ GifMarkerManager: Error creating marker: $e');
     }
   }
 
-  Future<Uint8List> _getVideoFrame(VideoPlayerController controller) async {
-    if (!controller.value.isInitialized) {
-      debugPrint('❌ GifMarkerManager: Video not initialized');
-      throw Exception('Video not initialized');
-    }
-
-    final textureId = controller.textureId;
-    debugPrint(
-        '🎬 GifMarkerManager: Getting frame from texture ID: $textureId');
-
-    // Create a widget to display the video
-    final videoWidget = Texture(
-      textureId: textureId,
-    );
-
-    // Convert widget to image
-    final boundary = GlobalKey();
-    final widget = RepaintBoundary(
-      key: boundary,
-      child: SizedBox(
-        width: 35,
-        height: 35,
-        child: videoWidget,
-      ),
-    );
-
-    // Используем BuildContext для рендеринга
-    final context = this.context;
-    if (!context.mounted) {
-      debugPrint('❌ GifMarkerManager: Context is not available');
-      throw Exception('Context is not available');
-    }
-    OverlayEntry? overlay;
+  // Получаем координаты на экране для заданных географических координат
+  Future<Offset?> _getScreenPoint(List coordinates) async {
     try {
-      debugPrint('🎬 GifMarkerManager: Converting widget to image');
-
-      // Создаем OverlayEntry для временного добавления виджета
-      overlay = OverlayEntry(
-        builder: (context) => widget,
+      final point = mapbox.Point(
+        coordinates: mapbox.Position(
+          coordinates[0] as double,
+          coordinates[1] as double,
+        ),
       );
 
-      // Добавляем виджет в оверлей
-      Overlay.of(context).insert(overlay);
-
-      // Даем время на рендеринг
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      final renderObject = boundary.currentContext?.findRenderObject();
-      if (renderObject == null) {
-        debugPrint('❌ GifMarkerManager: RenderObject is null');
-        throw Exception('RenderObject is null');
-      }
-
-      final renderBoundary = renderObject as RenderRepaintBoundary;
-      final ui.Image image = await renderBoundary.toImage(pixelRatio: 1.0);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
-
-      if (byteData == null) {
-        debugPrint('❌ GifMarkerManager: Failed to convert frame to bytes');
-        throw Exception('Failed to convert frame to bytes');
-      }
-
-      debugPrint('🎬 GifMarkerManager: Successfully converted frame to bytes');
-      return byteData.buffer.asUint8List();
-    } finally {
-      // Удаляем оверлей
-      overlay?.remove();
+      final screenCoordinate = await widget.mapboxMap.pixelForCoordinate(point);
+      return Offset(screenCoordinate.x, screenCoordinate.y);
+    } catch (e) {
+      debugPrint('❌ GifMarkerManager: Error getting screen point: $e');
+      return null;
     }
+  }
+
+  // Обновляем позиции всех маркеров при изменении камеры
+  Future<void> _updateMarkerPositions() async {
+    if (_isDisposed || _markersById.isEmpty) return;
+
+    final updatedMarkers = <String, _MarkerData>{};
+
+    for (final entry in _markersById.entries) {
+      final id = entry.key;
+      final markerData = entry.value;
+
+      final screenPoint = await _getScreenPoint(
+          [markerData.coordinates[0], markerData.coordinates[1]]);
+
+      updatedMarkers[id] = _MarkerData(
+        controller: markerData.controller,
+        coordinates: markerData.coordinates,
+        screenPoint: screenPoint,
+      );
+    }
+
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _markersById.clear();
+        _markersById.addAll(updatedMarkers);
+      });
+    }
+  }
+
+  // Создаем тестовый маркер с фиксированным URL
+  Future<void> _createTestMarker() async {
+    if (_isDisposed) return;
+
+    // Тестовый URL для GIF/WebM
+    const testUrl =
+        'https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif';
+
+    // Центр карты
+    final cameraPosition = await widget.mapboxMap.getCameraState();
+    final coordinates = [
+      cameraPosition.center.coordinates[0],
+      cameraPosition.center.coordinates[1]
+    ];
+
+    debugPrint(
+        '🎬 GifMarkerManager: Creating test marker at $coordinates with URL: $testUrl');
+
+    await _createVideoMarker('test_marker', coordinates, testUrl);
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-        '🎬 GifMarkerManager: Building widget with ${_markersById.length} markers');
     return Stack(
-      children: _markersById.entries.map((entry) {
-        final markerData = entry.value;
-        final position = markerData.marker.geometry.coordinates;
-        debugPrint(
-            '🎬 GifMarkerManager: Building marker at position: ${position.lng}, ${position.lat}');
-        return Positioned(
-          left: position.lng.toDouble(),
-          top: position.lat.toDouble(),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: Texture(
-              textureId: markerData.controller.textureId,
+      children: [
+        for (final entry in _markersById.entries)
+          if (entry.value.screenPoint != null)
+            Positioned(
+              left: entry.value.screenPoint!.dx - 30, // Центрируем маркер
+              top: entry.value.screenPoint!.dy - 30, // Центрируем маркер
+              child: SizedBox(
+                width: 60,
+                height: 60,
+                child: VideoPlayer(entry.value.controller),
+              ),
             ),
-          ),
-        );
-      }).toList(),
+      ],
     );
   }
 }
 
 class _MarkerData {
-  final mapbox.PointAnnotation marker;
   final VideoPlayerController controller;
+  final List<double> coordinates;
+  final Offset? screenPoint;
 
   _MarkerData({
-    required this.marker,
     required this.controller,
+    required this.coordinates,
+    this.screenPoint,
   });
 }

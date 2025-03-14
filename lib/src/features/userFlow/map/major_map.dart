@@ -51,6 +51,7 @@ class _MajorMapState extends State<MajorMap> {
   late String mapStyleUri;
 
   bool _isDisposed = false; // Добавляем флаг для отслеживания состояния виджета
+  bool _wasInactive = false; // Флаг для отслеживания неактивного состояния
 
   @override
   void initState() {
@@ -76,6 +77,46 @@ class _MajorMapState extends State<MajorMap> {
         updateOpenCloseStates();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    debugPrint('🗺️ MajorMap: didChangeDependencies called');
+
+    // Если виджет был неактивен и теперь снова активен, переинициализируем GifMarkerManager
+    if (_wasInactive &&
+        mounted &&
+        !_isDisposed &&
+        mapboxMapController != null) {
+      debugPrint(
+          '🗺️ MajorMap: Widget was inactive, reinitializing GifMarkerManager');
+      _wasInactive = false;
+
+      // Пересоздаем GifMarkerManager
+      setState(() {
+        _gifMarkerManager = null;
+      });
+
+      // Даем время на обновление состояния
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && !_isDisposed && mapboxMapController != null) {
+          setState(() {
+            _gifMarkerManager =
+                GifMarkerManager(mapboxMap: mapboxMapController!);
+          });
+          debugPrint(
+              '🗺️ MajorMap: GifMarkerManager recreated after inactivity');
+        }
+      });
+    }
+  }
+
+  @override
+  void deactivate() {
+    debugPrint('🗺️ MajorMap: deactivate called');
+    _wasInactive = true;
+    super.deactivate();
   }
 
   @override
@@ -116,6 +157,25 @@ class _MajorMapState extends State<MajorMap> {
   Widget build(BuildContext context) {
     if (!isStyleLoaded || !isLocationLoaded) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    // Проверяем, нужно ли создать GifMarkerManager
+    if (mapboxMapController != null &&
+        _gifMarkerManager == null &&
+        !_isDisposed &&
+        mounted) {
+      debugPrint(
+          '🗺️ MajorMap: GifMarkerManager is null in build, scheduling creation');
+      Future.microtask(() {
+        if (mounted && !_isDisposed) {
+          setState(() {
+            _gifMarkerManager =
+                GifMarkerManager(mapboxMap: mapboxMapController!);
+          });
+          debugPrint(
+              '🗺️ MajorMap: GifMarkerManager created in build microtask');
+        }
+      });
     }
 
     return MultiBlocListener(
@@ -224,8 +284,7 @@ class _MajorMapState extends State<MajorMap> {
                 }
               },
             ),
-            if (mapboxMapController != null)
-              GifMarkerManager(mapboxMap: mapboxMapController!),
+            if (_gifMarkerManager != null) _gifMarkerManager!,
             const Positioned(
               top: 30,
               right: 13,
@@ -280,12 +339,20 @@ class _MajorMapState extends State<MajorMap> {
     if (_isDisposed) return;
     await updateOpenCloseStates();
 
-    if (_isDisposed) return;
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && mapboxMapController != null && !_isDisposed) {
-        updateOpenCloseStates();
-      }
+    // Пересоздаем GifMarkerManager при загрузке стиля
+    setState(() {
+      _gifMarkerManager = null; // Сначала обнуляем старый менеджер
     });
+
+    // Даем время на обновление состояния
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted && !_isDisposed && mapboxMapController != null) {
+      debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style loaded");
+      setState(() {
+        _gifMarkerManager = GifMarkerManager(mapboxMap: mapboxMapController!);
+      });
+    }
 
     if (_isDisposed) return;
     final camState = await mapboxMapController?.getCameraState();
@@ -642,17 +709,32 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _updateMapStyle(String newStyle) async {
     if (mapboxMapController == null) return;
 
+    // Очищаем GifMarkerManager перед сменой стиля
+    debugPrint("🗺️ MajorMap: Clearing GifMarkerManager before style change");
+    setState(() {
+      _gifMarkerManager = null;
+    });
+
     await mapboxMapController!.style.setStyleURI(newStyle);
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 500));
     await mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: false),
     );
     await _addSourceAndLayers();
     await updateOpenCloseStates();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 500));
     await mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
+
+    // Пересоздаем GifMarkerManager после смены стиля
+    if (mounted && !_isDisposed && mapboxMapController != null) {
+      debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style change");
+      setState(() {
+        _gifMarkerManager = GifMarkerManager(mapboxMap: mapboxMapController!);
+      });
+    }
+
     getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
   }
 
