@@ -176,13 +176,18 @@ class _MajorMapState extends State<MajorMap> {
           '🗺️ MajorMap: GifMarkerManager is null in build, scheduling creation');
       Future.microtask(() {
         if (mounted && !_isDisposed) {
-          setState(() {
-            _gifMarkerManager = GifMarkerManager(
-                key: GifMarkerManager.globalKey,
-                mapboxMap: mapboxMapController!);
+          // Принудительно запускаем сборку мусора перед созданием нового менеджера
+          _forceGarbageCollection().then((_) {
+            if (mounted && !_isDisposed) {
+              setState(() {
+                _gifMarkerManager = GifMarkerManager(
+                    key: GifMarkerManager.globalKey,
+                    mapboxMap: mapboxMapController!);
+              });
+              debugPrint(
+                  '🗺️ MajorMap: GifMarkerManager created in build microtask');
+            }
           });
-          debugPrint(
-              '🗺️ MajorMap: GifMarkerManager created in build microtask');
         }
       });
     }
@@ -720,28 +725,72 @@ class _MajorMapState extends State<MajorMap> {
       _gifMarkerManager = null;
     });
 
+    // Очищаем кэш видео контроллеров перед сменой стиля
+    try {
+      // Вызываем метод updateMarkers, который должен очистить ресурсы
+      GifMarkerManager.updateMarkers();
+      debugPrint(
+          "🗺️ MajorMap: Called updateMarkers to clean resources before style change");
+
+      // Даем время на освобождение ресурсов
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Принудительно запускаем сборку мусора
+      await _forceGarbageCollection();
+    } catch (e) {
+      debugPrint("⚠️ MajorMap: Error updating markers: $e");
+    }
+
     await mapboxMapController!.style.setStyleURI(newStyle);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 800));
     await mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: false),
     );
     await _addSourceAndLayers();
     await updateOpenCloseStates();
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 800));
     await mapboxMapController?.location.updateSettings(
       mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
 
-    // Пересоздаем GifMarkerManager после смены стиля
+    // Пересоздаем GifMarkerManager после смены стиля с большей задержкой
     if (mounted && !_isDisposed && mapboxMapController != null) {
+      // Даем больше времени на загрузку стиля
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Принудительно запускаем сборку мусора перед созданием нового менеджера
+      await _forceGarbageCollection();
+
       debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style change");
       setState(() {
         _gifMarkerManager = GifMarkerManager(
             key: GifMarkerManager.globalKey, mapboxMap: mapboxMapController!);
       });
+
+      // Даем время на инициализацию и затем обновляем маркеры
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && !_isDisposed) {
+          debugPrint(
+              "🗺️ MajorMap: Forcing update of markers after style change");
+          GifMarkerManager.updateMarkers();
+        }
+      });
     }
 
     getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
+  }
+
+  // Метод для принудительного запуска сборки мусора
+  Future<void> _forceGarbageCollection() async {
+    debugPrint("🗑️ MajorMap: Forcing garbage collection");
+
+    // Создаем и освобождаем большой объект для стимуляции сборки мусора
+    List<int> largeList = List.generate(10000, (index) => index);
+    await Future.delayed(const Duration(milliseconds: 100));
+    largeList = [];
+
+    // Даем время на сборку мусора
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   int _parseTime(String time) {

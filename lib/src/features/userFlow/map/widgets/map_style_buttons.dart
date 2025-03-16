@@ -39,6 +39,15 @@ class MapStyleButton extends StatelessWidget {
   }
 }
 
+final List<String> imagePaths = [
+  'assets/png/cyberpunk.jpeg',
+  'assets/png/standart.jpeg',
+  'assets/png/sputnik.jpeg',
+  'assets/png/GTA5.jpeg',
+  'assets/png/fallout.jpeg',
+  'assets/png/rd2.jpeg',
+];
+
 class MapStyleDialog extends StatefulWidget {
   const MapStyleDialog({super.key});
 
@@ -151,7 +160,7 @@ class _MapStyleDialogState extends State<MapStyleDialog>
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.asset(
-                                      'assets/map_styles/${style.id}.jpg',
+                                      imagePaths[index],
                                       fit: BoxFit.cover,
                                     ),
                                   ),

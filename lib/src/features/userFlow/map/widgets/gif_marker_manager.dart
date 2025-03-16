@@ -48,6 +48,114 @@ class GifCache {
   }
 }
 
+// Глобальный кэш для видео контроллеров
+class VideoControllerCache {
+  static final Map<String, VideoPlayerController> _cache = {};
+  static final Map<String, DateTime> _lastUsed = {};
+  static final Map<String, int> _usageCount = {};
+  static const int _maxCacheSize = 10;
+
+  static VideoPlayerController? getController(String url) {
+    if (_cache.containsKey(url)) {
+      _lastUsed[url] = DateTime.now();
+      _usageCount[url] = (_usageCount[url] ?? 0) + 1;
+      return _cache[url];
+    }
+    return null;
+  }
+
+  static Future<VideoPlayerController> createController(String url) async {
+    // Проверяем, есть ли контроллер в кэше
+    if (_cache.containsKey(url)) {
+      _lastUsed[url] = DateTime.now();
+      _usageCount[url] = (_usageCount[url] ?? 0) + 1;
+      return _cache[url]!;
+    }
+
+    // Если кэш переполнен, удаляем наименее используемые контроллеры
+    if (_cache.length >= _maxCacheSize) {
+      _cleanCache();
+    }
+
+    // Создаем новый контроллер
+    final controller = VideoPlayerController.network(
+      url,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+
+    _cache[url] = controller;
+    _lastUsed[url] = DateTime.now();
+    _usageCount[url] = 1;
+
+    // Инициализируем контроллер
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(0.0);
+
+      // Устанавливаем нормальную скорость воспроизведения
+      await controller.setPlaybackSpeed(1.0);
+    } catch (e) {
+      debugPrint('❌ VideoControllerCache: Error initializing controller: $e');
+      _cache.remove(url);
+      _lastUsed.remove(url);
+      _usageCount.remove(url);
+      rethrow;
+    }
+
+    return controller;
+  }
+
+  static void _cleanCache() {
+    // Если кэш не переполнен, ничего не делаем
+    if (_cache.length < _maxCacheSize) return;
+
+    // Сортируем URL по времени последнего использования и количеству использований
+    final urls = _cache.keys.toList();
+    urls.sort((a, b) {
+      // Сначала сортируем по количеству использований (меньше - удаляем первыми)
+      final countCompare = (_usageCount[a] ?? 0).compareTo(_usageCount[b] ?? 0);
+      if (countCompare != 0) return countCompare;
+
+      // Затем по времени последнего использования (старые - удаляем первыми)
+      return (_lastUsed[a] ?? DateTime.now())
+          .compareTo(_lastUsed[b] ?? DateTime.now());
+    });
+
+    // Удаляем наименее используемые контроллеры
+    final toRemove = urls.take(urls.length - _maxCacheSize + 1).toList();
+    for (final url in toRemove) {
+      final controller = _cache[url];
+      if (controller != null) {
+        controller.dispose();
+      }
+      _cache.remove(url);
+      _lastUsed.remove(url);
+      _usageCount.remove(url);
+      debugPrint(
+          '🗑️ VideoControllerCache: Removed controller for $url from cache');
+    }
+  }
+
+  static void releaseController(String url) {
+    // Помечаем контроллер как неиспользуемый, но не удаляем его
+    _lastUsed[url] = DateTime.now().subtract(const Duration(hours: 1));
+  }
+
+  static void clear() {
+    for (final controller in _cache.values) {
+      controller.dispose();
+    }
+    _cache.clear();
+    _lastUsed.clear();
+    _usageCount.clear();
+    debugPrint('🧹 VideoControllerCache: Cleared all controllers');
+  }
+}
+
 // Виджет для отображения зацикленных GIF
 class LoopingGifWidget extends StatefulWidget {
   final String url;
@@ -199,74 +307,52 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
   int _initializationAttempts = 0;
   static const int _maxInitializationAttempts = 3;
   Timer? _styleCheckTimer;
+  Timer? _videoRotationTimer;
+  final bool _isSystemUnderLoad = false;
+
+  static const int _maxSimultaneousVideos = 5;
+  final List<String> _activeVideoMarkers = [];
 
   @override
   void initState() {
     super.initState();
-    if (_enableDetailedLogs) {
-      debugPrint('🎬 GifMarkerManager: initState called');
-    }
     WidgetsBinding.instance.addObserver(this);
-
-    // Отложенная инициализация для уверенности, что карта загружена
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleInitialization();
     });
+    _startVideoRotationTimer();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _updateTimer?.cancel();
+    _styleCheckTimer?.cancel();
+    _videoRotationTimer?.cancel();
+    _clearMarkers();
+    GifCache.clear();
+    VideoControllerCache.clear();
+    super.dispose();
+  }
+
+  void _clearMarkers() {
+    for (final markerData in _markersById.values) {
+      if (!markerData.isGif && markerData.url.isNotEmpty) {
+        VideoControllerCache.releaseController(markerData.url);
+      }
+    }
+    _markersById.clear();
   }
 
   void _scheduleInitialization() {
     if (_isInitializing || _isInitialized || _isDisposed) return;
-
     _isInitializing = true;
-    // Увеличиваем задержку с каждой попыткой
-    final delay = Duration(seconds: 1 + _initializationAttempts);
-    debugPrint(
-        '🎬 GifMarkerManager: Scheduling initialization in ${delay.inSeconds}s (attempt ${_initializationAttempts + 1})');
-
-    Future.delayed(delay, () {
+    Future.delayed(Duration(seconds: 1 + _initializationAttempts), () {
       if (mounted && !_isDisposed && !_isInitialized) {
         _initialize();
       }
     });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_enableDetailedLogs) {
-      debugPrint('🎬 GifMarkerManager: AppLifecycleState changed to $state');
-    }
-    if (state == AppLifecycleState.resumed) {
-      // Приложение вернулось на передний план
-      if (!_isInitialized && mounted && !_isDisposed) {
-        if (_enableDetailedLogs) {
-          debugPrint('🎬 GifMarkerManager: Reinitializing after resume');
-        }
-        reinitialize();
-      }
-    } else if (state == AppLifecycleState.paused) {
-      // Приложение ушло в фон - останавливаем обновление
-      _updateTimer?.cancel();
-      _styleCheckTimer?.cancel();
-    }
-  }
-
-  @override
-  void deactivate() {
-    debugPrint('🎬 GifMarkerManager: deactivate called');
-    // Останавливаем таймеры при деактивации виджета
-    _updateTimer?.cancel();
-    _styleCheckTimer?.cancel();
-    super.deactivate();
-  }
-
-  // Публичный метод для принудительной переинициализации
-  void reinitialize() {
-    if (_isDisposed) return;
-    _clearMarkers();
-    _isInitialized = false;
-    _isInitializing = false;
-    _initializationAttempts = 0;
-    _scheduleInitialization();
   }
 
   Future<void> _initialize() async {
@@ -276,42 +362,28 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
     }
 
     try {
-      debugPrint(
-          '🎬 GifMarkerManager: Initializing... (attempt ${_initializationAttempts + 1})');
       _initializationAttempts++;
-
-      // Проверяем, загружен ли стиль карты
       final styleURI = await widget.mapboxMap.style.getStyleURI();
       if (styleURI.isEmpty) {
-        debugPrint('❌ GifMarkerManager: Style not loaded yet');
         _isInitializing = false;
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
-        } else {
-          // Если после нескольких попыток стиль не загрузился, запускаем периодическую проверку
-          _startStyleCheckTimer();
         }
         return;
       }
 
-      // Проверяем наличие слоя
       final layers = await widget.mapboxMap.style.getStyleLayers();
       final layerExists =
           layers.any((layer) => layer?.id == "places_symbol_layer");
 
       if (!layerExists) {
-        debugPrint('❌ GifMarkerManager: places_symbol_layer not found');
         _isInitializing = false;
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
-        } else {
-          // Если после нескольких попыток слой не найден, запускаем периодическую проверку
-          _startStyleCheckTimer();
         }
         return;
       }
 
-      // Получаем точки
       final features = await widget.mapboxMap.queryRenderedFeatures(
         mapbox.RenderedQueryGeometry(
           type: mapbox.Type.SCREEN_BOX,
@@ -326,19 +398,10 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
         ),
       );
 
-      if (_enableDetailedLogs) {
-        debugPrint('🎬 GifMarkerManager: Found ${features.length} features');
-      }
-
       if (features.isEmpty) {
-        debugPrint(
-            '❌ GifMarkerManager: No features found in places_symbol_layer');
         _isInitializing = false;
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
-        } else {
-          // Если после нескольких попыток точки не найдены, запускаем периодическую проверку
-          _startStyleCheckTimer();
         }
         return;
       }
@@ -348,88 +411,39 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
         return;
       }
 
-      // Обрабатываем каждую точку
-      int processedMarkers = 0;
       for (final feature in features) {
         if (feature == null || _isDisposed) continue;
 
         final properties =
             feature.queriedFeature.feature as Map<dynamic, dynamic>;
         final id = properties['id']?.toString();
+        if (id == null || _markersById.containsKey(id)) continue;
 
-        if (id == null) continue;
-        if (_markersById.containsKey(id)) continue;
-
-        // Ищем URL видео
-        String? videoUrl = _findVideoUrl(properties);
-
+        final videoUrl = _findVideoUrl(properties);
         if (videoUrl == null) continue;
 
-        // Получаем координаты
         final geometry = properties['geometry'] as Map<dynamic, dynamic>?;
         if (geometry == null) continue;
 
         final coordinates = geometry['coordinates'] as List?;
         if (coordinates == null || coordinates.length < 2) continue;
 
-        // Создаем маркер
         await _createVideoMarker(id, coordinates, videoUrl);
-        processedMarkers++;
       }
 
-      // Проверяем, были ли созданы маркеры
-      if (processedMarkers == 0 && _markersById.isEmpty) {
-        debugPrint(
-            '⚠️ GifMarkerManager: No markers were created, will retry later');
-        _isInitializing = false;
-        if (_initializationAttempts < _maxInitializationAttempts) {
-          _scheduleInitialization();
-        } else {
-          // Если после нескольких попыток маркеры не созданы, запускаем периодическую проверку
-          _startStyleCheckTimer();
-        }
-        return;
-      }
-
-      // Запускаем таймер обновления позиций маркеров
       _startUpdateTimer();
-
-      // Останавливаем таймер проверки стиля, если он был запущен
-      _styleCheckTimer?.cancel();
-
       _isInitialized = true;
       _isInitializing = false;
-      debugPrint(
-          '✅ GifMarkerManager: Initialization complete with ${_markersById.length} markers (processed $processedMarkers)');
     } catch (e) {
-      debugPrint('❌ GifMarkerManager: Error initializing: $e');
       _isInitializing = false;
       if (_initializationAttempts < _maxInitializationAttempts) {
         _scheduleInitialization();
-      } else {
-        // Если после нескольких попыток произошла ошибка, запускаем периодическую проверку
-        _startStyleCheckTimer();
       }
     }
   }
 
-  // Запускаем периодическую проверку стиля и слоев
-  void _startStyleCheckTimer() {
-    _styleCheckTimer?.cancel();
-    debugPrint('🎬 GifMarkerManager: Starting style check timer');
-    _styleCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (!mounted || _isDisposed || _isInitialized || _isInitializing) {
-        timer.cancel();
-        return;
-      }
-      debugPrint('🎬 GifMarkerManager: Checking style and layers...');
-      _scheduleInitialization();
-    });
-  }
-
   void _startUpdateTimer() {
     _updateTimer?.cancel();
-    // Уменьшаем частоту обновления до 30 кадров в секунду, этого достаточно для плавности
     _updateTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
       if (mounted && !_isDisposed) {
         _updateMarkerPositions();
@@ -437,67 +451,136 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
     });
   }
 
-  // Добавляем метод для обновления позиций маркеров с проверкой изменений
   Future<void> _updateMarkerPositions() async {
     if (!mounted || _isDisposed || _markersById.isEmpty) return;
 
-    // Проверяем, изменилась ли камера
     final cameraState = await widget.mapboxMap.getCameraState();
-    bool cameraChanged = false;
+    bool cameraChanged = _lastCameraState == null;
 
-    if (_lastCameraState == null) {
-      cameraChanged = true;
-    } else {
-      final zoomDiff = (_lastCameraState!.zoom != cameraState.zoom);
-      final bearingDiff = (_lastCameraState!.bearing != cameraState.bearing);
-      final pitchDiff = (_lastCameraState!.pitch != cameraState.pitch);
+    if (!cameraChanged) {
+      cameraChanged = _lastCameraState!.zoom != cameraState.zoom ||
+          _lastCameraState!.bearing != cameraState.bearing ||
+          _lastCameraState!.pitch != cameraState.pitch;
 
-      // Безопасно извлекаем координаты с проверкой на null
-      final lastLng = _lastCameraState!.center.coordinates[0];
-      final lastLat = _lastCameraState!.center.coordinates[1];
-      final currentLng = cameraState.center.coordinates[0];
-      final currentLat = cameraState.center.coordinates[1];
+      if (!cameraChanged) {
+        final lastLng = _lastCameraState!.center.coordinates[0];
+        final lastLat = _lastCameraState!.center.coordinates[1];
+        final currentLng = cameraState.center.coordinates[0];
+        final currentLat = cameraState.center.coordinates[1];
 
-      // Проверяем, что координаты не null перед вычислением разницы
-      double lngDiff = 0.001;
-      double latDiff = 0.001;
-
-      if (lastLng != null && currentLng != null) {
-        lngDiff = (lastLng - currentLng).abs().toDouble();
+        if (lastLng != null &&
+            currentLng != null &&
+            lastLat != null &&
+            currentLat != null) {
+          cameraChanged = (lastLng - currentLng).abs() > 0.0000001 ||
+              (lastLat - currentLat).abs() > 0.0000001;
+        }
       }
-
-      if (lastLat != null && currentLat != null) {
-        latDiff = (lastLat - currentLat).abs().toDouble();
-      }
-
-      cameraChanged = zoomDiff ||
-          bearingDiff ||
-          pitchDiff ||
-          lngDiff > 0.0000001 ||
-          latDiff > 0.0000001;
     }
 
     _lastCameraState = cameraState;
+    if (cameraChanged) {
+      setState(() {});
+    }
+  }
 
-    // Если камера не изменилась, не обновляем позиции
-    if (!cameraChanged) return;
-
-    // Обновляем позиции только если камера изменилась
-    setState(() {
-      // Позиции будут пересчитаны в _buildMarkers
+  void _startVideoRotationTimer() {
+    _videoRotationTimer?.cancel();
+    _videoRotationTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted && !_isDisposed && _isInitialized) {
+        _rotateActiveVideos();
+      }
     });
   }
 
-  String? _findVideoUrl(Map<dynamic, dynamic> properties) {
-    // Проверяем все возможные места, где может быть URL видео
-    final nestedProperties = properties['properties'] as Map<dynamic, dynamic>?;
+  void _rotateActiveVideos() {
+    if (_markersById.isEmpty) return;
 
-    if (_enableDetailedLogs) {
-      debugPrint('🎬 GifMarkerManager: Searching for video URL in properties');
+    final videoMarkers = _markersById.entries
+        .where((entry) => !entry.value.isGif)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (videoMarkers.isEmpty) return;
+
+    for (final id in _activeVideoMarkers.toList()) {
+      if (!_markersById.containsKey(id)) {
+        _activeVideoMarkers.remove(id);
+        continue;
+      }
+
+      final markerData = _markersById[id]!;
+      if (!markerData.isVisible ||
+          markerData.controller == null ||
+          !markerData.controller!.value.isInitialized) {
+        markerData.controller?.pause();
+        _activeVideoMarkers.remove(id);
+      }
     }
 
-    // Проверяем корневые свойства
-    for (final key in [
+    final visibleInactiveMarkers = videoMarkers
+        .where((id) =>
+            !_activeVideoMarkers.contains(id) &&
+            _markersById[id]!.isVisible &&
+            _markersById[id]!.controller != null &&
+            _markersById[id]!.controller!.value.isInitialized)
+        .toList();
+
+    while (_activeVideoMarkers.length < _maxSimultaneousVideos &&
+        visibleInactiveMarkers.isNotEmpty) {
+      final id = visibleInactiveMarkers.removeAt(0);
+      final controller = _markersById[id]!.controller;
+
+      if (controller != null && controller.value.isInitialized) {
+        Future.delayed(Duration(milliseconds: 300 * _activeVideoMarkers.length),
+            () {
+          if (!mounted || _isDisposed || !_markersById.containsKey(id)) return;
+          controller.play().then((_) {
+            if (mounted && !_isDisposed && _markersById.containsKey(id)) {
+              _activeVideoMarkers.add(id);
+            }
+          });
+        });
+      }
+    }
+  }
+
+  void _checkAndRestartAllVideos() {
+    if (!mounted || _isDisposed || !_isInitialized) return;
+
+    _activeVideoMarkers.clear();
+    final visibleMarkers = _markersById.keys
+        .where((id) => _markersById[id]!.isVisible)
+        .take(_maxSimultaneousVideos)
+        .toList();
+
+    for (int i = 0; i < visibleMarkers.length; i++) {
+      final id = visibleMarkers[i];
+      final markerData = _markersById[id];
+
+      if (markerData == null ||
+          markerData.isGif ||
+          markerData.controller == null) continue;
+
+      Future.delayed(Duration(milliseconds: 200 * i), () {
+        if (!mounted || _isDisposed || !_markersById.containsKey(id)) return;
+
+        final controller = markerData.controller;
+        if (controller == null || !controller.value.isInitialized) return;
+
+        if (!controller.value.isPlaying) {
+          controller.play();
+          _activeVideoMarkers.add(id);
+        } else {
+          _activeVideoMarkers.add(id);
+        }
+      });
+    }
+  }
+
+  String? _findVideoUrl(Map<dynamic, dynamic> properties) {
+    final nestedProperties = properties['properties'] as Map<dynamic, dynamic>?;
+    final keys = [
       'marker_type',
       'markerType',
       'marker_url',
@@ -505,269 +588,36 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
       'video_url',
       'videoUrl',
       'url'
-    ]) {
+    ];
+
+    for (final key in keys) {
       final value = properties[key]?.toString();
       if (value != null &&
           (value.endsWith('.webm') || value.endsWith('.gif'))) {
-        if (_enableDetailedLogs) {
-          debugPrint(
-              '🎬 GifMarkerManager: Found URL in root properties: $key = $value');
-        }
         return value;
       }
     }
 
-    // Проверяем вложенные свойства
     if (nestedProperties != null) {
-      for (final key in [
-        'marker_type',
-        'markerType',
-        'marker_url',
-        'markerUrl',
-        'video_url',
-        'videoUrl',
-        'url'
-      ]) {
+      for (final key in keys) {
         final value = nestedProperties[key]?.toString();
         if (value != null &&
             (value.endsWith('.webm') || value.endsWith('.gif'))) {
-          if (_enableDetailedLogs) {
-            debugPrint(
-                '🎬 GifMarkerManager: Found URL in nested properties: $key = $value');
-          }
           return value;
         }
       }
     }
 
-    // Рекурсивно ищем в любых вложенных объектах
-    String? searchInObject(dynamic obj, String path) {
-      if (obj is String && (obj.endsWith('.webm') || obj.endsWith('.gif'))) {
-        if (_enableDetailedLogs) {
-          debugPrint('🎬 GifMarkerManager: Found URL in path $path: $obj');
-        }
-        return obj;
-      } else if (obj is Map) {
-        for (final entry in obj.entries) {
-          final result = searchInObject(entry.value, '$path.${entry.key}');
-          if (result != null) return result;
-        }
-      } else if (obj is List) {
-        for (var i = 0; i < obj.length; i++) {
-          final result = searchInObject(obj[i], '$path[$i]');
-          if (result != null) return result;
-        }
-      }
-      return null;
-    }
-
-    final result = searchInObject(properties, 'root');
-    if (result != null) {
-      return result;
-    }
-
-    if (_enableDetailedLogs) {
-      debugPrint('🎬 GifMarkerManager: No video URL found in properties');
-    }
     return null;
   }
 
-  @override
-  void didUpdateWidget(GifMarkerManager oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_enableDetailedLogs) {
-      debugPrint('🎬 GifMarkerManager: didUpdateWidget called');
-    }
-    if (oldWidget.mapboxMap != widget.mapboxMap) {
-      if (_enableDetailedLogs) {
-        debugPrint(
-            '🎬 GifMarkerManager: MapboxMap instance changed, reinitializing');
-      }
-      _styleCheckTimer?.cancel();
-      _clearMarkers();
-      _isInitialized = false;
-      _isInitializing = false;
-      _initializationAttempts = 0;
-      _scheduleInitialization();
-    } else if (!_isInitialized && !_isInitializing) {
-      // Если виджет обновился, но маркеры не инициализированы, попробуем инициализировать
-      if (_enableDetailedLogs) {
-        debugPrint(
-            '🎬 GifMarkerManager: Widget updated but not initialized, trying to initialize');
-      }
-      _scheduleInitialization();
-    }
-  }
-
-  void _clearMarkers() {
-    if (_enableDetailedLogs) {
-      debugPrint(
-          '🎬 GifMarkerManager: Clearing ${_markersById.length} markers');
-    }
-
-    // Очищаем контроллеры видео
-    for (final markerData in _markersById.values) {
-      if (markerData.controller != null) {
-        markerData.controller!.dispose();
-      }
-    }
-    _markersById.clear();
-  }
-
-  @override
-  void dispose() {
-    debugPrint('🎬 GifMarkerManager: dispose called');
-    _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _updateTimer?.cancel();
-    _styleCheckTimer?.cancel();
-    _clearMarkers();
-    // Очищаем кэш GIF при уничтожении
-    GifCache.clear();
-    super.dispose();
-  }
-
-  Future<void> _createVideoMarker(
-      String id, List coordinates, String videoUrl) async {
+  void reinitialize() {
     if (_isDisposed) return;
-
-    debugPrint(
-        '🎬 GifMarkerManager ✅: Creating marker $id with URL: $videoUrl');
-
-    try {
-      final isGif = videoUrl.toLowerCase().endsWith('.gif');
-      VideoPlayerController? controller;
-
-      // Если это GIF, предварительно проверяем его доступность
-      if (isGif) {
-        try {
-          // Проверяем, можно ли загрузить GIF
-          final response = await http.head(Uri.parse(videoUrl));
-          if (response.statusCode != 200) {
-            debugPrint(
-                '❌ GifMarkerManager: GIF not available: $videoUrl (status: ${response.statusCode})');
-            return;
-          }
-          debugPrint('✅ GifMarkerManager: GIF is available: $videoUrl');
-        } catch (e) {
-          debugPrint('❌ GifMarkerManager: Error checking GIF availability: $e');
-          return;
-        }
-      }
-      // Если это не GIF, используем VideoPlayer
-      else {
-        // Создаем контроллер видео
-        controller = VideoPlayerController.network(videoUrl);
-
-        // Устанавливаем таймаут для инициализации
-        bool initialized = false;
-        Timer? timeoutTimer;
-
-        timeoutTimer = Timer(const Duration(seconds: 10), () {
-          if (!initialized && !_isDisposed) {
-            debugPrint(
-                '❌ GifMarkerManager: Video initialization timeout for $videoUrl');
-            controller!.dispose();
-          }
-        });
-
-        try {
-          await controller.initialize();
-          initialized = true;
-          timeoutTimer.cancel();
-
-          // Проверяем, что контроллер все еще валиден
-          if (_isDisposed || !controller.value.isInitialized) {
-            controller.dispose();
-            return;
-          }
-
-          // Настраиваем зацикливание и автоматическое воспроизведение
-          await controller.setLooping(true);
-          await controller.setVolume(0.0);
-
-          // Проверяем длительность видео и устанавливаем оптимальную скорость воспроизведения
-          if (controller.value.duration.inMilliseconds > 0) {
-            // Если видео слишком длинное, можно ускорить его
-            if (controller.value.duration.inSeconds > 10) {
-              await controller.setPlaybackSpeed(1.5);
-            }
-            if (_enableDetailedLogs) {
-              debugPrint(
-                  '🎬 GifMarkerManager: Video duration: ${controller.value.duration.inSeconds}s');
-            }
-          }
-
-          // Запускаем воспроизведение
-          await controller.play();
-          debugPrint('✅ GifMarkerManager: Video playback started for $id');
-
-          // Добавляем периодическую проверку воспроизведения
-          Timer.periodic(const Duration(seconds: 2), (timer) {
-            if (_isDisposed || controller == null || !mounted) {
-              timer.cancel();
-              return;
-            }
-
-            // Проверяем, что контроллер все еще валиден
-            if (!controller.value.isInitialized) {
-              timer.cancel();
-              return;
-            }
-
-            // Если видео остановилось, перезапускаем его
-            if (!controller.value.isPlaying) {
-              debugPrint(
-                  '🔄 GifMarkerManager: Restarting video playback for $id');
-              controller.play();
-            }
-          });
-        } catch (e) {
-          debugPrint('❌ GifMarkerManager: Failed to initialize video: $e');
-          controller.dispose();
-          return;
-        }
-
-        if (_isDisposed) {
-          controller.dispose();
-          return;
-        }
-      }
-
-      // Сохраняем данные маркера
-      setState(() {
-        _markersById[id] = _MarkerData(
-          controller: controller,
-          coordinates: [coordinates[0] as double, coordinates[1] as double],
-          isGif: isGif,
-          url: videoUrl,
-        );
-      });
-
-      debugPrint('✅ GifMarkerManager: Successfully created marker $id');
-    } catch (e) {
-      debugPrint('❌ GifMarkerManager: Error creating marker: $e');
-    }
-  }
-
-  // Получаем координаты на экране для заданных географических координат
-  Future<Offset?> _getScreenPoint(List<double> coordinates) async {
-    try {
-      final point = mapbox.Point(
-        coordinates: mapbox.Position(
-          coordinates[0],
-          coordinates[1],
-        ),
-      );
-
-      final screenCoordinate = await widget.mapboxMap.pixelForCoordinate(point);
-      return Offset(screenCoordinate.x, screenCoordinate.y);
-    } catch (e) {
-      if (_enableDetailedLogs) {
-        debugPrint('❌ GifMarkerManager: Error getting screen point: $e');
-      }
-      return null;
-    }
+    _clearMarkers();
+    _isInitialized = false;
+    _isInitializing = false;
+    _initializationAttempts = 0;
+    _scheduleInitialization();
   }
 
   @override
@@ -777,10 +627,8 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
     );
   }
 
-  // Кэшированные маркеры для более стабильного отображения
   List<Widget> _buildCachedMarkers() {
     final markers = <Widget>[];
-
     for (final entry in _markersById.entries) {
       markers.add(
         _MarkerWidget(
@@ -790,55 +638,90 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
         ),
       );
     }
-
     return markers;
   }
 
-  // Публичный метод для принудительного обновления маркеров
-  void forceUpdate() {
+  Future<void> _createVideoMarker(
+      String id, List coordinates, String videoUrl) async {
     if (_isDisposed) return;
-    debugPrint('🎬 GifMarkerManager: Force update requested');
 
-    // Если инициализация уже идет, не запускаем новую
-    if (_isInitializing) {
-      debugPrint(
-          '🎬 GifMarkerManager: Initialization already in progress, skipping force update');
-      return;
-    }
+    try {
+      final isGif = videoUrl.toLowerCase().endsWith('.gif');
+      VideoPlayerController? controller;
 
-    // Если маркеры уже инициализированы, обновляем их
-    if (_isInitialized) {
-      debugPrint('🎬 GifMarkerManager: Updating marker positions and states');
+      if (isGif) {
+        try {
+          final response = await http.head(Uri.parse(videoUrl));
+          if (response.statusCode != 200) return;
 
-      // Обновляем позиции маркеров
-      _updateMarkerPositions();
+          setState(() {
+            _markersById[id] = _MarkerData(
+              controller: null,
+              coordinates: [coordinates[0] as double, coordinates[1] as double],
+              isGif: true,
+              url: videoUrl,
+              isInitialized: true,
+            );
+          });
+        } catch (e) {
+          return;
+        }
+      } else {
+        setState(() {
+          _markersById[id] = _MarkerData(
+            controller: null,
+            coordinates: [coordinates[0] as double, coordinates[1] as double],
+            isGif: isGif,
+            url: videoUrl,
+            isInitialized: false,
+          );
+        });
 
-      // Проверяем состояние видео-контроллеров
-      for (final entry in _markersById.entries) {
-        final markerData = entry.value;
-        if (!markerData.isGif && markerData.controller != null) {
-          final controller = markerData.controller!;
+        await Future.delayed(const Duration(milliseconds: 500));
 
-          // Проверяем, что контроллер инициализирован
-          if (controller.value.isInitialized) {
-            // Если видео не воспроизводится, запускаем его
-            if (!controller.value.isPlaying) {
-              debugPrint(
-                  '🔄 GifMarkerManager: Restarting video for marker ${entry.key}');
-              controller.play();
-            }
-          } else {
-            debugPrint(
-                '⚠️ GifMarkerManager: Controller for marker ${entry.key} is not initialized');
+        try {
+          controller = VideoControllerCache.getController(videoUrl);
+
+          controller ??= await VideoControllerCache.createController(videoUrl);
+
+          if (mounted && !_isDisposed && _markersById.containsKey(id)) {
+            setState(() {
+              _markersById[id] = _MarkerData(
+                controller: controller,
+                coordinates: [
+                  coordinates[0] as double,
+                  coordinates[1] as double
+                ],
+                isGif: isGif,
+                url: videoUrl,
+                isInitialized: true,
+              );
+            });
+
+            Future.delayed(const Duration(milliseconds: 800), () {
+              if (!_isDisposed &&
+                  controller != null &&
+                  controller.value.isInitialized &&
+                  mounted &&
+                  _markersById.containsKey(id)) {
+                if (_activeVideoMarkers.length < _maxSimultaneousVideos) {
+                  controller.play().then((_) {
+                    _activeVideoMarkers.add(id);
+                  });
+                }
+              }
+            });
           }
+        } catch (e) {
+          if (_markersById.containsKey(id)) {
+            _markersById.remove(id);
+          }
+          return;
         }
       }
-
-      return;
+    } catch (e) {
+      debugPrint('❌ GifMarkerManager: Error creating marker $id: $e');
     }
-
-    // Если маркеры не инициализированы, запускаем инициализацию
-    reinitialize();
   }
 }
 
@@ -863,6 +746,19 @@ class _MarkerWidgetState extends State<_MarkerWidget>
   bool _isVisible = false;
   late AnimationController _animationController;
   bool _videoStarted = false;
+  Timer? _videoCheckTimer;
+  int _restartAttempts = 0;
+  static const int _maxRestartAttempts = 5;
+
+  // Флаг для отслеживания высокой нагрузки на систему
+  bool get _isSystemUnderLoad {
+    // Получаем доступ к родительскому состоянию через GlobalKey
+    final parentState = GifMarkerManager.globalKey.currentState;
+    if (parentState != null) {
+      return parentState._isSystemUnderLoad;
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -882,18 +778,55 @@ class _MarkerWidgetState extends State<_MarkerWidget>
 
     // Проверяем и запускаем видео, если это необходимо
     _checkAndStartVideo();
+
+    // Запускаем периодическую проверку видео
+    _startVideoCheckTimer();
+  }
+
+  void _startVideoCheckTimer() {
+    _videoCheckTimer?.cancel();
+
+    // Проверяем видео каждые 3 секунды
+    _videoCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _forceRestartVideoIfNeeded();
+    });
+  }
+
+  void _forceRestartVideoIfNeeded() {
+    if (!mounted || widget.markerData.isGif) return;
+
+    final controller = widget.markerData.controller;
+    if (controller == null) return;
+
+    if (controller.value.isInitialized && !controller.value.isPlaying) {
+      if (_restartAttempts < _maxRestartAttempts) {
+        _restartAttempts++;
+        debugPrint(
+            '🔄 _MarkerWidget: Force restarting video (attempt $_restartAttempts)');
+        controller.play().catchError((error) {
+          debugPrint('❌ _MarkerWidget: Error restarting video: $error');
+        });
+      }
+    } else if (controller.value.isPlaying) {
+      // Сбрасываем счетчик попыток, если видео воспроизводится
+      _restartAttempts = 0;
+    }
   }
 
   void _checkAndStartVideo() {
-    if (!widget.markerData.isGif &&
-        widget.markerData.controller != null &&
-        widget.markerData.controller!.value.isInitialized &&
-        !_videoStarted) {
+    if (!mounted || widget.markerData.isGif || _videoStarted) return;
+
+    final controller = widget.markerData.controller;
+    if (controller == null) return;
+
+    if (!_videoStarted && controller.value.isInitialized) {
       _videoStarted = true;
-      widget.markerData.controller!.play().then((_) {
-        debugPrint('✅ Video playback started in _MarkerWidget');
-      }).catchError((error) {
-        debugPrint('❌ Error starting video in _MarkerWidget: $error');
+      // Добавляем небольшую задержку перед запуском видео
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        controller.play().catchError((error) {
+          debugPrint('❌ _MarkerWidget: Error playing video: $error');
+        });
       });
     }
   }
@@ -901,6 +834,7 @@ class _MarkerWidgetState extends State<_MarkerWidget>
   @override
   void dispose() {
     _animationController.dispose();
+    _videoCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -914,6 +848,11 @@ class _MarkerWidgetState extends State<_MarkerWidget>
 
     // Проверяем и запускаем видео при обновлении виджета
     _checkAndStartVideo();
+
+    // Если контроллер изменился, перезапускаем таймер проверки
+    if (oldWidget.markerData.controller != widget.markerData.controller) {
+      _startVideoCheckTimer();
+    }
   }
 
   void _updatePosition() {
@@ -939,6 +878,9 @@ class _MarkerWidgetState extends State<_MarkerWidget>
         setState(() {
           _screenPoint = Offset(screenCoordinate.x, screenCoordinate.y);
           _isVisible = isOnScreen;
+
+          // Обновляем видимость в данных маркера
+          (widget.markerData).isVisible = isOnScreen;
         });
       }
     }).catchError((_) {
@@ -955,15 +897,18 @@ class _MarkerWidgetState extends State<_MarkerWidget>
     // Проверяем и запускаем видео при построении виджета
     _checkAndStartVideo();
 
+    // Стандартный размер маркера
+    const markerSize = 30.0;
+    const halfSize = markerSize / 2;
+
     return AnimatedPositioned(
-      duration:
-          const Duration(milliseconds: 0), // Мгновенное обновление позиции
-      left: _screenPoint!.dx - 15, // Центрируем маркер (половина ширины)
-      top: _screenPoint!.dy - 15, // Центрируем маркер (половина высоты)
+      duration: const Duration(milliseconds: 0),
+      left: _screenPoint!.dx - halfSize,
+      top: _screenPoint!.dy - halfSize,
       child: RepaintBoundary(
         child: Container(
-          width: 30,
-          height: 30,
+          width: markerSize,
+          height: markerSize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
@@ -975,40 +920,27 @@ class _MarkerWidgetState extends State<_MarkerWidget>
               ),
             ],
           ),
-          clipBehavior: Clip.antiAlias,
-          child: widget.markerData.isGif
-              ? LoopingGifWidget(
-                  key: ValueKey('gif_${widget.markerData.url}'),
-                  url: widget.markerData.url,
-                  fit: BoxFit.cover,
-                )
-              : _buildVideoPlayer(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: widget.markerData.isGif
+                ? LoopingGifWidget(url: widget.markerData.url)
+                : widget.markerData.controller != null &&
+                        widget.markerData.controller!.value.isInitialized
+                    ? AspectRatio(
+                        aspectRatio:
+                            widget.markerData.controller!.value.aspectRatio,
+                        child: VideoPlayer(widget.markerData.controller!),
+                      )
+                    : const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildVideoPlayer() {
-    // Проверяем, что контроллер существует и инициализирован
-    if (widget.markerData.controller == null) {
-      return const Center(
-        child: Icon(Icons.error, color: Colors.red, size: 16),
-      );
-    }
-
-    if (!widget.markerData.controller!.value.isInitialized) {
-      return const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    return AspectRatio(
-      aspectRatio: 1.0,
-      child: VideoPlayer(widget.markerData.controller!),
     );
   }
 }
@@ -1018,11 +950,14 @@ class _MarkerData {
   final List<double> coordinates;
   final bool isGif;
   final String url;
+  final bool isInitialized;
+  bool isVisible = false;
 
   _MarkerData({
     this.controller,
     required this.coordinates,
     this.isGif = false,
     required this.url,
+    this.isInitialized = false,
   });
 }
