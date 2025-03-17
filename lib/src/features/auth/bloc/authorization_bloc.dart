@@ -13,7 +13,7 @@ class AuthorizationBloc extends Bloc<AuthorizationEvent, AuthorizationState> {
     on<AuthorizationSignInWithEmailPressedEvent>((event, emit) async {
       emit(AuthorizationInProcess());
       final response = await authorizationRepositoryImpl.authorize(
-          username: event.username, password: event.password);
+          login: event.login, password: event.password);
       if (response.statusCode == 200 || response.statusCode == 201) {
         emit(AuthorizationSuccess());
       } else {

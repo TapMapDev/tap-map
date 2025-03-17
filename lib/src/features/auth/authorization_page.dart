@@ -124,7 +124,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                         onPressed: () {
                           context.read<AuthorizationBloc>().add(
                                 AuthorizationSignInWithEmailPressedEvent(
-                                  username: usernameController.text,
+                                  login: usernameController.text,
                                   password: passwordController.text,
                                 ),
                               );

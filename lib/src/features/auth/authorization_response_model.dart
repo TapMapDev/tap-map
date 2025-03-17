@@ -15,11 +15,9 @@ class AuthorizationResponseModel {
       Map<String, dynamic> json, int statusCode) {
     final accessToken = json['access'];
     final refreshToken = json['refresh'];
-    
-    // Логирование ошибки, если токены не пришли
+
     if (accessToken == null || refreshToken == null) {
-      print("Ошибка: Access Token или Refresh Token отсутствует в ответе API.");
-      print("Ответ API: $json");
+      throw Exception('Access Token или Refresh Token отсутствует в ответе API.');
     }
 
     return AuthorizationResponseModel(

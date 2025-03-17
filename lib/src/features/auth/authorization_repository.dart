@@ -9,36 +9,26 @@ class AuthorizationRepositoryImpl {
   AuthorizationRepositoryImpl({required this.apiService});
 
   Future<AuthorizationResponseModel> authorize({
-    required String username,
+    required String login,
     required String password,
   }) async {
-    print('🔄 Starting authorization process...');
+    final bool isEmail = login.contains('@');
+
     final response = await apiService.postData(
-        '/auth/jwt/create/',
+        '/auth/token/login/',
         {
-          'username': username,
+          'login': login,
           'password': password,
         },
         useAuth: false);
-
-    print("📝 API Response: $response");
 
     final responseModel = AuthorizationResponseModel.fromJson(
         response['data'], response['statusCode']);
 
     if (responseModel.accessToken != null &&
         responseModel.refreshToken != null) {
-      print("✅ Tokens received, saving...");
-      print(
-          "📝 Access Token: ${responseModel.accessToken?.substring(0, 10)}...");
-      print(
-          "📝 Refresh Token: ${responseModel.refreshToken?.substring(0, 10)}...");
-
       await prefs.setString('access_token', responseModel.accessToken!);
       await prefs.setString('refresh_token', responseModel.refreshToken!);
-      print("💾 Tokens saved successfully");
-    } else {
-      print("❌ Error: Tokens not received");
     }
 
     return responseModel;
