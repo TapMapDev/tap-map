@@ -10,6 +10,9 @@ import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
+import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
+import 'package:tap_map/src/features/password_reset/password_reset_repository.dart';
+import 'package:tap_map/src/features/password_reset/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/registration/registration_repository.dart';
@@ -22,8 +25,8 @@ import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  setup();
   WidgetsFlutterBinding.ensureInitialized();
+  setup();
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 
@@ -52,6 +55,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => IconsBloc(getIt.get<IconsRepository>()),
         ),
+        BlocProvider(
+          create: (context) =>
+              ResetPasswordBloc(getIt.get<ResetPasswordRepositoryImpl>()),
+        ),
       ],
       child: GetMaterialApp(
         navigatorKey: navigatorKey,
@@ -61,6 +68,7 @@ class MyApp extends StatelessWidget {
           '/authorization': (context) => const AuthorizationPage(),
           '/registration': (context) => const RegistrationPage(),
           '/homepage': (context) => const BottomNavbar(),
+          '/password_reset': (context) => const ResetPasswordPage(),
         },
         home: FutureBuilder<Widget>(
           future: _getInitialPage(),

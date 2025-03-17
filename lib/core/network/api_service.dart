@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-
 import 'package:talker/talker.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/dio_client.dart';
@@ -83,8 +82,19 @@ class ApiService {
       final response = await dioClient.client.post(
         path,
         data: data,
-        options: Options(headers: mergedHeaders),
+        options: Options(
+          headers: mergedHeaders,
+          validateStatus: (status) => status != null && status < 500,
+        ),
       );
+
+      if (response.statusCode == 404) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          error: 'Endpoint not found: $path',
+        );
+      }
 
       return {
         'data': response.data,
@@ -93,6 +103,13 @@ class ApiService {
       };
     } on DioException catch (e) {
       talker.error('DioError при выполнении POST-запроса: $e');
+      if (e.response?.statusCode == 404) {
+        throw DioException(
+          requestOptions: e.requestOptions,
+          response: e.response,
+          error: 'Endpoint not found: $path',
+        );
+      }
       return {
         'data': e.response?.data,
         'statusCode': e.response?.statusCode ?? 500,
@@ -115,7 +132,7 @@ class ApiService {
       final response = await dioClient.client.post(
         '/auth/jwt/refresh/',
         data: {'refresh': refreshToken},
-         options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
