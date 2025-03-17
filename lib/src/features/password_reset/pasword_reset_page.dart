@@ -92,7 +92,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 Container(
                   color: Colors.black
                       .withOpacity(0.3), // Semi-transparent background
-                  child: Center(
+                  child: const Center(
                     child: CircularProgressIndicator(
                         // color: StyleManager.mainColor,
                         ),
@@ -223,7 +223,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
-              'New password',
+              'Новый пароль',
               style: TextStyle(
                 fontWeight: FontWeight.w400,
                 fontSize: 14,
@@ -278,7 +278,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               height: 20,
             ),
             const Text(
-              'Repeat the password',
+              'Повторите пароль',
               style: TextStyle(
                 fontWeight: FontWeight.w400,
                 fontSize: 14,
@@ -321,7 +321,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 ),
                 filled: true,
                 // fillColor: StyleManager.blocColor,
-                hintText: 'Repeat the password',
+                hintText: 'Повторите пароль',
                 hintStyle: TextStylesManager.standartMain,
                 border: OutlineInputBorder(
                   borderSide: BorderSide.none,
@@ -375,7 +375,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       case StageOfReset.firstStep:
         return 'Чтобы сбросить пароль, введите ваш email';
       case StageOfReset.secondStep:
-        return 'Мы отправили SMS с кодом на ваш телефон или email.';
+        return 'Мы отправили письмо на ваш email.';
       case StageOfReset.thirdStep:
         return 'Придумайте новый пароль.';
     }

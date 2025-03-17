@@ -6,6 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/core/di/di.dart';
+import 'package:tap_map/src/core/deep_links/deep_link_service.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
@@ -29,6 +30,10 @@ void main() async {
   setup();
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
+
+  // Initialize deep link service
+  final deepLinkService = getIt<DeepLinkService>();
+  await deepLinkService.initialize();
 
   runApp(const MyApp());
   // await _setupPositionTracking();

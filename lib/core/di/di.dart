@@ -5,6 +5,7 @@ import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/main.dart';
+import 'package:tap_map/src/core/deep_links/deep_link_service.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/registration_repository.dart';
@@ -45,4 +46,8 @@ void setup() {
 
   getIt.registerLazySingleton<ResetPasswordRepositoryImpl>(
       () => ResetPasswordRepositoryImpl(apiService: getIt<ApiService>()));
+
+  // Регистрация DeepLinkService
+  getIt.registerLazySingleton(
+      () => DeepLinkService(getIt<ResetPasswordRepositoryImpl>()));
 }

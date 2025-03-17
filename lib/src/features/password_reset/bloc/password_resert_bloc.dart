@@ -20,20 +20,6 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
       }
     });
 
-    // on<ConfirmCode>(
-    //   (event, emit) async {
-    //     emit(ConfirmCodeInProgress());
-    //     final response =
-    //         await repository.confirmCode(email: event.email, code: event.code);
-    //     if (response.statusCode == 200 || response.statusCode == 201) {
-    //       emit(ConfirmCodeSuccess());
-    //       emit(SetNewPasswordInitial());
-    //     } else {
-    //       emit(ConfirmCodeError(error: response.message));
-    //     }
-    //   },
-    // );
-
     on<SetNewPassword>(
       (event, emit) async {
         emit(SetNewPasswordInProgress());
