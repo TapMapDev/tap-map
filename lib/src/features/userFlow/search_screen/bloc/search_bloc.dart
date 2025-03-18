@@ -86,7 +86,8 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onLikePlace(LikePlace event, Emitter<SearchState> emit) async {
     try {
-      await searchRepository.likePlace(event.placeId);
+      await searchRepository.likePlace(event.placeId,
+          objectType: event.objectType);
       emit(PlaceLiked(event.placeId));
 
       // Восстанавливаем предыдущее состояние списка
@@ -105,7 +106,8 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onSkipPlace(SkipPlace event, Emitter<SearchState> emit) async {
     try {
-      await searchRepository.skipPlace(event.placeId);
+      await searchRepository.skipPlace(event.placeId,
+          objectType: event.objectType);
       emit(PlaceSkipped(event.placeId));
 
       // Восстанавливаем предыдущее состояние списка

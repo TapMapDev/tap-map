@@ -22,21 +22,23 @@ class LoadPlaces extends SearchEvent {
 // Лайк места
 class LikePlace extends SearchEvent {
   final int placeId;
+  final String objectType;
 
-  LikePlace({required this.placeId});
+  LikePlace({required this.placeId, required this.objectType});
 
   @override
-  List<Object?> get props => [placeId];
+  List<Object?> get props => [placeId, objectType];
 }
 
 // Пропуск места
 class SkipPlace extends SearchEvent {
   final int placeId;
+  final String objectType;
 
-  SkipPlace({required this.placeId});
+  SkipPlace({required this.placeId, required this.objectType});
 
   @override
-  List<Object?> get props => [placeId];
+  List<Object?> get props => [placeId, objectType];
 }
 
 // Загрузка дополнительных мест

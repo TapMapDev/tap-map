@@ -9,6 +9,7 @@ class ScreenResponseModal {
   final String category;
   final List<TinderInfo> tinderInfo;
   final List<UnderCardData> underCardData;
+  final String? objectType;
 
   ScreenResponseModal({
     required this.id,
@@ -21,6 +22,7 @@ class ScreenResponseModal {
     required this.category,
     required this.tinderInfo,
     required this.underCardData,
+    this.objectType,
   });
 
   factory ScreenResponseModal.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class ScreenResponseModal {
       underCardData: (json['under_card_data'] as List)
           .map((data) => UnderCardData.fromJson(data))
           .toList(),
+      objectType: json['object_type'] as String?,
     );
   }
 
@@ -56,6 +59,7 @@ class ScreenResponseModal {
       'category': category,
       'tinder_info': tinderInfo.map((info) => info.toJson()).toList(),
       'under_card_data': underCardData.map((data) => data.toJson()).toList(),
+      'object_type': objectType,
     };
   }
 
@@ -70,6 +74,7 @@ class ScreenResponseModal {
     String? category,
     List<TinderInfo>? tinderInfo,
     List<UnderCardData>? underCardData,
+    String? objectType,
   }) {
     return ScreenResponseModal(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class ScreenResponseModal {
       category: category ?? this.category,
       tinderInfo: tinderInfo ?? this.tinderInfo,
       underCardData: underCardData ?? this.underCardData,
+      objectType: objectType ?? this.objectType,
     );
   }
 }

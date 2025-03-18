@@ -38,7 +38,14 @@ class _SearchPageContentState extends State<_SearchPageContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Найди то самое место'),
+        backgroundColor: Colors.pink.shade500,
+        title: const Text(
+          'Найди то самое место',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
       ),
       body: BlocConsumer<SearchBloc, SearchState>(
         listener: (context, state) {
@@ -85,15 +92,24 @@ class _SearchPageContentState extends State<_SearchPageContent> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.black54,
+                              color: Colors.black,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              '${place.name}\n${place.description}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                              ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  place.name,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  place.description,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ],
                             ),
                           ),
                         )
@@ -107,7 +123,7 @@ class _SearchPageContentState extends State<_SearchPageContent> {
             return Center(
               child: TCard(
                 cards: cards,
-                size: const Size(380, 550),
+                size: const Size(400, 580),
                 controller: _controller,
                 onForward: (index, info) {
                   debugPrint('Свайп вперёд! Текущий индекс: $index');
@@ -118,15 +134,15 @@ class _SearchPageContentState extends State<_SearchPageContent> {
 
                     // Если свайп вправо - лайкаем место
                     if (info.direction == SwipDirection.Right) {
-                      context
-                          .read<SearchBloc>()
-                          .add(LikePlace(placeId: currentPlace.id));
+                      context.read<SearchBloc>().add(LikePlace(
+                          placeId: currentPlace.id,
+                          objectType: currentPlace.objectType ?? 'point'));
                     }
                     // Если свайп влево - пропускаем место
                     else if (info.direction == SwipDirection.Left) {
-                      context
-                          .read<SearchBloc>()
-                          .add(SkipPlace(placeId: currentPlace.id));
+                      context.read<SearchBloc>().add(SkipPlace(
+                          placeId: currentPlace.id,
+                          objectType: currentPlace.objectType ?? 'point'));
                     }
                   }
                 },
@@ -144,12 +160,58 @@ class _SearchPageContentState extends State<_SearchPageContent> {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Программный переход к следующей карточке (свайп вправо)
-          _controller.forward(direction: SwipDirection.Right);
-        },
-        child: const Icon(Icons.thumb_up),
+      floatingActionButton: null,
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.red.shade400,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                heroTag: "dislike",
+                backgroundColor: Colors.red.shade400,
+                onPressed: () {
+                  // Программный переход к следующей карточке (свайп влево)
+                  _controller.forward(direction: SwipDirection.Left);
+                },
+                child: const Icon(Icons.thumb_down, color: Colors.white),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.green.shade400,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                heroTag: "like",
+                backgroundColor: Colors.green.shade400,
+                onPressed: () {
+                  // Программный переход к следующей карточке (свайп вправо)
+                  _controller.forward(direction: SwipDirection.Right);
+                },
+                child: const Icon(Icons.thumb_up, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

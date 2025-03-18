@@ -12,7 +12,6 @@ class AuthorizationRepositoryImpl {
     required String login,
     required String password,
   }) async {
-    final bool isEmail = login.contains('@');
 
     final response = await apiService.postData(
         '/auth/token/login/',

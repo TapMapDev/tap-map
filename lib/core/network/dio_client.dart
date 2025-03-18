@@ -11,8 +11,9 @@ class DioClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: 'https://api.tap-map.net/api',
-        connectTimeout: const Duration(milliseconds: 5000),
-        receiveTimeout: const Duration(milliseconds: 3000),
+        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
       ),
     );
