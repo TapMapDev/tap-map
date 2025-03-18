@@ -326,61 +326,53 @@ class SearchRepositoryImpl implements SearchRepository {
     return null;
   }
 
-  // Вспомогательный метод для парсинга images
+  // Вспомогательный метод для парсинга имен и URL изображений
   List<ScreenImage> _parseImages(dynamic imagesData) {
+    // Инициализируем список для результата
     List<ScreenImage> result = [];
 
     try {
-      // Случай 1: imagesData - это список объектов с полями id и image
+      // Если imagesData - список
       if (imagesData is List) {
-        for (int i = 0; i < imagesData.length; i++) {
-          dynamic item = imagesData[i];
-
-          // Если элемент - объект с полями
+        int id = 1;
+        for (var item in imagesData) {
+          // Если элемент - объект (Map)
           if (item is Map<String, dynamic>) {
-            // Проверяем разные варианты полей для URL изображения
+            // Ищем URL изображения в объекте
             String? imageUrl;
-            for (var key in [
-              'image',
-              'url',
-              'src',
-              'path',
-              'photo',
-              'picture'
-            ]) {
+
+            // Проверяем разные возможные имена полей с URL изображения
+            for (var key in ['url', 'src', 'path', 'href', 'image']) {
               if (item.containsKey(key) && item[key] is String) {
                 imageUrl = item[key] as String;
-                if (imageUrl.startsWith('http') ||
-                    imageUrl.startsWith('https')) {
+                if ((imageUrl.startsWith('http') ||
+                    imageUrl.startsWith('https'))) {
+                  result.add(ScreenImage(id: id++, image: imageUrl));
                   break;
                 }
               }
             }
-
-            // Если нашли URL, добавляем изображение
-            if (imageUrl != null) {
-              int id = item['id'] ?? i + 1;
-              result.add(ScreenImage(id: id, image: imageUrl));
-            }
           }
-          // Если элемент просто строка URL
+          // Если элемент - строка URL
           else if (item is String &&
               (item.startsWith('http') || item.startsWith('https'))) {
-            result.add(ScreenImage(id: i + 1, image: item));
+            result.add(ScreenImage(id: id++, image: item));
           }
         }
       }
-      // Случай 2: imagesData - это строка URL одного изображения
+      // Если imagesData - одиночная строка URL
       else if (imagesData is String &&
           (imagesData.startsWith('http') || imagesData.startsWith('https'))) {
         result.add(ScreenImage(id: 1, image: imagesData));
       }
-      // Случай 3: imagesData - это объект с URL изображения
+      // Если imagesData - объект с URL
       else if (imagesData is Map<String, dynamic>) {
-        for (var key in ['url', 'image', 'src', 'path', 'photo', 'picture']) {
-          if (imagesData.containsKey(key) && imagesData[key] is String) {
-            String url = imagesData[key];
-            if (url.startsWith('http') || url.startsWith('https')) {
+        // Ищем URL изображения в объекте
+        for (var imageKey in ['url', 'src', 'path', 'href', 'image']) {
+          if (imagesData.containsKey(imageKey)) {
+            String? url = imagesData[imageKey] as String?;
+            if (url != null &&
+                (url.startsWith('http') || url.startsWith('https'))) {
               result.add(ScreenImage(id: 1, image: url));
               break;
             }
@@ -391,9 +383,15 @@ class SearchRepositoryImpl implements SearchRepository {
       print("Ошибка при парсинге изображений: $e");
     }
 
-    // Если ничего не удалось распарсить, возвращаем тестовое изображение
+    // Если ничего не удалось распарсить, добавляем несколько тестовых изображений
     if (result.isEmpty) {
-      result.add(ScreenImage(id: 1, image: "https://picsum.photos/500/800"));
+      print("Не удалось получить изображения, используем тестовые");
+      result.add(
+          ScreenImage(id: 1, image: "https://picsum.photos/id/1/800/1200"));
+      result.add(
+          ScreenImage(id: 2, image: "https://picsum.photos/id/2/800/1200"));
+      result.add(
+          ScreenImage(id: 3, image: "https://picsum.photos/id/3/800/1200"));
     }
 
     return result;

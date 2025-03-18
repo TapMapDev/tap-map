@@ -71,53 +71,111 @@ class _SearchPageContentState extends State<_SearchPageContent> {
             final List<Widget> cards = [];
 
             for (final place in state.places) {
-              // Для каждого места используем первое изображение, если оно есть
-              if (place.images.isNotEmpty) {
-                cards.add(
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      image: DecorationImage(
-                        image: NetworkImage(place.images.first.image),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        // Накладываем инфу о месте поверх картинки
-                        Positioned(
-                          left: 16,
-                          right: 16,
-                          bottom: 16,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  place.name,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  place.description,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
+              cards.add(
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200], // Фоновый цвет для карточки
                   ),
-                );
-              }
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Изображение с обработкой ошибок
+                      place.images.isNotEmpty
+                          ? Image.network(
+                              place.images.first.image,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.pink.shade300),
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                print('Ошибка загрузки изображения: $error');
+                                return Image.network(
+                                  'https://picsum.photos/500/800',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, st) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 50,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            )
+                          : Image.network(
+                              'https://picsum.photos/500/800', // Запасное изображение
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                      // Накладываем инфу о месте поверх картинки
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        bottom: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                place.name,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                place.description,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              );
             }
 
             return Center(
