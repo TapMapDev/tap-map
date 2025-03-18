@@ -22,6 +22,9 @@ import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -64,6 +67,11 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               ResetPasswordBloc(getIt.get<ResetPasswordRepositoryImpl>()),
         ),
+        BlocProvider<SearchBloc>(
+          create: (context) => SearchBloc(
+            getIt.get<SearchRepository>(),
+          ),
+        ),
       ],
       child: GetMaterialApp(
         navigatorKey: navigatorKey,
@@ -74,6 +82,7 @@ class MyApp extends StatelessWidget {
           '/registration': (context) => const RegistrationPage(),
           '/homepage': (context) => const BottomNavbar(),
           '/password_reset': (context) => const ResetPasswordPage(),
+          '/search': (context) => const SearchPage(),
         },
         home: FutureBuilder<Widget>(
           future: _getInitialPage(),

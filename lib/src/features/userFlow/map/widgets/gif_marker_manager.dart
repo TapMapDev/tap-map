@@ -369,8 +369,8 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
         }
-        return;
-      }
+            return;
+          }
 
       final layers = await widget.mapboxMap.style.getStyleLayers();
       final layerExists =
@@ -408,8 +408,8 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
 
       if (_isDisposed) {
         _isInitializing = false;
-        return;
-      }
+                return;
+              }
 
       for (final feature in features) {
         if (feature == null || _isDisposed) continue;
@@ -434,7 +434,7 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
       _startUpdateTimer();
       _isInitialized = true;
       _isInitializing = false;
-    } catch (e) {
+              } catch (e) {
       _isInitializing = false;
       if (_initializationAttempts < _maxInitializationAttempts) {
         _scheduleInitialization();
@@ -447,9 +447,9 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
     _updateTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
       if (mounted && !_isDisposed) {
         _updateMarkerPositions();
-      }
-    });
-  }
+              }
+            });
+          }
 
   Future<void> _updateMarkerPositions() async {
     if (!mounted || _isDisposed || _markersById.isEmpty) return;
@@ -712,7 +712,7 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
               }
             });
           }
-        } catch (e) {
+      } catch (e) {
           if (_markersById.containsKey(id)) {
             _markersById.remove(id);
           }

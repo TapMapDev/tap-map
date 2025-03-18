@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_screen.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/user_profile.dart';
 
 class BottomNavbar extends StatefulWidget {
@@ -16,7 +16,7 @@ class _MainScreenState extends State<BottomNavbar> {
 
   final List<Widget> _screens = [
     const MajorMap(), // Карта
-    const SearchScreen(), // Поиск
+    const SearchPage(), // Поиск
     const FavoritesScreen(), // Избранное
     const UserProfileScreen(), // Профиль
     const SettingsScreen(), // Настройки

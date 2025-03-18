@@ -11,6 +11,7 @@ import 'package:tap_map/src/features/password_reset/password_reset_repository.da
 import 'package:tap_map/src/features/registration/registration_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -50,4 +51,8 @@ void setup() {
   // Регистрация DeepLinkService
   getIt.registerLazySingleton(
       () => DeepLinkService(getIt<ResetPasswordRepositoryImpl>()));
+
+  // Регистрация SearchRepository
+  getIt.registerLazySingleton<SearchRepository>(
+      () => SearchRepositoryImpl(apiService: getIt<ApiService>()));
 }

@@ -22,10 +22,6 @@ class RegistrationRepositoryImpl implements RegistrationRepository {
       required String email,
       required String password1,
       required String password2}) async {
-    print(username);
-    print(email);
-    print(password1);
-    print(password2);
     final response = await apiService.postData(
         '/auth/registration/',
         {

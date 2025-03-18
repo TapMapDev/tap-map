@@ -246,7 +246,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       color: StyleManager.mainColor,
                     ),
                   ),
-                Spacer(),
+                const Spacer(),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 25),
                   child: Row(
