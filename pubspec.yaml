@@ -27,6 +27,8 @@ dependencies:
   equatable: ^2.0.7
   video_player: ^2.9.3
   tcard: ^1.3.5
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
@@ -40,13 +42,18 @@ flutter:
     - assets/
     - assets/svg/
     - assets/png/
-    - assets/png/location.png
+    - assets/jpeg/
     
 
-
-
-
-
+flutter_native_splash:
+  color: "#FFFFFF" 
+  image: assets/png/logo_TM.png
+  android: true
+  ios: true
+  fullscreen: true
+  android_12:
+    color: "#FFFFFF"
+    image: assets/png/logo_TM.png
 
 
 

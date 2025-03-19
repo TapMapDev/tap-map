@@ -21,7 +21,13 @@ class DioClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401 && !_isRefreshing) {
+          // Проверяем наличие заголовка, запрещающего обновление токена для некритичных запросов
+          final skipAuthRefresh =
+              error.requestOptions.headers['X-Skip-Auth-Refresh'] == 'true';
+
+          if (error.response?.statusCode == 401 &&
+              !_isRefreshing &&
+              !skipAuthRefresh) {
             _isRefreshing = true;
             print('🔄 Starting token refresh process...');
             try {
@@ -49,7 +55,7 @@ class DioClient {
                     final newRefreshToken = response.data['refresh'];
                     print('✅ New tokens received');
 
-                    // Сохраняем новые токены
+                    // Сохраняем новые токены, используя правильные методы
                     await prefs.saveAccessToken(newAccessToken);
                     await prefs.saveRefreshToken(newRefreshToken);
                     print('💾 New tokens saved');

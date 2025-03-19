@@ -40,12 +40,12 @@ class MapStyleButton extends StatelessWidget {
 }
 
 final List<String> imagePaths = [
-  'assets/png/cyberpunk.jpeg',
-  'assets/png/standart.jpeg',
-  'assets/png/sputnik.jpeg',
-  'assets/png/GTA5.jpeg',
-  'assets/png/fallout.jpeg',
-  'assets/png/rd2.jpeg',
+  'assets/jpeg/cyberpunk.jpeg',
+  'assets/jpeg/standart.jpeg',
+  'assets/jpeg/sputnik.jpeg',
+  'assets/jpeg/GTA5.jpeg',
+  'assets/jpeg/fallout.jpeg',
+  'assets/jpeg/rd2.jpeg',
 ];
 
 class MapStyleDialog extends StatefulWidget {

@@ -3,9 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/core/di/di.dart';
+import 'package:tap_map/core/network/api_service.dart';
+import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/core/deep_links/deep_link_service.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/auth/authorization_repository.dart';
@@ -34,12 +35,41 @@ void main() async {
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 
+  // Инициализация токена - пробуем обновить при каждом запуске
+  try {
+    await _initializeTokens();
+  } catch (e) {
+    debugPrint("Ошибка при инициализации токенов: $e");
+  }
+
   // Initialize deep link service
   final deepLinkService = getIt<DeepLinkService>();
   await deepLinkService.initialize();
 
   runApp(const MyApp());
   // await _setupPositionTracking();
+}
+
+// Функция для инициализации токенов при запуске
+Future<void> _initializeTokens() async {
+  final prefs = getIt.get<SharedPrefsRepository>();
+  final apiService = getIt.get<ApiService>();
+
+  // Проверяем наличие токенов
+  final refreshToken = await prefs.getRefreshToken();
+  final accessToken = await prefs.getAccessToken();
+
+  debugPrint(
+      "🔑 При запуске: access_token ${accessToken != null ? "существует" : "отсутствует"}");
+  debugPrint(
+      "🔑 При запуске: refresh_token ${refreshToken != null ? "существует" : "отсутствует"}");
+
+  // Если есть refresh_token, пробуем обновить токены
+  if (refreshToken != null) {
+    final success = await apiService.refreshTokens();
+    debugPrint(
+        "🔄 Обновление токенов при запуске: ${success ? "успешно" : "не удалось"}");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -109,9 +139,10 @@ class MyApp extends StatelessWidget {
   }
 
   Future<Widget> _getInitialPage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? access = prefs.getString('access_token');
+    final prefs = getIt.get<SharedPrefsRepository>();
+    final String? access = await prefs.getAccessToken();
     debugPrint("🔍 Читаем access_token: $access");
+
     if (access != null) {
       return const BottomNavbar();
     } else {

@@ -16,6 +16,9 @@ import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dar
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/geo_location.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/gif_marker_manager.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart'
+    show OpenStatusManager;
+import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
 
@@ -36,10 +39,10 @@ class _MajorMapState extends State<MajorMap> {
   gl.Position? _initialUserPosition;
 
   /// Флаг готовности локации
-  bool isLocationLoaded = false;
+  bool isLocationLoaded = true; // Начинаем с true для мгновенного отображения
 
   /// Флаг готовности стиля
-  bool isStyleLoaded = false;
+  bool isStyleLoaded = false; // Нужно дождаться загрузки стиля
 
   /// Словарь "имя_иконки -> уже_загружено?"
   final Map<String, bool> loadedIcons = {};
@@ -47,7 +50,7 @@ class _MajorMapState extends State<MajorMap> {
   /// Сохранённый styleId
   int? currentStyleId;
 
-  /// Сохранённый styleUri
+  /// Сохранённый styleUri - не задаем значение по умолчанию
   late String mapStyleUri;
 
   bool _isDisposed = false; // Добавляем флаг для отслеживания состояния виджета
@@ -56,98 +59,61 @@ class _MajorMapState extends State<MajorMap> {
   @override
   void initState() {
     super.initState();
-    _loadSavedMapStyle(); // 1) Грузим стиль
-    Future.delayed(const Duration(milliseconds: 500)).then((_) async {
-      final position = await LocationService.getUserPosition();
-      if (position != null && mounted) {
-        setState(() {
-          _initialUserPosition = position;
-          isLocationLoaded = true;
-        });
-      }
-    });
-    // 3) Запрашиваем список стилей
-    Future.microtask(() {
-      context.read<MapStyleBloc>().add(FetchMapStylesEvent());
-    });
 
-    // Обновляем состояния каждые 30 секунд вместо минуты
-    Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted && mapboxMapController != null) {
-        updateOpenCloseStates();
-      }
-    });
-  }
+    // Сначала загружаем стиль, затем уже все остальное
+    _loadSavedMapStyle().then((_) {
+      if (mounted) {
+        // Загружаем позицию пользователя
+        _loadUserPosition();
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    debugPrint('🗺️ MajorMap: didChangeDependencies called');
+        // Запрашиваем список стилей
+        context.read<MapStyleBloc>().add(FetchMapStylesEvent());
 
-    // Если виджет был неактивен и теперь снова активен, переинициализируем GifMarkerManager
-    if (_wasInactive &&
-        mounted &&
-        !_isDisposed &&
-        mapboxMapController != null) {
-      debugPrint(
-          '🗺️ MajorMap: Widget was inactive, reinitializing GifMarkerManager');
-      _wasInactive = false;
-
-      // Если GifMarkerManager уже существует, вызываем forceUpdate
-      if (_gifMarkerManager != null) {
-        debugPrint(
-            '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager');
-        GifMarkerManager.updateMarkers();
-      } else {
-        // Пересоздаем GifMarkerManager
-        setState(() {
-          _gifMarkerManager = null;
-        });
-
-        // Даем время на обновление состояния
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted && !_isDisposed && mapboxMapController != null) {
-            setState(() {
-              _gifMarkerManager = GifMarkerManager(
-                  key: GifMarkerManager.globalKey,
-                  mapboxMap: mapboxMapController!);
-            });
-            debugPrint(
-                '🗺️ MajorMap: GifMarkerManager recreated after inactivity');
+        // Обновляем состояния каждые 30 секунд
+        Timer.periodic(const Duration(seconds: 30), (_) {
+          if (mounted && mapboxMapController != null) {
+            updateOpenCloseStates();
           }
         });
       }
+    });
+  }
+
+  /// Загружаем сохраненный стиль перед отрисовкой карты
+  Future<void> _loadSavedMapStyle() async {
+    try {
+      final prefs = getIt.get<SharedPrefsRepository>();
+      final savedStyle = await prefs.getSavedMapStyle();
+      final savedStyleId = await prefs.getMapStyleId();
+
+      if (mounted) {
+        setState(() {
+          mapStyleUri = savedStyle ?? mp.MapboxStyles.MAPBOX_STREETS;
+          currentStyleId = savedStyleId;
+          isStyleLoaded = true;
+        });
+
+        debugPrint("🗺️ Загружен стиль: $mapStyleUri (ID: $currentStyleId)");
+      }
+    } catch (e) {
+      // В случае ошибки установим дефолтный стиль
+      if (mounted) {
+        setState(() {
+          mapStyleUri = mp.MapboxStyles.MAPBOX_STREETS;
+          isStyleLoaded = true;
+        });
+      }
+      debugPrint("⚠️ Ошибка загрузки стиля: $e, используем дефолтный стиль");
     }
   }
 
-  @override
-  void deactivate() {
-    debugPrint('🗺️ MajorMap: deactivate called');
-    _wasInactive = true;
-    super.deactivate();
-  }
-
-  @override
-  void dispose() {
-    _isDisposed = true; // Устанавливаем флаг при уничтожении
-    super.dispose();
-  }
-
-  /// Грузим сохранённый стиль (URL + ID) из SharedPrefs
-  Future<void> _loadSavedMapStyle() async {
-    final prefs = getIt.get<SharedPrefsRepository>();
-    final savedStyle = await prefs.getSavedMapStyle();
-    final savedStyleId = await prefs.getMapStyleId();
-
-    setState(() {
-      mapStyleUri = savedStyle ?? mp.MapboxStyles.MAPBOX_STREETS;
-      currentStyleId = savedStyleId;
-      isStyleLoaded = true;
-    });
-
-    // Если нужно загрузить иконки заранее
-    if (currentStyleId != null) {
-      context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
+  // Новый метод для асинхронной загрузки позиции пользователя
+  Future<void> _loadUserPosition() async {
+    final position = await LocationService.getUserPosition();
+    if (position != null && mounted) {
+      setState(() {
+        _initialUserPosition = position;
+      });
     }
   }
 
@@ -163,8 +129,13 @@ class _MajorMapState extends State<MajorMap> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isStyleLoaded || !isLocationLoaded) {
-      return const Center(child: CircularProgressIndicator());
+    if (!isStyleLoaded) {
+      // Показываем индикатор загрузки только пока загружаем стиль
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     // Проверяем, нужно ли создать GifMarkerManager
@@ -206,24 +177,27 @@ class _MajorMapState extends State<MajorMap> {
               if (_isDisposed) return;
               final textColorExpression =
                   buildTextColorExpression(state.textColors);
-              try {
-                await mapboxMapController?.style.setStyleLayerProperty(
-                  placesLayerId,
-                  "text-color",
-                  textColorExpression,
-                );
-                debugPrint("✅ Цвет текста обновлён!");
-              } catch (e, st) {
-                debugPrint("❌ Ошибка обновления цвета текста: $e\n$st");
-              }
+              await mapboxMapController?.style.setStyleLayerProperty(
+                placesLayerId,
+                "text-color",
+                textColorExpression,
+              );
             }
           },
         ),
         BlocListener<MapStyleBloc, MapStyleState>(
           listener: (context, state) async {
             if (state is MapStyleUpdateSuccess) {
-              await _updateMapStyle(state.styleUri);
+              // Сохраняем ID стиля
               currentStyleId = state.newStyleId;
+              await getIt
+                  .get<SharedPrefsRepository>()
+                  .saveMapStyleId(state.newStyleId);
+
+              // Обновляем стиль
+              await _updateMapStyle(state.styleUri);
+
+              // Очищаем иконки
               await _clearIcons();
 
               Future.delayed(const Duration(milliseconds: 500), () {
@@ -250,7 +224,7 @@ class _MajorMapState extends State<MajorMap> {
                         ),
                       )
                     : mp.Point(coordinates: mp.Position(98.360473, 7.886778)),
-                zoom: 14.0,
+                zoom: 12.5,
               ),
               onMapCreated: _onMapCreated,
               onMapLoadedListener: _onStyleLoadedCallback,
@@ -321,27 +295,47 @@ class _MajorMapState extends State<MajorMap> {
     setState(() {
       mapboxMapController = controller;
     });
-    mapboxMapController?.location.updateSettings(
-      mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
-    );
-    mapboxMapController?.scaleBar.updateSettings(
-      mp.ScaleBarSettings(enabled: false),
-    );
-    mapboxMapController?.compass.updateSettings(
-      mp.CompassSettings(enabled: false),
-    );
-    mapboxMapController?.attribution.updateSettings(
-      mp.AttributionSettings(enabled: false),
-    );
+
+    // Объединяем настройки в один вызов для ускорения инициализации
+    Future.microtask(() {
+      // Настройки локации
+      mapboxMapController?.location.updateSettings(
+        mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
+      );
+
+      // Отключаем ненужные элементы управления
+      mapboxMapController?.scaleBar.updateSettings(
+        mp.ScaleBarSettings(enabled: false),
+      );
+      mapboxMapController?.compass.updateSettings(
+        mp.CompassSettings(enabled: false),
+      );
+      mapboxMapController?.attribution.updateSettings(
+        mp.AttributionSettings(enabled: false),
+      );
+    });
   }
 
   Future<void> _onStyleLoadedCallback(mp.MapLoadedEventData data) async {
     if (mapboxMapController == null || _isDisposed) return;
+
     debugPrint("🗺️ Стиль загружен! Добавляем слои...");
-    await _loadMyDotIconFromUrl();
-    await _addSourceAndLayers();
+
+    // Запускаем загрузку иконок и инициализацию слоев параллельно
+    final futures = <Future>[];
+
+    // Добавляем источники и слои
+    futures.add(_addSourceAndLayers());
+
+    // Загружаем иконку для точки
+    futures.add(_loadMyDotIconFromUrl());
+
+    // Ждем завершения обеих операций
+    await Future.wait(futures);
 
     if (_isDisposed) return;
+
+    // Проверяем, что слой создан успешно
     final styleLayers = await mapboxMapController?.style.getStyleLayers();
     final layerExists =
         styleLayers?.any((layer) => layer?.id == placesLayerId) ?? false;
@@ -350,65 +344,81 @@ class _MajorMapState extends State<MajorMap> {
       return;
     }
 
+    // Асинхронно обновляем состояния открытия/закрытия
+    updateOpenCloseStates();
+
+    // Инициализируем GifMarkerManager
+    _initializeGifMarkerManager();
+
     if (_isDisposed) return;
-    await updateOpenCloseStates();
+
+    // Получаем и устанавливаем настройки для слоев
+    final camState = await mapboxMapController?.getCameraState();
+    final currentZoom = camState?.zoom ?? 14.0;
+    final threshold = getThresholdByZoom(currentZoom);
+
+    // Применяем настройки асинхронно
+    _applyLayerSettings(threshold);
+
+    // Запрашиваем иконки, если есть ID стиля
+    if (_isDisposed) return;
+    if (currentStyleId != null) {
+      context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
+    }
+  }
+
+  /// Инициализирует или обновляет GifMarkerManager
+  void _initializeGifMarkerManager() {
+    if (_isDisposed) return;
 
     // Если GifMarkerManager уже существует, вызываем forceUpdate
     if (_gifMarkerManager != null) {
       debugPrint(
-          '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager after style loaded');
+          '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager');
       GifMarkerManager.updateMarkers();
-    } else {
-      // Пересоздаем GifMarkerManager при загрузке стиля
-      setState(() {
-        _gifMarkerManager = null; // Сначала обнуляем старый менеджер
-      });
+      return;
+    }
 
-      // Даем время на обновление состояния
-      await Future.delayed(const Duration(milliseconds: 300));
+    // Пересоздаем GifMarkerManager при загрузке стиля
+    setState(() {
+      _gifMarkerManager = null; // Сначала обнуляем старый менеджер
+    });
 
+    // Создаем новый менеджер
+    Future.microtask(() {
       if (mounted && !_isDisposed && mapboxMapController != null) {
-        debugPrint(
-            "🗺️ MajorMap: Creating GifMarkerManager after style loaded");
         setState(() {
           _gifMarkerManager = GifMarkerManager(
               key: GifMarkerManager.globalKey, mapboxMap: mapboxMapController!);
         });
+        debugPrint("✅ GifMarkerManager создан");
       }
-    }
+    });
+  }
 
-    if (_isDisposed) return;
-    final camState = await mapboxMapController?.getCameraState();
-    final currentZoom = camState?.zoom ?? 14.0;
-    final threshold = getThresholdByZoom(currentZoom);
+  /// Применяет настройки слоев асинхронно
+  Future<void> _applyLayerSettings(double threshold) async {
+    if (_isDisposed || mapboxMapController == null) return;
+
     final iconExpr = buildIconImageExpression(threshold);
     final textExpr = buildTextFieldExpression(threshold);
 
-    if (_isDisposed) return;
     try {
       await mapboxMapController?.style.setStyleLayerProperty(
         placesLayerId,
         "icon-image",
         iconExpr,
       );
-    } catch (e, st) {
-      debugPrint("❌ Ошибка установки icon-image: $e\n$st");
-    }
 
-    if (_isDisposed) return;
-    try {
       await mapboxMapController?.style.setStyleLayerProperty(
         placesLayerId,
         "text-field",
         textExpr,
       );
-    } catch (e, st) {
-      debugPrint("❌ Ошибка установки text-field: $e\n$st");
-    }
 
-    if (_isDisposed) return;
-    if (currentStyleId != null) {
-      context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
+      debugPrint("✅ Настройки слоев применены");
+    } catch (e, st) {
+      debugPrint("❌ Ошибка установки свойств слоя: $e\n$st");
     }
   }
 
@@ -453,34 +463,7 @@ class _MajorMapState extends State<MajorMap> {
           maxzoom: 20,
         );
 
-        // Логируем конфигурацию источника
-        debugPrint("  - Конфигурация places_source:");
-        debugPrint(
-            "  - URL тайлов: https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf");
-        debugPrint("  - MinZoom: 0");
-        debugPrint("  - MaxZoom: 20");
-
         await mapboxMapController?.style.addSource(vectorSource);
-        debugPrint("✅ Источник places_source добавлен");
-      } else {
-        debugPrint("ℹ️ Источник places_source уже существует");
-      }
-
-      // Проверяем загрузку тайлов
-      debugPrint("🔄 Проверяем загрузку тайлов...");
-      final source = sources.firstWhere(
-        (source) => source?.id == "places_source",
-        orElse: () => null,
-      );
-      if (source != null) {
-        debugPrint("ℹ️ Информация о places_source:");
-        debugPrint("  - ID: ${source.id}");
-        debugPrint("  - Type: ${source.type}");
-        if (source is mp.VectorSource) {
-          debugPrint("  - Tiles: ${(source as mp.VectorSource).tiles}");
-          debugPrint("  - MinZoom: ${(source as mp.VectorSource).minzoom}");
-          debugPrint("  - MaxZoom: ${(source as mp.VectorSource).maxzoom}");
-        }
       }
 
       // Добавляем источник для видео-маркеров
@@ -719,71 +702,66 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _updateMapStyle(String newStyle) async {
     if (mapboxMapController == null) return;
 
-    // Очищаем GifMarkerManager перед сменой стиля
-    debugPrint("🗺️ MajorMap: Clearing GifMarkerManager before style change");
+    // Сначала сохраняем стиль, чтобы он использовался при следующем открытии
+    await getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
+    debugPrint("✅ Новый стиль сохранен: $newStyle");
+
+    // Обновляем локальную переменную
+    mapStyleUri = newStyle;
+
+    // Сначала убираем маркеры, чтобы не тормозили при переключении
     setState(() {
       _gifMarkerManager = null;
     });
 
     // Очищаем кэш видео контроллеров перед сменой стиля
-    try {
-      // Вызываем метод updateMarkers, который должен очистить ресурсы
-      GifMarkerManager.updateMarkers();
-      debugPrint(
-          "🗺️ MajorMap: Called updateMarkers to clean resources before style change");
+    GifMarkerManager.updateMarkers();
 
-      // Даем время на освобождение ресурсов
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Принудительно запускаем сборку мусора
-      await _forceGarbageCollection();
-    } catch (e) {
-      debugPrint("⚠️ MajorMap: Error updating markers: $e");
-    }
-
+    // Устанавливаем новый стиль без задержки
     await mapboxMapController!.style.setStyleURI(newStyle);
-    await Future.delayed(const Duration(milliseconds: 800));
-    await mapboxMapController?.location.updateSettings(
-      mp.LocationComponentSettings(enabled: false),
-    );
-    await _addSourceAndLayers();
-    await updateOpenCloseStates();
-    await Future.delayed(const Duration(milliseconds: 800));
-    await mapboxMapController?.location.updateSettings(
-      mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
-    );
 
-    // Пересоздаем GifMarkerManager после смены стиля с большей задержкой
-    if (mounted && !_isDisposed && mapboxMapController != null) {
-      // Даем больше времени на загрузку стиля
-      await Future.delayed(const Duration(seconds: 2));
+    // Обновляем базовые настройки и слои асинхронно, не блокируя UI
+    Future.microtask(() async {
+      // Отключаем локацию на время обновления слоев
+      await mapboxMapController?.location.updateSettings(
+        mp.LocationComponentSettings(enabled: false),
+      );
 
-      // Принудительно запускаем сборку мусора перед созданием нового менеджера
-      await _forceGarbageCollection();
+      // Добавляем источники и слои
+      await _addSourceAndLayers();
 
-      debugPrint("🗺️ MajorMap: Creating GifMarkerManager after style change");
-      setState(() {
-        _gifMarkerManager = GifMarkerManager(
-            key: GifMarkerManager.globalKey, mapboxMap: mapboxMapController!);
-      });
+      // Обновляем состояния иконок
+      updateOpenCloseStates();
 
-      // Даем время на инициализацию и затем обновляем маркеры
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && !_isDisposed) {
-          debugPrint(
-              "🗺️ MajorMap: Forcing update of markers after style change");
-          GifMarkerManager.updateMarkers();
-        }
-      });
-    }
+      // Включаем локацию
+      await mapboxMapController?.location.updateSettings(
+        mp.LocationComponentSettings(enabled: true, pulsingEnabled: true),
+      );
 
-    getIt.get<SharedPrefsRepository>().saveMapStyle(newStyle);
+      // Создаем новый GifMarkerManager с небольшой задержкой
+      if (mounted && !_isDisposed && mapboxMapController != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && !_isDisposed) {
+            setState(() {
+              _gifMarkerManager = GifMarkerManager(
+                  key: GifMarkerManager.globalKey,
+                  mapboxMap: mapboxMapController!);
+            });
+
+            // Даем время на инициализацию и затем обновляем маркеры
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted && !_isDisposed) {
+                GifMarkerManager.updateMarkers();
+              }
+            });
+          }
+        });
+      }
+    });
   }
 
   // Метод для принудительного запуска сборки мусора
   Future<void> _forceGarbageCollection() async {
-    debugPrint("🗑️ MajorMap: Forcing garbage collection");
-
     // Создаем и освобождаем большой объект для стимуляции сборки мусора
     List<int> largeList = List.generate(10000, (index) => index);
     await Future.delayed(const Duration(milliseconds: 100));
@@ -793,249 +771,83 @@ class _MajorMapState extends State<MajorMap> {
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
-  int _parseTime(String time) {
-    final parts = time.split(':').map(int.parse).toList();
-    return parts[0] * 60 + parts[1];
-  }
-
-// Функция проверки времени работы
-  bool isPointClosedNow(String? workingHoursRaw, DateTime now) {
-    if (workingHoursRaw == null || workingHoursRaw.isEmpty) return false;
-
-    try {
-      final workingHours = jsonDecode(workingHoursRaw) as Map<String, dynamic>;
-      final dayOfWeek = now.weekday % 7; // 0=Monday, 6=Sunday (адаптируем к JS)
-      final days = [
-        'sunday',
-        'monday',
-        'tuesday',
-        'wednesday',
-        'thursday',
-        'friday',
-        'saturday'
-      ];
-      final dayKey = days[dayOfWeek];
-
-      final schedule = workingHours[dayKey];
-      if (schedule == null) return true; // Нет расписания - закрыто
-
-      if (schedule['is_closed'] == true) return true;
-      if (schedule['is_24'] == true) return false;
-
-      final openTimes = List<String>.from(schedule['open_times'] ?? []);
-      final closeTimes = List<String>.from(schedule['close_times'] ?? []);
-
-      final nowMinutes = now.hour * 60 + now.minute;
-
-      for (var i = 0; i < openTimes.length; i++) {
-        final open = _parseTime(openTimes[i]);
-        final close = _parseTime(closeTimes[i]);
-
-        if (open < close) {
-          if (nowMinutes >= open && nowMinutes < close) return false;
-        } else {
-          if (nowMinutes >= open || nowMinutes < close) return false;
-        }
-      }
-
-      return true; // Ни один интервал не подошел
-    } catch (e) {
-      return false;
-    }
-  }
-
+  // Функция проверки работы точки теперь использует OpenStatusManager
   Future<void> updateOpenCloseStates() async {
-    if (mapboxMapController == null) return;
-
-    try {
-      final now = DateTime.now();
-
-      // Получаем features с оптимизированным запросом
-      final features = await mapboxMapController!.queryRenderedFeatures(
-        mp.RenderedQueryGeometry(
-          type: mp.Type.SCREEN_BOX,
-          value: jsonEncode({
-            "min": {"x": 0, "y": 0},
-            "max": {"x": 10000, "y": 10000}
-          }),
-        ),
-        mp.RenderedQueryOptions(
-          layerIds: [placesLayerId],
-          filter: null,
-        ),
-      );
-
-      // Обрабатываем features пакетами по 20 штук для оптимизации
-      for (var i = 0; i < features.length; i += 20) {
-        final batch = features.skip(i).take(20);
-        await Future.wait(
-          batch.map((feature) async {
-            if (feature == null) return;
-
-            final featureData = feature.queriedFeature.feature;
-            final properties = featureData as Map<dynamic, dynamic>;
-            final id = properties['id']?.toString();
-            final nestedProperties =
-                properties['properties'] as Map<dynamic, dynamic>?;
-
-            if (id == null || nestedProperties == null) return;
-
-            String? workingHours =
-                nestedProperties['working_hours']?.toString();
-            if (workingHours != null) {
-              workingHours = workingHours.replaceAll('\\"', '"');
-            }
-
-            final isClosed = isPointClosedNow(workingHours, now);
-
-            await mapboxMapController!.setFeatureState(
-              "places_source",
-              "mylayer",
-              id,
-              jsonEncode({"closed": isClosed}),
-            );
-          }),
-        );
-      }
-
-      debugPrint("✨ Обновление состояний завершено");
-    } catch (e, st) {
-      debugPrint("❌ Ошибка в updateOpenCloseStates: $e");
-      debugPrint("Stack trace: $st");
-    }
+    return OpenStatusManager.updateOpenCloseStates(
+      mapboxMapController,
+      placesLayerId,
+      _isDisposed,
+    );
   }
 
   double getThresholdByZoom(double zoom) {
-    if (zoom < 6.0)
-      return 3050;
-    else if (zoom < 7.0)
-      return 2850;
-    else if (zoom < 7.5)
-      return 2550;
-    else if (zoom < 8.0)
-      return 2350;
-    else if (zoom < 8.5)
-      return 2050;
-    else if (zoom < 9.0)
-      return 1850;
-    else if (zoom < 9.5)
-      return 1500;
-    else if (zoom < 10.0)
-      return 1200;
-    else if (zoom < 10.5)
-      return 1000;
-    else if (zoom < 11.0)
-      return 700;
-    else if (zoom < 11.5)
-      return 550;
-    else if (zoom < 12.0)
-      return 450;
-    else if (zoom < 12.5)
-      return 400;
-    else if (zoom < 13.0)
-      return 300;
-    else if (zoom < 13.5)
-      return 250;
-    else if (zoom < 14.0)
-      return 200;
-    else if (zoom < 14.5)
-      return 100;
-    else if (zoom < 15.0)
-      return 75;
-    else if (zoom < 15.5)
-      return 50;
-    else if (zoom < 16.0)
-      return 30;
-    else if (zoom < 16.5)
-      return 15;
-    else if (zoom < 17.0)
-      return 12;
-    else if (zoom < 17.5)
-      return 9;
-    else if (zoom < 18.0)
-      return 6;
-    else if (zoom < 18.5)
-      return 4;
-    else if (zoom < 19.0)
-      return 2;
-    else
-      return 0;
+    return OpenStatusManager.getThresholdByZoom(zoom);
   }
 
   List<Object> buildIconImageExpression(double threshold) {
-    return [
-      "let",
-      "myThreshold",
-      threshold,
-      [
-        "case",
-        // Если расстояние меньше порога, используем my_dot_icon
-        [
-          "<",
-          [
-            "to-number",
-            [
-              "coalesce",
-              ["get", "min_dist"],
-              0
-            ]
-          ],
-          ["var", "myThreshold"]
-        ],
-        "my_dot_icon",
-        // Если заведение закрыто, используем закрытую версию иконки
-        [
-          "==",
-          ["feature-state", "closed"],
-          true
-        ],
-        [
-          "concat",
-          ["get", "subca tegory"],
-          "_closed"
-        ],
-        // В остальных случаях используем обычную иконку
-        ["get", "subcategory"]
-      ]
-    ];
+    return OpenStatusManager.buildIconImageExpression(threshold);
   }
 
   List<Object> buildTextFieldExpression(double threshold) {
-    return [
-      "let",
-      "myThreshold",
-      threshold,
-      [
-        "case",
-        [
-          "<",
-          [
-            "to-number",
-            [
-              "coalesce",
-              ["get", "min_dist"],
-              0
-            ]
-          ],
-          ["var", "myThreshold"]
-        ],
-        "",
-        ["get", "name"]
-      ]
-    ];
+    return OpenStatusManager.buildTextFieldExpression(threshold);
   }
 
   List<Object> buildIconOpacityExpression() {
-    return [
-      "case",
-      [
-        "==",
-        ["feature-state", "closed"],
-        true
-      ],
-      0.6, // если closed = true, opacity = 0.7
-      1.0 // в остальных случаях opacity = 1.0
-    ];
+    return OpenStatusManager.buildIconOpacityExpression();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    debugPrint('🗺️ MajorMap: didChangeDependencies called');
+
+    // Если виджет был неактивен и теперь снова активен, переинициализируем GifMarkerManager
+    if (_wasInactive &&
+        mounted &&
+        !_isDisposed &&
+        mapboxMapController != null) {
+      debugPrint(
+          '🗺️ MajorMap: Widget was inactive, reinitializing GifMarkerManager');
+      _wasInactive = false;
+
+      // Если GifMarkerManager уже существует, вызываем forceUpdate
+      if (_gifMarkerManager != null) {
+        debugPrint(
+            '🗺️ MajorMap: Calling forceUpdate on existing GifMarkerManager');
+        GifMarkerManager.updateMarkers();
+      } else {
+        // Пересоздаем GifMarkerManager
+        setState(() {
+          _gifMarkerManager = null;
+        });
+
+        // Даем время на обновление состояния
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && !_isDisposed && mapboxMapController != null) {
+            setState(() {
+              _gifMarkerManager = GifMarkerManager(
+                  key: GifMarkerManager.globalKey,
+                  mapboxMap: mapboxMapController!);
+            });
+            debugPrint(
+                '🗺️ MajorMap: GifMarkerManager recreated after inactivity');
+          }
+        });
+      }
+    }
+  }
+
+  @override
+  void deactivate() {
+    debugPrint('🗺️ MajorMap: deactivate called');
+    _wasInactive = true;
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true; // Устанавливаем флаг при уничтожении
+    super.dispose();
   }
 }
 

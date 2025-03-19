@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -12,7 +13,6 @@ class AuthorizationRepositoryImpl {
     required String login,
     required String password,
   }) async {
-
     final response = await apiService.postData(
         '/auth/token/login/',
         {
@@ -26,8 +26,9 @@ class AuthorizationRepositoryImpl {
 
     if (responseModel.accessToken != null &&
         responseModel.refreshToken != null) {
-      await prefs.setString('access_token', responseModel.accessToken!);
-      await prefs.setString('refresh_token', responseModel.refreshToken!);
+      await prefs.saveAccessToken(responseModel.accessToken!);
+      await prefs.saveRefreshToken(responseModel.refreshToken!);
+      debugPrint("🔑 Токены сохранены при авторизации");
     }
 
     return responseModel;

@@ -529,10 +529,14 @@ class SearchRepositoryImpl implements SearchRepository {
 
   @override
   Future<void> likePlace(int placeId, {required String objectType}) async {
+    // Добавляем параметр, разрешающий временные 401 ошибки без обновления токенов
+    Map<String, dynamic> optionalHeaders = {'X-Skip-Auth-Refresh': 'true'};
+
     return _retryOperation(() async {
       final response = await apiService.postData(
         '/tinder/favorite/',
         {'object_type': objectType, 'object_id': placeId},
+        headers: optionalHeaders,
       );
 
       if (response['statusCode'] != 200) {
@@ -547,10 +551,14 @@ class SearchRepositoryImpl implements SearchRepository {
 
   @override
   Future<void> skipPlace(int placeId, {required String objectType}) async {
+    // Добавляем параметр, разрешающий временные 401 ошибки без обновления токенов
+    Map<String, dynamic> optionalHeaders = {'X-Skip-Auth-Refresh': 'true'};
+
     return _retryOperation(() async {
       final response = await apiService.postData(
         '/tinder/skip/',
         {'object_type': objectType, 'object_id': placeId},
+        headers: optionalHeaders,
       );
 
       if (response['statusCode'] != 200) {

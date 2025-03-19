@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true />
+		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -25,28 +25,28 @@
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
-		<true />
+		<true/>
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsArbitraryLoads</key>
-			<true />
+			<true/>
 			<key>NSExceptionDomains</key>
 			<dict>
 				<key>map-travel.net</key>
 				<dict>
 					<key>NSIncludesSubdomains</key>
-					<true />
+					<true/>
 					<key>NSTemporaryExceptionAllowsInsecureHTTPSLoads</key>
-					<true />
+					<true/>
 					<key>NSTemporaryExceptionMinimumTLSVersion</key>
 					<string>TLSv1.2</string>
 				</dict>
 				<key>tap-map.net</key>
 				<dict>
 					<key>NSIncludesSubdomains</key>
-					<true />
+					<true/>
 					<key>NSTemporaryExceptionAllowsInsecureHTTPSLoads</key>
-					<true />
+					<true/>
 					<key>NSTemporaryExceptionMinimumTLSVersion</key>
 					<string>TLSv1.2</string>
 				</dict>
@@ -61,7 +61,7 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Мы используем ваше местоположение для отображения карты.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true />
+		<true/>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>location</string>
@@ -95,5 +95,9 @@
 				<string>com.tapmap.app</string>
 			</dict>
 		</array>
+		<key>UIStatusBarHidden</key>
+		<true/>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<false/>
 	</dict>
 </plist>
