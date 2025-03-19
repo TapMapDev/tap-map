@@ -5,6 +5,9 @@ abstract class SearchEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+// Инициализация поиска с кешированными данными
+class InitializeSearchEvent extends SearchEvent {}
+
 // Загрузка мест
 class LoadPlaces extends SearchEvent {
   final int offset;
@@ -39,6 +42,20 @@ class SkipPlace extends SearchEvent {
 
   @override
   List<Object?> get props => [placeId, objectType];
+}
+
+// Обновление состояния свайпера
+class UpdateSwipeState extends SearchEvent {
+  final int currentIndex;
+  final int? viewedPlaceId;
+
+  UpdateSwipeState({
+    required this.currentIndex,
+    this.viewedPlaceId,
+  });
+
+  @override
+  List<Object?> get props => [currentIndex, viewedPlaceId];
 }
 
 // Загрузка дополнительных мест

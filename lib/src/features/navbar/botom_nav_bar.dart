@@ -14,6 +14,15 @@ class BottomNavbar extends StatefulWidget {
 class _MainScreenState extends State<BottomNavbar> {
   int _selectedIndex = 0;
 
+  // Используем глобальные ключи для сохранения состояния виджетов
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+  ];
+
   final List<Widget> _screens = [
     const MajorMap(), // Карта
     const SearchPage(), // Поиск
@@ -31,7 +40,12 @@ class _MainScreenState extends State<BottomNavbar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex], // Показываем активный экран
+      // Используем IndexedStack вместо обычного виджета
+      // IndexedStack сохраняет состояние всех дочерних виджетов
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -59,7 +73,6 @@ class _MainScreenState extends State<BottomNavbar> {
 
 // Заглушки для экранов
 
-
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
   @override
@@ -67,8 +80,6 @@ class FavoritesScreen extends StatelessWidget {
     return const Center(child: Text('Найти Место'));
   }
 }
-
-
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

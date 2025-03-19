@@ -16,6 +16,83 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     on<LikePlace>(_onLikePlace);
     on<SkipPlace>(_onSkipPlace);
     on<ResetSearch>(_onResetSearch);
+    on<InitializeSearchEvent>(_onInitializeSearch);
+    on<UpdateSwipeState>(_onUpdateSwipeState);
+  }
+
+  // Обработчик обновления состояния свайпера
+  void _onUpdateSwipeState(UpdateSwipeState event, Emitter<SearchState> emit) {
+    if (state is! SearchLoaded) return;
+
+    final currentState = state as SearchLoaded;
+    List<int> updatedViewedPlaces = List.from(currentState.viewedPlaces);
+
+    // Добавляем ID просмотренного места, если оно есть
+    if (event.viewedPlaceId != null &&
+        !updatedViewedPlaces.contains(event.viewedPlaceId)) {
+      updatedViewedPlaces.add(event.viewedPlaceId!);
+    }
+
+    emit(currentState.copyWith(
+      currentIndex: event.currentIndex,
+      viewedPlaces: updatedViewedPlaces,
+    ));
+  }
+
+  Future<void> _onInitializeSearch(
+      InitializeSearchEvent event, Emitter<SearchState> emit) async {
+    List<ScreenResponseModal>? cachedPlaces =
+        await searchRepository.getCachedPlaces();
+
+    if (cachedPlaces != null && cachedPlaces.isNotEmpty) {
+      emit(SearchLoading(cachedPlaces: cachedPlaces, hasCachedData: true));
+    } else {
+      emit(SearchLoading());
+    }
+
+    try {
+      final places = await searchRepository.fetchPlace();
+      await searchRepository.cachePlaces(places);
+
+      // Сохраняем текущий индекс и просмотренные места, если они были
+      int currentIndex = 0;
+      List<int> viewedPlaces = [];
+
+      if (previousState is SearchLoaded) {
+        final prevLoadedState = previousState as SearchLoaded;
+        currentIndex = prevLoadedState.currentIndex;
+        viewedPlaces = prevLoadedState.viewedPlaces;
+      }
+
+      emit(SearchLoaded(
+        places: places,
+        offset: 0,
+        isEndReached: false,
+        currentIndex: currentIndex,
+        viewedPlaces: viewedPlaces,
+      ));
+    } catch (e) {
+      if (cachedPlaces != null && cachedPlaces.isNotEmpty) {
+        int currentIndex = 0;
+        List<int> viewedPlaces = [];
+
+        if (previousState is SearchLoaded) {
+          final prevLoadedState = previousState as SearchLoaded;
+          currentIndex = prevLoadedState.currentIndex;
+          viewedPlaces = prevLoadedState.viewedPlaces;
+        }
+
+        emit(SearchLoaded(
+          places: cachedPlaces,
+          offset: 0,
+          isEndReached: true,
+          currentIndex: currentIndex,
+          viewedPlaces: viewedPlaces,
+        ));
+      } else {
+        emit(SearchError('Ошибка загрузки данных: ${e.toString()}'));
+      }
+    }
   }
 
   Future<void> _onLoadPlaces(

@@ -9,34 +9,54 @@ abstract class SearchState extends Equatable {
 class SearchInitial extends SearchState {}
 
 // Состояние загрузки
-class SearchLoading extends SearchState {}
+class SearchLoading extends SearchState {
+  final List<ScreenResponseModal>? cachedPlaces;
+  final bool hasCachedData;
+
+  SearchLoading({
+    this.cachedPlaces,
+    this.hasCachedData = false,
+  });
+
+  @override
+  List<Object?> get props => [cachedPlaces, hasCachedData];
+}
 
 // Состояние с загруженными данными
 class SearchLoaded extends SearchState {
   final List<ScreenResponseModal> places;
   final bool isEndReached;
   final int offset;
+  final int currentIndex; // Текущий индекс в свайпере
+  final List<int> viewedPlaces; // Список ID просмотренных мест
 
   SearchLoaded({
     required this.places,
     this.isEndReached = false,
     this.offset = 0,
+    this.currentIndex = 0,
+    this.viewedPlaces = const [],
   });
 
   SearchLoaded copyWith({
     List<ScreenResponseModal>? places,
     bool? isEndReached,
     int? offset,
+    int? currentIndex,
+    List<int>? viewedPlaces,
   }) {
     return SearchLoaded(
       places: places ?? this.places,
       isEndReached: isEndReached ?? this.isEndReached,
       offset: offset ?? this.offset,
+      currentIndex: currentIndex ?? this.currentIndex,
+      viewedPlaces: viewedPlaces ?? this.viewedPlaces,
     );
   }
 
   @override
-  List<Object?> get props => [places, isEndReached, offset];
+  List<Object?> get props =>
+      [places, isEndReached, offset, currentIndex, viewedPlaces];
 }
 
 // Ошибка загрузки

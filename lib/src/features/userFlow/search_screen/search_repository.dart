@@ -18,6 +18,8 @@ abstract class SearchRepository {
   Future<void> likePlace(int placeId, {required String objectType});
   Future<void> skipPlace(int placeId, {required String objectType});
   Future<List<ScreenResponseModal>> fetchPlace();
+  Future<List<ScreenResponseModal>?> getCachedPlaces();
+  Future<void> cachePlaces(List<ScreenResponseModal> places);
 }
 
 class SearchRepositoryImpl implements SearchRepository {
@@ -569,6 +571,26 @@ class SearchRepositoryImpl implements SearchRepository {
       _placeCache.remove(placeId);
       _cache.clear(); // Очищаем кэш списков, так как они могут измениться
     });
+  }
+
+  @override
+  Future<List<ScreenResponseModal>?> getCachedPlaces() async {
+    // Простая реализация - возвращаем кешированные данные, если они есть
+    if (_cache.containsKey('recent_places')) {
+      return _cache['recent_places'];
+    }
+    return null;
+  }
+
+  @override
+  Future<void> cachePlaces(List<ScreenResponseModal> places) async {
+    // Сохраняем места в кеш
+    _cache['recent_places'] = places;
+
+    // Также обновляем кеш отдельных мест
+    for (var place in places) {
+      _placeCache[place.id] = place;
+    }
   }
 
   void clearCache() {
