@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:video_player/video_player.dart';
@@ -53,7 +54,7 @@ class VideoControllerCache {
   static final Map<String, VideoPlayerController> _cache = {};
   static final Map<String, DateTime> _lastUsed = {};
   static final Map<String, int> _usageCount = {};
-  static const int _maxCacheSize = 10;
+  static const int _maxCacheSize = 30;
 
   static VideoPlayerController? getController(String url) {
     if (_cache.containsKey(url)) {
@@ -153,6 +154,32 @@ class VideoControllerCache {
     _lastUsed.clear();
     _usageCount.clear();
     debugPrint('🧹 VideoControllerCache: Cleared all controllers');
+  }
+}
+
+// Кэш изображений для видео
+class VideoFrameCache {
+  static final Map<String, Uint8List> _cache = {};
+  static final Map<String, DateTime> _lastUpdate = {};
+  static const Duration _cacheTimeout = Duration(milliseconds: 100);
+
+  static bool shouldUpdate(String url) {
+    if (!_lastUpdate.containsKey(url)) return true;
+    return DateTime.now().difference(_lastUpdate[url]!) > _cacheTimeout;
+  }
+
+  static void setFrame(String url, Uint8List bytes) {
+    _cache[url] = bytes;
+    _lastUpdate[url] = DateTime.now();
+  }
+
+  static Uint8List? getFrame(String url) {
+    return _cache[url];
+  }
+
+  static void clear() {
+    _cache.clear();
+    _lastUpdate.clear();
   }
 }
 
@@ -272,14 +299,41 @@ class _LoopingGifWidgetState extends State<LoopingGifWidget>
   }
 }
 
+// Виджет для захвата кадра видео
+class _VideoFrameWidget extends StatelessWidget {
+  final VideoPlayerController controller;
+  final GlobalKey frameKey;
+
+  const _VideoFrameWidget({
+    required this.controller,
+    required this.frameKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      key: frameKey,
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: AspectRatio(
+            aspectRatio: controller.value.aspectRatio,
+            child: VideoPlayer(controller),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class GifMarkerManager extends StatefulWidget {
   final mapbox.MapboxMap mapboxMap;
 
-  // Глобальный ключ для доступа к состоянию из родительского виджета
   static final GlobalKey<_GifMarkerManagerState> globalKey =
       GlobalKey<_GifMarkerManagerState>();
 
-  // Статический метод для обновления маркеров из любого места в приложении
   static void updateMarkers() {
     final state = globalKey.currentState;
     if (state != null && !state._isDisposed) {
@@ -299,32 +353,42 @@ class GifMarkerManager extends StatefulWidget {
 class _GifMarkerManagerState extends State<GifMarkerManager>
     with WidgetsBindingObserver {
   final Map<String, _MarkerData> _markersById = {};
+  final Set<String> _activeAnnotationIds = {};
+  OverlayEntry? _captureOverlay;
   bool _isDisposed = false;
   bool _isInitialized = false;
   bool _isInitializing = false;
   Timer? _updateTimer;
-  mapbox.CameraState? _lastCameraState;
   int _initializationAttempts = 0;
   static const int _maxInitializationAttempts = 3;
   Timer? _styleCheckTimer;
   Timer? _videoRotationTimer;
-  final bool _isSystemUnderLoad = false;
+  mapbox.PointAnnotationManager? _pointAnnotationManager;
 
   static const int _maxSimultaneousVideos = 5;
   final List<String> _activeVideoMarkers = [];
+
+  // Для захвата кадра из VideoPlayer
+  final GlobalKey _videoFrameKey = GlobalKey();
+  OverlayEntry? _videoFrameOverlay;
+
+  // Кэш для хеш-значений последних кадров
+  final Map<String, int> _lastFrameHashes = {};
+
+  // Для отслеживания кадров GIF-анимации
+  final Map<String, int> _gifFrameIndices = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleInitialization();
-    });
-    _startVideoRotationTimer();
+    _initializePointAnnotationManager();
   }
 
   @override
   void dispose() {
+    _captureOverlay?.remove();
+    _videoFrameOverlay?.remove();
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _updateTimer?.cancel();
@@ -333,7 +397,34 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
     _clearMarkers();
     GifCache.clear();
     VideoControllerCache.clear();
+    VideoFrameCache.clear();
     super.dispose();
+  }
+
+  Future<void> _initializePointAnnotationManager() async {
+    if (_isDisposed) {
+      debugPrint('❌ Cannot initialize: manager is disposed');
+      return;
+    }
+
+    try {
+      debugPrint('🔄 Initializing PointAnnotationManager');
+      final annotationManager = widget.mapboxMap.annotations;
+
+      _pointAnnotationManager =
+          await annotationManager.createPointAnnotationManager();
+      if (_pointAnnotationManager == null) {
+        debugPrint('❌ Failed to create point annotation manager');
+        return;
+      }
+
+      debugPrint('✅ PointAnnotationManager initialized successfully');
+      _scheduleInitialization();
+      _startVideoRotationTimer();
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error initializing PointAnnotationManager: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
   }
 
   void _clearMarkers() {
@@ -341,8 +432,17 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
       if (!markerData.isGif && markerData.url.isNotEmpty) {
         VideoControllerCache.releaseController(markerData.url);
       }
+      if (markerData.annotation != null &&
+          _activeAnnotationIds.contains(markerData.annotation!.id)) {
+        try {
+          _pointAnnotationManager?.delete(markerData.annotation!);
+        } catch (e) {
+          debugPrint('Warning: Could not delete annotation during cleanup: $e');
+        }
+      }
     }
     _markersById.clear();
+    _activeAnnotationIds.clear();
   }
 
   void _scheduleInitialization() {
@@ -369,8 +469,8 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
         }
-            return;
-          }
+        return;
+      }
 
       final layers = await widget.mapboxMap.style.getStyleLayers();
       final layerExists =
@@ -408,8 +508,8 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
 
       if (_isDisposed) {
         _isInitializing = false;
-                return;
-              }
+        return;
+      }
 
       for (final feature in features) {
         if (feature == null || _isDisposed) continue;
@@ -434,7 +534,7 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
       _startUpdateTimer();
       _isInitialized = true;
       _isInitializing = false;
-              } catch (e) {
+    } catch (e) {
       _isInitializing = false;
       if (_initializationAttempts < _maxInitializationAttempts) {
         _scheduleInitialization();
@@ -444,43 +544,210 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
 
   void _startUpdateTimer() {
     _updateTimer?.cancel();
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
+    _updateTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
       if (mounted && !_isDisposed) {
-        _updateMarkerPositions();
-              }
-            });
-          }
+        _updateMarkers();
+      }
+    });
+  }
 
-  Future<void> _updateMarkerPositions() async {
+  Future<void> _updateMarkers() async {
     if (!mounted || _isDisposed || _markersById.isEmpty) return;
 
-    final cameraState = await widget.mapboxMap.getCameraState();
-    bool cameraChanged = _lastCameraState == null;
-
-    if (!cameraChanged) {
-      cameraChanged = _lastCameraState!.zoom != cameraState.zoom ||
-          _lastCameraState!.bearing != cameraState.bearing ||
-          _lastCameraState!.pitch != cameraState.pitch;
-
-      if (!cameraChanged) {
-        final lastLng = _lastCameraState!.center.coordinates[0];
-        final lastLat = _lastCameraState!.center.coordinates[1];
-        final currentLng = cameraState.center.coordinates[0];
-        final currentLat = cameraState.center.coordinates[1];
-
-        if (lastLng != null &&
-            currentLng != null &&
-            lastLat != null &&
-            currentLat != null) {
-          cameraChanged = (lastLng - currentLng).abs() > 0.0000001 ||
-              (lastLat - currentLat).abs() > 0.0000001;
-        }
+    for (final entry in _markersById.entries) {
+      if (entry.value.isGif) {
+        _updateGifMarkerImage(entry.key);
+      } else if (_activeVideoMarkers.contains(entry.key)) {
+        _updateVideoMarkerImage(entry.key);
       }
     }
+  }
 
-    _lastCameraState = cameraState;
-    if (cameraChanged) {
-      setState(() {});
+  Future<void> _updateVideoMarkerImage(String id) async {
+    if (!_markersById.containsKey(id)) return;
+
+    final markerData = _markersById[id]!;
+    if (markerData.isGif ||
+        markerData.controller == null ||
+        !markerData.controller!.value.isInitialized) return;
+
+    try {
+      final videoValue = markerData.controller!.value;
+
+      // Проверяем состояние видео
+      if (videoValue.hasError) {
+        debugPrint(
+            '❌ Video has error for marker $id: ${videoValue.errorDescription}');
+        return;
+      }
+
+      // Если видео закончилось, перематываем в начало
+      if (videoValue.position >= videoValue.duration) {
+        debugPrint('🔄 Seeking video to start for marker $id');
+        await markerData.controller!.seekTo(Duration.zero);
+      }
+
+      // Проверяем, что видео проигрывается
+      if (!videoValue.isPlaying) {
+        debugPrint('▶️ Starting playback for marker $id');
+        await markerData.controller!.play();
+      }
+
+      // Захватываем кадр
+      debugPrint('📸 Capturing frame for marker $id');
+      final imageBytes = await _captureVideoFrame(markerData.controller!);
+      if (imageBytes == null || imageBytes.isEmpty) {
+        debugPrint('❌ Failed to capture frame for marker $id');
+        return;
+      }
+
+      debugPrint(
+          '✅ Frame captured for marker $id, size: ${imageBytes.length} bytes');
+
+      // Создаем точку для маркера
+      final point = mapbox.Point(
+        coordinates: mapbox.Position(
+          markerData.coordinates[0],
+          markerData.coordinates[1],
+        ),
+      );
+
+      try {
+        // Создаем опции для маркера
+        final options = mapbox.PointAnnotationOptions(
+          geometry: point,
+          image: imageBytes,
+          iconSize: 0.5,
+        );
+
+        // Создаем новый маркер
+        final newAnnotation = await _pointAnnotationManager?.create(options);
+        if (newAnnotation != null && mounted) {
+          // Удаляем старый маркер, если он существует
+          if (markerData.annotation != null &&
+              _activeAnnotationIds.contains(markerData.annotation!.id)) {
+            try {
+              await _pointAnnotationManager?.delete(markerData.annotation!);
+              _activeAnnotationIds.remove(markerData.annotation!.id);
+              debugPrint('🗑️ Deleted old annotation for marker $id');
+            } catch (e) {
+              debugPrint('⚠️ Failed to delete old annotation: $e');
+            }
+          }
+
+          // Добавляем новый маркер
+          _activeAnnotationIds.add(newAnnotation.id);
+          _markersById[id] = markerData.copyWith(annotation: newAnnotation);
+          debugPrint('✅ Updated marker $id with new annotation');
+        } else {
+          debugPrint('❌ Failed to create new annotation for marker $id');
+        }
+      } catch (e) {
+        debugPrint('❌ Error updating annotation for marker $id: $e');
+      }
+    } catch (e) {
+      debugPrint('❌ Error updating video marker image for $id: $e');
+    }
+  }
+
+  Future<void> _updateGifMarkerImage(String id) async {
+    if (!_markersById.containsKey(id)) return;
+
+    final markerData = _markersById[id]!;
+    if (!markerData.isGif) return;
+
+    try {
+      final codec = await GifCache.getGif(markerData.url);
+      final frameInfo = await codec.getNextFrame();
+
+      final image = await _convertFrameToBytes(frameInfo.image);
+      if (image != null) {
+        final point = mapbox.Point(
+          coordinates: mapbox.Position(
+            markerData.coordinates[0],
+            markerData.coordinates[1],
+          ),
+        );
+
+        final options = mapbox.PointAnnotationOptions(
+          geometry: point,
+          image: image,
+          iconSize: 1.0,
+        );
+
+        try {
+          // Создаем новую аннотацию
+          final newAnnotation = await _pointAnnotationManager?.create(options);
+          if (newAnnotation != null) {
+            // Если старая аннотация существует и активна, удаляем её
+            if (markerData.annotation != null &&
+                _activeAnnotationIds.contains(markerData.annotation!.id)) {
+              try {
+                await _pointAnnotationManager?.delete(markerData.annotation!);
+                _activeAnnotationIds.remove(markerData.annotation!.id);
+              } catch (e) {
+                debugPrint('Warning: Could not delete old annotation: $e');
+              }
+            }
+
+            // Добавляем новую аннотацию в список активных
+            _activeAnnotationIds.add(newAnnotation.id);
+
+            // Обновляем данные маркера
+            _markersById[id] = markerData.copyWith(annotation: newAnnotation);
+          }
+        } catch (e) {
+          debugPrint('❌ Error updating annotation: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error updating GIF marker image: $e');
+    }
+  }
+
+  Future<Uint8List?> _convertFrameToBytes(ui.Image image) async {
+    try {
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      return bytes?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('❌ Error converting frame to bytes: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _createPlaceholderImage() async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      const size = Size(60.0, 60.0);
+
+      // Draw background
+      final paint = Paint()
+        ..color = Colors.black.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        const Radius.circular(8),
+      );
+      canvas.drawRRect(rect, paint);
+
+      // Draw border
+      paint
+        ..color = Colors.white.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      canvas.drawRRect(rect, paint);
+
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(
+        size.width.toInt(),
+        size.height.toInt(),
+      );
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('❌ Error creating placeholder image: $e');
+      return null;
     }
   }
 
@@ -496,51 +763,22 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
   void _rotateActiveVideos() {
     if (_markersById.isEmpty) return;
 
+    // Включаем все видео, не ограничивая количество одновременных видео
     final videoMarkers = _markersById.entries
-        .where((entry) => !entry.value.isGif)
+        .where((entry) => !entry.value.isGif && entry.value.isVisible)
         .map((entry) => entry.key)
         .toList();
 
-    if (videoMarkers.isEmpty) return;
-
-    for (final id in _activeVideoMarkers.toList()) {
-      if (!_markersById.containsKey(id)) {
-        _activeVideoMarkers.remove(id);
-        continue;
-      }
-
-      final markerData = _markersById[id]!;
-      if (!markerData.isVisible ||
-          markerData.controller == null ||
-          !markerData.controller!.value.isInitialized) {
-        markerData.controller?.pause();
-        _activeVideoMarkers.remove(id);
-      }
-    }
-
-    final visibleInactiveMarkers = videoMarkers
-        .where((id) =>
-            !_activeVideoMarkers.contains(id) &&
-            _markersById[id]!.isVisible &&
-            _markersById[id]!.controller != null &&
-            _markersById[id]!.controller!.value.isInitialized)
-        .toList();
-
-    while (_activeVideoMarkers.length < _maxSimultaneousVideos &&
-        visibleInactiveMarkers.isNotEmpty) {
-      final id = visibleInactiveMarkers.removeAt(0);
-      final controller = _markersById[id]!.controller;
-
-      if (controller != null && controller.value.isInitialized) {
-        Future.delayed(Duration(milliseconds: 300 * _activeVideoMarkers.length),
-            () {
-          if (!mounted || _isDisposed || !_markersById.containsKey(id)) return;
-          controller.play().then((_) {
-            if (mounted && !_isDisposed && _markersById.containsKey(id)) {
-              _activeVideoMarkers.add(id);
-            }
-          });
-        });
+    // Добавляем все видимые видео в список активных
+    for (final id in videoMarkers) {
+      if (!_activeVideoMarkers.contains(id)) {
+        final controller = _markersById[id]?.controller;
+        if (controller != null &&
+            controller.value.isInitialized &&
+            !controller.value.isPlaying) {
+          controller.play();
+          _activeVideoMarkers.add(id);
+        }
       }
     }
   }
@@ -622,326 +860,350 @@ class _GifMarkerManagerState extends State<GifMarkerManager>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: _buildCachedMarkers(),
-    );
-  }
-
-  List<Widget> _buildCachedMarkers() {
-    final markers = <Widget>[];
-    for (final entry in _markersById.entries) {
-      markers.add(
-        _MarkerWidget(
-          key: ValueKey('marker_${entry.key}'),
-          mapboxMap: widget.mapboxMap,
-          markerData: entry.value,
+    return Overlay(
+      initialEntries: [
+        OverlayEntry(
+          builder: (context) => const SizedBox.shrink(),
         ),
-      );
-    }
-    return markers;
+      ],
+    );
   }
 
   Future<void> _createVideoMarker(
       String id, List coordinates, String videoUrl) async {
-    if (_isDisposed) return;
+    if (_isDisposed || _pointAnnotationManager == null) {
+      debugPrint(
+          '❌ Cannot create marker: manager is disposed or not initialized');
+      return;
+    }
 
     try {
+      debugPrint('🎥 Creating marker $id with URL: $videoUrl');
       final isGif = videoUrl.toLowerCase().endsWith('.gif');
       VideoPlayerController? controller;
 
+      final point = mapbox.Point(
+        coordinates: mapbox.Position(
+          coordinates[0] as double,
+          coordinates[1] as double,
+        ),
+      );
+
+      debugPrint(
+          '📍 Creating point annotation at coordinates: ${coordinates[0]}, ${coordinates[1]}');
+
+      // Create initial marker with a placeholder image
+      final placeholderImage = await _createPlaceholderImage();
+      if (placeholderImage == null) {
+        debugPrint('❌ Failed to create placeholder image for marker $id');
+        return;
+      }
+
+      final options = mapbox.PointAnnotationOptions(
+        geometry: point,
+        image: placeholderImage,
+        iconSize: 0.5,
+      );
+
+      final annotation = await _pointAnnotationManager!.create(options);
+      _activeAnnotationIds.add(annotation.id);
+
       if (isGif) {
         try {
+          debugPrint('🖼️ Initializing GIF marker $id');
           final response = await http.head(Uri.parse(videoUrl));
-          if (response.statusCode != 200) return;
+          if (response.statusCode != 200) {
+            debugPrint('❌ Failed to verify GIF URL: ${response.statusCode}');
+            await _pointAnnotationManager?.delete(annotation);
+            return;
+          }
 
-          setState(() {
-            _markersById[id] = _MarkerData(
-              controller: null,
-              coordinates: [coordinates[0] as double, coordinates[1] as double],
-              isGif: true,
-              url: videoUrl,
-              isInitialized: true,
-            );
-          });
-        } catch (e) {
-          return;
-        }
-      } else {
-        setState(() {
           _markersById[id] = _MarkerData(
             controller: null,
             coordinates: [coordinates[0] as double, coordinates[1] as double],
-            isGif: isGif,
+            isGif: true,
             url: videoUrl,
-            isInitialized: false,
+            isInitialized: true,
+            annotation: annotation,
           );
-        });
+          _markersById[id]!.isVisible = true;
 
-        await Future.delayed(const Duration(milliseconds: 500));
+          _updateGifMarkerImage(id);
+          debugPrint('✅ GIF marker $id initialized successfully');
+        } catch (e) {
+          debugPrint('❌ Error creating GIF marker $id: $e');
+          await _pointAnnotationManager?.delete(annotation);
+          return;
+        }
+      } else {
+        debugPrint('🎬 Initializing video marker $id');
+        _markersById[id] = _MarkerData(
+          controller: null,
+          coordinates: [coordinates[0] as double, coordinates[1] as double],
+          isGif: isGif,
+          url: videoUrl,
+          isInitialized: false,
+          annotation: annotation,
+        );
 
         try {
+          debugPrint('🔄 Getting video controller for $id');
           controller = VideoControllerCache.getController(videoUrl);
 
-          controller ??= await VideoControllerCache.createController(videoUrl);
+          if (controller == null) {
+            debugPrint('📱 Creating new video controller for $id');
+            try {
+              controller =
+                  await VideoControllerCache.createController(videoUrl);
 
-          if (mounted && !_isDisposed && _markersById.containsKey(id)) {
-            setState(() {
-              _markersById[id] = _MarkerData(
-                controller: controller,
-                coordinates: [
-                  coordinates[0] as double,
-                  coordinates[1] as double
-                ],
-                isGif: isGif,
-                url: videoUrl,
-                isInitialized: true,
-              );
-            });
-
-            Future.delayed(const Duration(milliseconds: 800), () {
-              if (!_isDisposed &&
-                  controller != null &&
-                  controller.value.isInitialized &&
-                  mounted &&
-                  _markersById.containsKey(id)) {
-                if (_activeVideoMarkers.length < _maxSimultaneousVideos) {
-                  controller.play().then((_) {
-                    _activeVideoMarkers.add(id);
-                  });
+              // Проверяем, что контроллер создан и инициализирован
+              if (!controller.value.isInitialized) {
+                debugPrint('❌ Controller initialization failed for $id');
+                if (_markersById.containsKey(id)) {
+                  await _pointAnnotationManager?.delete(annotation);
+                  _markersById.remove(id);
                 }
+                return;
               }
-            });
+
+              // Настраиваем контроллер с явными параметрами
+              debugPrint('⚙️ Configuring video controller for $id');
+              await controller.setLooping(true);
+              await controller.setVolume(0.0);
+              await controller.setPlaybackSpeed(1.0);
+
+              // Логируем размер видео
+              final videoSize = controller.value.size;
+              debugPrint(
+                  '📐 Video size for $id: ${videoSize.width.toInt()}x${videoSize.height.toInt()}');
+            } catch (e) {
+              debugPrint('❌ Error creating video controller for $id: $e');
+              if (_markersById.containsKey(id)) {
+                await _pointAnnotationManager?.delete(annotation);
+                _markersById.remove(id);
+              }
+              return;
+            }
+          } else {
+            debugPrint('♻️ Reusing cached controller for $id');
           }
-      } catch (e) {
+
+          if (!_isDisposed && controller.value.isInitialized) {
+            debugPrint('✅ Video controller initialized for $id');
+            _markersById[id] = _MarkerData(
+              controller: controller,
+              coordinates: [coordinates[0] as double, coordinates[1] as double],
+              isGif: isGif,
+              url: videoUrl,
+              isInitialized: true,
+              annotation: annotation,
+            );
+            _markersById[id]!.isVisible = true;
+
+            // Сразу запускаем видео без задержки
+            if (!controller.value.isPlaying) {
+              debugPrint('▶️ Starting video playback for marker $id');
+              await controller.play();
+            } else {
+              debugPrint('⏯️ Video already playing for marker $id');
+            }
+            _activeVideoMarkers.add(id);
+
+            // Сразу обновляем изображение маркера с кадром из видео
+            debugPrint('🔄 Updating initial marker image for $id');
+            await _updateVideoMarkerImage(id);
+            debugPrint('▶️ Started playing video for marker $id');
+          } else {
+            debugPrint('❌ Controller not properly initialized for $id');
+            if (_markersById.containsKey(id)) {
+              await _pointAnnotationManager?.delete(annotation);
+              _markersById.remove(id);
+            }
+          }
+        } catch (e) {
+          debugPrint('❌ Error creating video marker $id: $e');
           if (_markersById.containsKey(id)) {
+            await _pointAnnotationManager?.delete(annotation);
             _markersById.remove(id);
           }
           return;
         }
       }
     } catch (e) {
-      debugPrint('❌ GifMarkerManager: Error creating marker $id: $e');
+      debugPrint('❌ Error in _createVideoMarker for $id: $e');
     }
   }
-}
 
-// Выделяем маркер в отдельный StatefulWidget для лучшего управления жизненным циклом
-class _MarkerWidget extends StatefulWidget {
-  final mapbox.MapboxMap mapboxMap;
-  final _MarkerData markerData;
+  Future<Uint8List?> _captureVideoFrame(
+      VideoPlayerController controller) async {
+    if (!mounted || _isDisposed) return null;
 
-  const _MarkerWidget({
-    super.key,
-    required this.mapboxMap,
-    required this.markerData,
-  });
-
-  @override
-  State<_MarkerWidget> createState() => _MarkerWidgetState();
-}
-
-class _MarkerWidgetState extends State<_MarkerWidget>
-    with SingleTickerProviderStateMixin {
-  Offset? _screenPoint;
-  bool _isVisible = false;
-  late AnimationController _animationController;
-  bool _videoStarted = false;
-  Timer? _videoCheckTimer;
-  int _restartAttempts = 0;
-  static const int _maxRestartAttempts = 5;
-
-  // Флаг для отслеживания высокой нагрузки на систему
-  bool get _isSystemUnderLoad {
-    // Получаем доступ к родительскому состоянию через GlobalKey
-    final parentState = GifMarkerManager.globalKey.currentState;
-    if (parentState != null) {
-      return parentState._isSystemUnderLoad;
-    }
-    return false;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Создаем контроллер анимации для обновления позиции в каждом кадре
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: false);
-
-    // Добавляем слушатель для обновления позиции в каждом кадре анимации
-    _animationController.addListener(_updatePosition);
-
-    // Инициализируем позицию
-    _updatePosition();
-
-    // Проверяем и запускаем видео, если это необходимо
-    _checkAndStartVideo();
-
-    // Запускаем периодическую проверку видео
-    _startVideoCheckTimer();
-  }
-
-  void _startVideoCheckTimer() {
-    _videoCheckTimer?.cancel();
-
-    // Проверяем видео каждые 3 секунды
-    _videoCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _forceRestartVideoIfNeeded();
-    });
-  }
-
-  void _forceRestartVideoIfNeeded() {
-    if (!mounted || widget.markerData.isGif) return;
-
-    final controller = widget.markerData.controller;
-    if (controller == null) return;
-
-    if (controller.value.isInitialized && !controller.value.isPlaying) {
-      if (_restartAttempts < _maxRestartAttempts) {
-        _restartAttempts++;
-        debugPrint(
-            '🔄 _MarkerWidget: Force restarting video (attempt $_restartAttempts)');
-        controller.play().catchError((error) {
-          debugPrint('❌ _MarkerWidget: Error restarting video: $error');
-        });
+    try {
+      if (!controller.value.isInitialized ||
+          controller.value.size.width == 0 ||
+          controller.value.size.height == 0) {
+        return _createDummyFrame();
       }
-    } else if (controller.value.isPlaying) {
-      // Сбрасываем счетчик попыток, если видео воспроизводится
-      _restartAttempts = 0;
-    }
-  }
 
-  void _checkAndStartVideo() {
-    if (!mounted || widget.markerData.isGif || _videoStarted) return;
+      final completer = Completer<Uint8List?>();
+      _videoFrameOverlay?.remove();
+      _videoFrameOverlay = OverlayEntry(
+        builder: (context) {
+          return Positioned(
+            left: -9999, // Выносим за пределы экрана
+            top: -9999,
+            width: 64, // Фиксированный размер
+            height: 64,
+            child: Opacity(
+              opacity: 0.01, // Почти невидимый
+              child: Material(
+                type: MaterialType.transparency,
+                child: RepaintBoundary(
+                  key: _videoFrameKey,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    color: Colors.black,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: AspectRatio(
+                        aspectRatio: controller.value.aspectRatio,
+                        child: VideoPlayer(controller),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 
-    final controller = widget.markerData.controller;
-    if (controller == null) return;
+      Overlay.of(context).insert(_videoFrameOverlay!);
 
-    if (!_videoStarted && controller.value.isInitialized) {
-      _videoStarted = true;
-      // Добавляем небольшую задержку перед запуском видео
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        controller.play().catchError((error) {
-          debugPrint('❌ _MarkerWidget: Error playing video: $error');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (!mounted || _isDisposed) {
+            completer.complete(null);
+            return;
+          }
+
+          try {
+            final boundary = _videoFrameKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+            if (boundary == null) {
+              debugPrint('❌ RepaintBoundary not found');
+              completer.complete(_createDummyFrame());
+              return;
+            }
+
+            boundary.toImage(pixelRatio: 1.0).then((image) {
+              image.toByteData(format: ui.ImageByteFormat.png).then((byteData) {
+                final bytes = byteData?.buffer.asUint8List();
+                completer.complete(bytes);
+              }).catchError((e) {
+                debugPrint('❌ Error converting image to bytes: $e');
+                completer.complete(_createDummyFrame());
+              });
+            }).catchError((e) {
+              debugPrint('❌ Error capturing image: $e');
+              completer.complete(_createDummyFrame());
+            });
+          } catch (e) {
+            debugPrint('❌ Error in frame capture: $e');
+            completer.complete(_createDummyFrame());
+          }
         });
       });
+
+      final result = await completer.future.timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () {
+          debugPrint('⚠️ Frame capture timed out, using dummy frame');
+          return _createDummyFrame();
+        },
+      );
+
+      _videoFrameOverlay?.remove();
+      _videoFrameOverlay = null;
+
+      return result;
+    } catch (e) {
+      debugPrint('❌ Error in _captureVideoFrame: $e');
+      return _createDummyFrame();
     }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _videoCheckTimer?.cancel();
-    super.dispose();
-  }
+  // Создаем заглушку, если не удалось захватить кадр
+  Future<Uint8List?> _createDummyFrame() async {
+    const size = Size(64.0, 64.0);
 
-  @override
-  void didUpdateWidget(_MarkerWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Обновляем позицию если координаты изменились
-    if (oldWidget.markerData.coordinates != widget.markerData.coordinates) {
-      _updatePosition();
-    }
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
 
-    // Проверяем и запускаем видео при обновлении виджета
-    _checkAndStartVideo();
+    // Рисуем черный фон
+    final paint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
 
-    // Если контроллер изменился, перезапускаем таймер проверки
-    if (oldWidget.markerData.controller != widget.markerData.controller) {
-      _startVideoCheckTimer();
-    }
-  }
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
 
-  void _updatePosition() {
-    // Используем метод pixelForCoordinate для преобразования геокоординат в экранные
-    widget.mapboxMap
-        .pixelForCoordinate(
-      mapbox.Point(
-        coordinates: mapbox.Position(
-          widget.markerData.coordinates[0],
-          widget.markerData.coordinates[1],
-        ),
+    // Рисуем контур
+    paint
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(1, 1, size.width - 2, size.height - 2),
+        const Radius.circular(4),
       ),
-    )
-        .then((screenCoordinate) {
-      if (mounted) {
-        // Проверяем, находится ли точка в пределах экрана
-        final size = MediaQuery.of(context).size;
-        final isOnScreen = screenCoordinate.x >= -30 &&
-            screenCoordinate.x <= size.width + 30 &&
-            screenCoordinate.y >= -30 &&
-            screenCoordinate.y <= size.height + 30;
-
-        setState(() {
-          _screenPoint = Offset(screenCoordinate.x, screenCoordinate.y);
-          _isVisible = isOnScreen;
-
-          // Обновляем видимость в данных маркера
-          (widget.markerData).isVisible = isOnScreen;
-        });
-      }
-    }).catchError((_) {
-      // Игнорируем ошибки
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_screenPoint == null || !_isVisible) {
-      return const SizedBox.shrink();
-    }
-
-    // Проверяем и запускаем видео при построении виджета
-    _checkAndStartVideo();
-
-    // Стандартный размер маркера
-    const markerSize = 30.0;
-    const halfSize = markerSize / 2;
-
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 0),
-      left: _screenPoint!.dx - halfSize,
-      top: _screenPoint!.dy - halfSize,
-      child: RepaintBoundary(
-        child: Container(
-          width: markerSize,
-          height: markerSize,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: widget.markerData.isGif
-                ? LoopingGifWidget(url: widget.markerData.url)
-                : widget.markerData.controller != null &&
-                        widget.markerData.controller!.value.isInitialized
-                    ? AspectRatio(
-                        aspectRatio:
-                            widget.markerData.controller!.value.aspectRatio,
-                        child: VideoPlayer(widget.markerData.controller!),
-                      )
-                    : const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-          ),
-        ),
-      ),
+      paint,
     );
+
+    // Индикатор проблемы с загрузкой
+    paint
+      ..color = Colors.red.withOpacity(0.7)
+      ..style = PaintingStyle.fill;
+
+    // Создаем символ ошибки (восклицательный знак)
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(center, 12, paint);
+
+    paint.color = Colors.white;
+
+    // Восклицательный знак
+    final exclamationPath = Path();
+    exclamationPath.moveTo(center.dx, center.dy - 6);
+    exclamationPath.lineTo(center.dx, center.dy + 1);
+    exclamationPath.moveTo(center.dx, center.dy + 4);
+    exclamationPath.lineTo(center.dx, center.dy + 4);
+
+    paint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    canvas.drawPath(exclamationPath, paint);
+
+    final picture = recorder.endRecording();
+    final image =
+        await picture.toImage(size.width.toInt(), size.height.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return byteData?.buffer.asUint8List();
+  }
+
+  // Вычисляет простой хеш для сравнения изображений
+  int _computeImageHash(Uint8List bytes) {
+    if (bytes.isEmpty) return 0;
+
+    int hash = 0;
+    // Берем каждый 10-й байт для ускорения вычислений
+    for (int i = 0; i < bytes.length; i += 10) {
+      hash = (hash * 31 + bytes[i]) & 0xFFFFFFFF;
+    }
+    return hash;
   }
 }
 
@@ -951,6 +1213,7 @@ class _MarkerData {
   final bool isGif;
   final String url;
   final bool isInitialized;
+  final mapbox.PointAnnotation? annotation;
   bool isVisible = false;
 
   _MarkerData({
@@ -959,5 +1222,25 @@ class _MarkerData {
     this.isGif = false,
     required this.url,
     this.isInitialized = false,
+    this.annotation,
   });
+
+  _MarkerData copyWith({
+    VideoPlayerController? controller,
+    List<double>? coordinates,
+    bool? isGif,
+    String? url,
+    bool? isInitialized,
+    mapbox.PointAnnotation? annotation,
+    bool? isVisible,
+  }) {
+    return _MarkerData(
+      controller: controller ?? this.controller,
+      coordinates: coordinates ?? this.coordinates,
+      isGif: isGif ?? this.isGif,
+      url: url ?? this.url,
+      isInitialized: isInitialized ?? this.isInitialized,
+      annotation: annotation ?? this.annotation,
+    )..isVisible = isVisible ?? this.isVisible;
+  }
 }
