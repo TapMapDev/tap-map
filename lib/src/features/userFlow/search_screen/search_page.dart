@@ -44,19 +44,45 @@ class _SearchPageContentState extends State<_SearchPageContent>
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.pink.shade500,
-        title: const Text(
-          'Найди то самое место',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+        backgroundColor: Colors.black,
+        toolbarHeight: 30,
+
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Tap Map',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.heart_broken),
+                  color: Colors.white,
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  color: Colors.white,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ],
         ),
         // Если _showDetails = true, показываем кнопку «Назад»,
         // чтобы вернуться к свайпам.
         leading: _showDetails
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
+                style: IconButton.styleFrom(
+                  alignment: Alignment.center,
+                  backgroundColor: Colors.white,
+                ),
                 onPressed: () {
                   setState(() {
                     _showDetails = false;
@@ -103,7 +129,14 @@ class _SearchPageContentState extends State<_SearchPageContent>
               );
             } else {
               // Если _showDetails == true -> показываем детальный режим
-              return DetailModePage(place: _selectedPlace);
+              return DetailModePage(
+                place: _selectedPlace,
+                onImageTap: () {
+                  setState(() {
+                    _showDetails = false;
+                  });
+                },
+              );
             }
           } else {
             return const Center(child: Text('Начните поиск'));
