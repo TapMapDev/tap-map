@@ -28,7 +28,6 @@ class AuthorizationRepositoryImpl {
         responseModel.refreshToken != null) {
       await prefs.saveAccessToken(responseModel.accessToken!);
       await prefs.saveRefreshToken(responseModel.refreshToken!);
-      debugPrint("🔑 Токены сохранены при авторизации");
     }
 
     return responseModel;

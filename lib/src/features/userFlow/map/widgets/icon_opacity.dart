@@ -66,63 +66,55 @@ class OpenStatusManager {
   ) async {
     if (mapboxMapController == null) return;
 
-    try {
-      final now = DateTime.now();
+    final now = DateTime.now();
 
-      // Получаем features с оптимизированным запросом
-      final features = await mapboxMapController.queryRenderedFeatures(
-        mp.RenderedQueryGeometry(
-          type: mp.Type.SCREEN_BOX,
-          value: jsonEncode({
-            "min": {"x": 0, "y": 0},
-            "max": {"x": 10000, "y": 10000}
-          }),
-        ),
-        mp.RenderedQueryOptions(
-          layerIds: [placesLayerId],
-          filter: null,
-        ),
+    // Получаем features с оптимизированным запросом
+    final features = await mapboxMapController.queryRenderedFeatures(
+      mp.RenderedQueryGeometry(
+        type: mp.Type.SCREEN_BOX,
+        value: jsonEncode({
+          "min": {"x": 0, "y": 0},
+          "max": {"x": 10000, "y": 10000}
+        }),
+      ),
+      mp.RenderedQueryOptions(
+        layerIds: [placesLayerId],
+        filter: null,
+      ),
+    );
+
+    // Обрабатываем features пакетами по 20 штук для оптимизации
+    for (var i = 0; i < features.length; i += 20) {
+      if (isDisposed) return;
+
+      final batch = features.skip(i).take(20);
+      await Future.wait(
+        batch.map((feature) async {
+          if (feature == null) return;
+
+          final featureData = feature.queriedFeature.feature;
+          final properties = featureData as Map<dynamic, dynamic>;
+          final id = properties['id']?.toString();
+          final nestedProperties =
+              properties['properties'] as Map<dynamic, dynamic>?;
+
+          if (id == null || nestedProperties == null) return;
+
+          String? workingHours = nestedProperties['working_hours']?.toString();
+          if (workingHours != null) {
+            workingHours = workingHours.replaceAll('\\"', '"');
+          }
+
+          final isClosed = isPointClosedNow(workingHours, now);
+
+          await mapboxMapController.setFeatureState(
+            "places_source",
+            "mylayer",
+            id,
+            jsonEncode({"closed": isClosed}),
+          );
+        }),
       );
-
-      // Обрабатываем features пакетами по 20 штук для оптимизации
-      for (var i = 0; i < features.length; i += 20) {
-        if (isDisposed) return;
-
-        final batch = features.skip(i).take(20);
-        await Future.wait(
-          batch.map((feature) async {
-            if (feature == null) return;
-
-            final featureData = feature.queriedFeature.feature;
-            final properties = featureData as Map<dynamic, dynamic>;
-            final id = properties['id']?.toString();
-            final nestedProperties =
-                properties['properties'] as Map<dynamic, dynamic>?;
-
-            if (id == null || nestedProperties == null) return;
-
-            String? workingHours =
-                nestedProperties['working_hours']?.toString();
-            if (workingHours != null) {
-              workingHours = workingHours.replaceAll('\\"', '"');
-            }
-
-            final isClosed = isPointClosedNow(workingHours, now);
-
-            await mapboxMapController.setFeatureState(
-              "places_source",
-              "mylayer",
-              id,
-              jsonEncode({"closed": isClosed}),
-            );
-          }),
-        );
-      }
-
-      debugPrint("✨ Обновление состояний завершено");
-    } catch (e, st) {
-      debugPrint("❌ Ошибка в updateOpenCloseStates: $e");
-      debugPrint("Stack trace: $st");
     }
   }
 

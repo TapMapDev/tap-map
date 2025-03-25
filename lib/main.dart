@@ -124,7 +124,12 @@ class MyApp extends StatelessWidget {
           },
         ),
         theme: ThemeData(
-          appBarTheme: const AppBarTheme(surfaceTintColor: Colors.transparent),
+          useMaterial3: true,
+          appBarTheme: const AppBarTheme(
+            surfaceTintColor: Colors.transparent,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: StyleManager.mainColor,

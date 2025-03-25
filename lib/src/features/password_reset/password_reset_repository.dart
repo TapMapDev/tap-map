@@ -14,7 +14,6 @@ class ResetPasswordRepositoryImpl {
 
   // Метод для обработки глубокой ссылки
   void handleResetPasswordLink(String url) {
-    print('Handling reset password link: $url'); // Debug log
 
     final uidMatch = RegExp(r'uid=([^&]+)').firstMatch(url);
     final tokenMatch = RegExp(r'token=([^&]+)').firstMatch(url);
@@ -22,8 +21,6 @@ class ResetPasswordRepositoryImpl {
     if (uidMatch != null && tokenMatch != null) {
       _resetUid = uidMatch.group(1);
       _resetToken = tokenMatch.group(1);
-      print(
-          'Extracted from link - uid: $_resetUid, token: $_resetToken'); // Debug log
     } else {
       throw Exception('Invalid reset password link');
     }
@@ -40,8 +37,6 @@ class ResetPasswordRepositoryImpl {
             'email': email,
           },
           useAuth: false);
-
-      print('Reset password response: ${response['data']}'); // Debug log
 
       // Handle empty response
       if (response['data'] == null || response['data'].toString().isEmpty) {
@@ -62,7 +57,6 @@ class ResetPasswordRepositoryImpl {
         throw Exception('Unexpected response format: ${response['data']}');
       }
     } catch (e) {
-      print('Error in sendConfirmationCode: $e'); // Debug log
       rethrow;
     }
   }

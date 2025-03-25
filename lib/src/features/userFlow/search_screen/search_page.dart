@@ -5,6 +5,8 @@ import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dar
 import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/widgets/search_silver.dart';
 
+bool _enableDetailedLogs = false;
+
 class SearchPage extends StatelessWidget {
   const SearchPage({super.key});
 
