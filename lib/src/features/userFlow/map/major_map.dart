@@ -15,7 +15,7 @@ import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/geo_location.dart';
-import 'package:tap_map/src/features/userFlow/map/widgets/gif_marker_manager.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart'
     show OpenStatusManager;
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart';

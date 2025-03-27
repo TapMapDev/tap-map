@@ -1,57 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:tap_map/src/features/userFlow/map/major_map.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/user_profile.dart';
+import 'package:go_router/go_router.dart';
 
-class BottomNavbar extends StatefulWidget {
-  const BottomNavbar({super.key});
+class BottomNavbar extends StatelessWidget {
+  final StatefulNavigationShell shell;
+  const BottomNavbar({super.key, required this.shell});
 
-  @override
-  State<BottomNavbar> createState() => _MainScreenState();
-}
 
-class _MainScreenState extends State<BottomNavbar> {
-  int _selectedIndex = 0;
-
-  // Используем глобальные ключи для сохранения состояния виджетов
-  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-  ];
-
-  final List<Widget> _screens = [
-    const MajorMap(), // Карта
-    const SearchPage(), // Поиск
-    const FavoritesScreen(), // Избранное
-    const UserProfileScreen(), // Профиль
-    const SettingsScreen(), // Настройки
-  ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    shell.goBranch(
+      index,
+      initialLocation: index == shell.currentIndex, // чтоб не перезагружался
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Используем IndexedStack вместо обычного виджета
-      // IndexedStack сохраняет состояние всех дочерних виджетов
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: shell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: shell.currentIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.blue, // Цвет активной иконки
-        unselectedItemColor: Colors.grey, // Цвет неактивных иконок
-        type: BottomNavigationBarType.fixed, // Фиксированное расположение
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
               icon: SvgPicture.asset('assets/svg/afisha.svg'), label: 'Афиша'),
@@ -68,23 +41,5 @@ class _MainScreenState extends State<BottomNavbar> {
         ],
       ),
     );
-  }
-}
-
-// Заглушки для экранов
-
-class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Найти Место'));
-  }
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Профиль'));
   }
 }

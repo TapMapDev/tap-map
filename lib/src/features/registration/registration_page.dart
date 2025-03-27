@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
-
+import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/widget/custom_elevated_button.dart';
-
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
 
@@ -36,11 +35,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             Get.snackbar('Error', state.errorMessage ?? 'Something went wrong');
           }
           if (state is RegistarationStateSuccess) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/', // Route name of the new screen
-              (Route<dynamic> route) => false, // Condition for deleting routes
-            );
+            context.go('/homepage');
           }
         },
         builder: (context, state) {

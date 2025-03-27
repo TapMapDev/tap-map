@@ -10,16 +10,13 @@ class GeoLocationButton extends StatelessWidget {
 
   Future<void> _centerOnUserLocation(BuildContext context) async {
     if (mapboxMapController == null) {
-      debugPrint("❌ Ошибка: Контроллер карты не инициализирован.");
       return;
     }
 
     final position = await LocationService.getUserPosition();
     if (position != null) {
-      debugPrint("📍 Центрируем карту на позиции: ${position.latitude}, ${position.longitude}");
       _moveCameraToPosition(position);
     } else {
-      debugPrint("❌ Не удалось получить текущую позицию.");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось получить геопозицию')),
       );
@@ -29,18 +26,14 @@ class GeoLocationButton extends StatelessWidget {
   void _moveCameraToPosition(gl.Position position) async {
     if (mapboxMapController == null) return;
 
-    try {
-      await mapboxMapController?.setCamera(
-        mp.CameraOptions(
-          zoom: 14,
-          center: mp.Point(
-            coordinates: mp.Position(position.longitude, position.latitude),
-          ),
+    await mapboxMapController?.setCamera(
+      mp.CameraOptions(
+        zoom: 14,
+        center: mp.Point(
+          coordinates: mp.Position(position.longitude, position.latitude),
         ),
-      );
-    } catch (e) {
-      debugPrint('❌ Ошибка обновления камеры: $e');
-    }
+      ),
+    );
   }
 
   @override
@@ -55,7 +48,7 @@ class GeoLocationButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
-          Icons.my_location, // Изменил иконку для центрирования
+          Icons.my_location,
           color: Colors.black,
           size: 20,
         ),

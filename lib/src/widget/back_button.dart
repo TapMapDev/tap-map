@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tap_map/core/common/styles.dart';
 
-
 class CustomBackButton extends StatelessWidget {
   const CustomBackButton({super.key});
 
@@ -15,16 +14,16 @@ class CustomBackButton extends StatelessWidget {
           color: StyleManager.blocColor,
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 28.5, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 28.5, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.arrow_back,
                 size: 20,
                 color: Colors.black,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 "Back",
                 style: TextStylesManager.drawerText,

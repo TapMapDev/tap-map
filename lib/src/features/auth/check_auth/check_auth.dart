@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class CheckAuthPage extends StatefulWidget {
   const CheckAuthPage({super.key});
@@ -17,9 +18,9 @@ class _CheckAuthPageState extends State<CheckAuthPage> {
     return BlocListener<AuthorizationBloc, AuthorizationState>(
       listener: (context, state) {
         if (state is AuthorizedState) {
-          Navigator.pushReplacementNamed(context, '/homepage');
+          context.go('/homepage');
         } else if (state is UnAuthorizedState) {
-          Navigator.pushReplacementNamed(context, '/authorization');
+          context.go('/authorization');
         }
       },
       child: const Scaffold(

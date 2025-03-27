@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 
@@ -30,7 +31,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
             Get.snackbar('Error', state.errorMessage ?? 'Something went wrong');
           }
           if (state is AuthorizationSuccess) {
-            Navigator.pushReplacementNamed(context, '/homepage');
+            context.go('/homepage');
           }
         },
         builder: (context, state) {
@@ -106,7 +107,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                     const SizedBox(height: 20),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/password_reset');
+                        context.push('/password_reset');
                       },
                       child: const Text(
                         'Забыл пароль',
@@ -144,7 +145,7 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/registration');
+                          context.push('/registration');
                         },
                         child: const Text(
                           'Создать аккаунт',
