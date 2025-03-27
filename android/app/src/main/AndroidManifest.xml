@@ -37,7 +37,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="tapmap"
-                    android:host="reset-password" />
+                   android:pathPrefix="/reset_password_confirm" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

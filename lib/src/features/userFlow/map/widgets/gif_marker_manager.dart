@@ -5,39 +5,30 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:video_player/video_player.dart';
 
-// Глобальная переменная для контроля вывода логов
-// bool _enableDetailedLogs = true;
-
 // Глобальный кэш для видео контроллеров
 class VideoControllerCache {
   static final Map<String, VideoPlayerController> _cache = {};
   static final Map<String, DateTime> _lastUsed = {};
-  static final Map<String, int> _usageCount = {};
   static const int _maxCacheSize = 10;
 
   static VideoPlayerController? getController(String url) {
     if (_cache.containsKey(url)) {
       _lastUsed[url] = DateTime.now();
-      _usageCount[url] = (_usageCount[url] ?? 0) + 1;
       return _cache[url];
     }
     return null;
   }
 
   static Future<VideoPlayerController> createController(String url) async {
-    // Проверяем, есть ли контроллер в кэше
     if (_cache.containsKey(url)) {
       _lastUsed[url] = DateTime.now();
-      _usageCount[url] = (_usageCount[url] ?? 0) + 1;
       return _cache[url]!;
     }
 
-    // Если кэш переполнен, удаляем наименее используемые контроллеры
     if (_cache.length >= _maxCacheSize) {
       _cleanCache();
     }
 
-    // Создаем новый контроллер
     final controller = VideoPlayerController.network(
       url,
       videoPlayerOptions: VideoPlayerOptions(
@@ -48,19 +39,15 @@ class VideoControllerCache {
 
     _cache[url] = controller;
     _lastUsed[url] = DateTime.now();
-    _usageCount[url] = 1;
 
-    // Инициализируем контроллер
     try {
       await controller.initialize();
       await controller.setLooping(true);
       await controller.setVolume(0.0);
       await controller.setPlaybackSpeed(1.0);
     } catch (e) {
-      debugPrint('❌ VideoControllerCache: Error initializing controller: $e');
       _cache.remove(url);
       _lastUsed.remove(url);
-      _usageCount.remove(url);
       rethrow;
     }
 
@@ -71,12 +58,8 @@ class VideoControllerCache {
     if (_cache.length < _maxCacheSize) return;
 
     final urls = _cache.keys.toList();
-    urls.sort((a, b) {
-      final countCompare = (_usageCount[a] ?? 0).compareTo(_usageCount[b] ?? 0);
-      if (countCompare != 0) return countCompare;
-      return (_lastUsed[a] ?? DateTime.now())
-          .compareTo(_lastUsed[b] ?? DateTime.now());
-    });
+    urls.sort((a, b) => (_lastUsed[a] ?? DateTime.now())
+        .compareTo(_lastUsed[b] ?? DateTime.now()));
 
     final toRemove = urls.take(urls.length - _maxCacheSize + 1).toList();
     for (final url in toRemove) {
@@ -86,9 +69,6 @@ class VideoControllerCache {
       }
       _cache.remove(url);
       _lastUsed.remove(url);
-      _usageCount.remove(url);
-      debugPrint(
-          '🗑️ VideoControllerCache: Removed controller for $url from cache');
     }
   }
 
@@ -102,8 +82,232 @@ class VideoControllerCache {
     }
     _cache.clear();
     _lastUsed.clear();
-    _usageCount.clear();
-    debugPrint('🧹 VideoControllerCache: Cleared all controllers');
+  }
+}
+
+class _MarkerData {
+  final String id;
+  final mapbox.Point coordinates;
+  final double zoom;
+  final String url;
+
+  VideoPlayerController? controller;
+  final ValueNotifier<bool> isVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<Offset?> positionNotifier = ValueNotifier<Offset?>(null);
+
+  bool get isVisible => isVisibleNotifier.value;
+  set isVisible(bool value) {
+    if (isVisibleNotifier.value != value) {
+      isVisibleNotifier.value = value;
+    }
+  }
+
+  _MarkerData({
+    required this.id,
+    required this.coordinates,
+    required this.zoom,
+    required this.url,
+    this.controller,
+    bool isVisible = false,
+  }) {
+    isVisibleNotifier.value = isVisible;
+  }
+
+  void dispose() {
+    isVisibleNotifier.dispose();
+    positionNotifier.dispose();
+  }
+}
+
+class _MarkerWidget extends StatefulWidget {
+  final _MarkerData markerData;
+  final mapbox.MapboxMap mapboxMap;
+
+  const _MarkerWidget({
+    super.key,
+    required this.markerData,
+    required this.mapboxMap,
+  });
+
+  @override
+  State<_MarkerWidget> createState() => _MarkerWidgetState();
+}
+
+class _MarkerWidgetState extends State<_MarkerWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  bool _videoStarted = false;
+  Timer? _videoCheckTimer;
+  Timer? _positionUpdateTimer;
+  int _restartAttempts = 0;
+  static const int _maxRestartAttempts = 5;
+  static const double _smoothingFactor = 0.1;
+  static const double _maxPositionDelta = 50.0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: false);
+
+    _startVideoCheckTimer();
+    _startPositionUpdateTimer();
+  }
+
+  void _startPositionUpdateTimer() {
+    _positionUpdateTimer?.cancel();
+    _positionUpdateTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (_) {
+      _updatePosition();
+    });
+  }
+
+  void _startVideoCheckTimer() {
+    _videoCheckTimer?.cancel();
+    _videoCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _forceRestartVideoIfNeeded();
+    });
+  }
+
+  void _forceRestartVideoIfNeeded() {
+    if (!mounted) return;
+
+    final controller = widget.markerData.controller;
+    if (controller == null) return;
+
+    if (controller.value.isInitialized && !controller.value.isPlaying) {
+      if (_restartAttempts < _maxRestartAttempts) {
+        _restartAttempts++;
+        controller.play().catchError((error) {
+          // Ошибка воспроизведения видео
+        });
+      }
+    } else if (controller.value.isPlaying) {
+      _restartAttempts = 0;
+    }
+  }
+
+  void _checkAndStartVideo() {
+    if (!mounted || _videoStarted) return;
+
+    final controller = widget.markerData.controller;
+    if (controller == null) return;
+
+    if (!_videoStarted && controller.value.isInitialized) {
+      _videoStarted = true;
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        controller.play().catchError((error) {
+          // Ошибка воспроизведения видео
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _videoCheckTimer?.cancel();
+    _positionUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_MarkerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkAndStartVideo();
+
+    if (oldWidget.markerData.controller != widget.markerData.controller) {
+      _startVideoCheckTimer();
+    }
+  }
+
+  void _updatePosition() {
+    widget.mapboxMap
+        .pixelForCoordinate(
+      widget.markerData.coordinates,
+    )
+        .then((screenCoordinate) {
+      if (!mounted) return;
+
+      final newTargetPoint = Offset(screenCoordinate.x, screenCoordinate.y);
+      final currentPosition = widget.markerData.positionNotifier.value;
+
+      // Проверяем, не слишком ли резкое изменение позиции
+      if (currentPosition != null) {
+        final delta = (newTargetPoint - currentPosition).distance;
+        if (delta > _maxPositionDelta) {
+          // Если изменение слишком резкое, игнорируем его
+          return;
+        }
+      }
+
+      // Применяем сглаживание
+      final newPosition = currentPosition == null
+          ? newTargetPoint
+          : Offset.lerp(currentPosition, newTargetPoint, _smoothingFactor);
+
+      if (newPosition != currentPosition) {
+        widget.markerData.positionNotifier.value = newPosition;
+      }
+
+      // Проверяем видимость
+      if (newPosition != null) {
+        final size = MediaQuery.of(context).size;
+        final isOnScreen = newPosition.dx >= -30 &&
+            newPosition.dx <= size.width + 30 &&
+            newPosition.dy >= -30 &&
+            newPosition.dy <= size.height + 30;
+
+        if (widget.markerData.isVisible != isOnScreen) {
+          widget.markerData.isVisible = isOnScreen;
+        }
+      }
+    }).catchError((_) {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Offset?>(
+      valueListenable: widget.markerData.positionNotifier,
+      builder: (context, position, child) {
+        if (position == null) {
+          return const SizedBox.shrink();
+        }
+
+        _checkAndStartVideo();
+
+        return ValueListenableBuilder<bool>(
+          valueListenable: widget.markerData.isVisibleNotifier,
+          builder: (context, isVisible, child) {
+            if (!isVisible) {
+              return const SizedBox.shrink();
+            }
+
+            const markerSize = 25.0;
+            const halfSize = markerSize / 2;
+
+            return AnimatedPositioned(
+              duration: const Duration(milliseconds: 100),
+              left: position.dx - halfSize,
+              top: position.dy - halfSize,
+              child: RepaintBoundary(
+                child: SizedBox(
+                  width: markerSize,
+                  height: markerSize,
+                  child: widget.markerData.controller != null
+                      ? VideoPlayer(widget.markerData.controller!)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -137,24 +341,13 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
   bool _isInitializing = false;
   bool _isStyleLoaded = false;
   Timer? _updateTimer;
+  Timer? _featuresCheckTimer;
   mapbox.CameraState? _lastCameraState;
   int _initializationAttempts = 0;
   static const int _maxInitializationAttempts = 3;
   Timer? _styleCheckTimer;
   Timer? _videoRotationTimer;
-  final bool _isSystemUnderLoad = false;
   final Set<String> _processedFeatures = {};
-  Timer? _featuresCheckTimer;
-  int _lastFeaturesCount = 0;
-  int _stableFeaturesCount = 0;
-  static const int _maxStableChecks = 3;
-  static const Duration _checkInterval = Duration(milliseconds: 1000);
-  static const Duration _maxCheckDuration = Duration(seconds: 15);
-  static const int _minFeatureCount = 100;
-  static const int _maxFeatureCount = 1000;
-  static const double _maxFeatureChangePercent = 0.1;
-  DateTime? _checkStartTime;
-
   static const int _maxSimultaneousVideos = 5;
   final List<String> _activeVideoMarkers = [];
 
@@ -163,6 +356,7 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startStyleCheck();
+    _startFeaturesCheck();
   }
 
   void _startStyleCheck() {
@@ -178,52 +372,37 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
           if (layers.isNotEmpty) {
             _isStyleLoaded = true;
             _styleCheckTimer?.cancel();
-            _startFeaturesCheck();
+            _scheduleInitialization();
           }
         }
       } catch (e) {
-        debugPrint('❌ Error checking style: $e');
+        // Ошибка проверки стиля
       }
     });
   }
 
-  Future<void> _ensureMapLoaded() async {
-    while (!_isStyleLoaded) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-    await Future.delayed(const Duration(milliseconds: 300));
-  }
-
   void _startFeaturesCheck() {
     _featuresCheckTimer?.cancel();
-    _checkStartTime = DateTime.now();
-    _featuresCheckTimer = Timer.periodic(_checkInterval, (_) {
-      _checkFeaturesStability();
+    _featuresCheckTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (mounted && !_isDisposed && _isInitialized) {
+        _checkVisibleFeatures();
+      }
     });
   }
 
-  Future<void> _checkFeaturesStability() async {
-    if (_isDisposed || _isInitialized) {
-      _featuresCheckTimer?.cancel();
-      return;
-    }
-
-    // Проверяем таймаут
-    if (_checkStartTime != null &&
-        DateTime.now().difference(_checkStartTime!) > _maxCheckDuration) {
-      debugPrint('⚠️ Features check timeout reached');
-      _featuresCheckTimer?.cancel();
-      _scheduleInitialization();
-      return;
-    }
+  Future<void> _checkVisibleFeatures() async {
+    if (!mounted || _isDisposed || !_isInitialized) return;
 
     try {
+      final cameraState = await widget.mapboxMap.getCameraState();
+      final size = MediaQuery.of(context).size;
       final features = await widget.mapboxMap.queryRenderedFeatures(
         mapbox.RenderedQueryGeometry(
           type: mapbox.Type.SCREEN_BOX,
           value: jsonEncode({
             "min": {"x": 0, "y": 0},
-            "max": {"x": 10000, "y": 10000}
+            "max": {"x": size.width, "y": size.height}
           }),
         ),
         mapbox.RenderedQueryOptions(
@@ -232,49 +411,105 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
         ),
       );
 
-      final currentFeaturesCount = features.length;
-      debugPrint('📊 Current features count: $currentFeaturesCount');
+      if (features.isEmpty) return;
 
-      // Проверяем, что количество фич находится в разумных пределах
-      if (currentFeaturesCount >= _minFeatureCount &&
-          currentFeaturesCount <= _maxFeatureCount) {
-        if (_lastFeaturesCount == 0) {
-          _lastFeaturesCount = currentFeaturesCount;
-          _stableFeaturesCount = 0;
-          debugPrint('🔄 First features count: $currentFeaturesCount');
-          return;
+      final visibleFeatureIds = <String>{};
+      for (final feature in features) {
+        if (feature == null) continue;
+        final properties =
+            feature.queriedFeature.feature as Map<dynamic, dynamic>;
+        final id = properties['id']?.toString();
+        if (id != null) {
+          visibleFeatureIds.add(id);
         }
-
-        // Проверяем, не слишком ли большое изменение
-        final changePercent =
-            (currentFeaturesCount - _lastFeaturesCount).abs() /
-                _lastFeaturesCount;
-        if (changePercent <= _maxFeatureChangePercent) {
-          _stableFeaturesCount++;
-          debugPrint(
-              '✅ Features count stable: $_stableFeaturesCount/$_maxStableChecks (change: ${(changePercent * 100).toStringAsFixed(1)}%)');
-
-          if (_stableFeaturesCount >= _maxStableChecks) {
-            _featuresCheckTimer?.cancel();
-            _scheduleInitialization();
-          }
-        } else {
-          _stableFeaturesCount = 0;
-          debugPrint(
-              '📈 Features count changed significantly: $_lastFeaturesCount -> $currentFeaturesCount (${(changePercent * 100).toStringAsFixed(1)}%)');
-        }
-      } else {
-        debugPrint(
-            '⚠️ Features count out of range: $currentFeaturesCount (expected: $_minFeatureCount - $_maxFeatureCount)');
-        _stableFeaturesCount = 0;
       }
 
-      _lastFeaturesCount = currentFeaturesCount;
+      bool visibilityChanged = false;
+
+      // Обновляем видимость существующих маркеров
+      for (final entry in _markersById.entries) {
+        final wasVisible = entry.value.isVisible;
+        entry.value.isVisible = visibleFeatureIds.contains(entry.key);
+        if (wasVisible != entry.value.isVisible) {
+          visibilityChanged = true;
+        }
+      }
+
+      final markersToRemove = _markersById.keys
+          .where((id) => !visibleFeatureIds.contains(id))
+          .toList();
+
+      // Удаляем маркеры, которые больше не видны
+      for (final id in markersToRemove) {
+        final markerData = _markersById[id];
+        if (markerData != null) {
+          if (markerData.url.isNotEmpty) {
+            VideoControllerCache.releaseController(markerData.url);
+          }
+          _markersById.remove(id);
+          _activeVideoMarkers.remove(id);
+          visibilityChanged = true;
+        }
+      }
+
+      final newMarkersToCreate = <Map<String, dynamic>>[];
+
+      // Добавляем новые маркеры
+      for (final feature in features) {
+        if (feature == null) continue;
+
+        final properties =
+            feature.queriedFeature.feature as Map<dynamic, dynamic>;
+        final id = properties['id']?.toString();
+        if (id == null || _markersById.containsKey(id)) continue;
+
+        final videoUrl = _findVideoUrl(properties);
+        if (videoUrl == null) continue;
+
+        final geometry = properties['geometry'] as Map<dynamic, dynamic>?;
+        if (geometry == null) continue;
+
+        final coordinates = geometry['coordinates'] as List?;
+        if (coordinates == null || coordinates.length < 2) continue;
+
+        newMarkersToCreate.add({
+          'id': id,
+          'coordinates': coordinates,
+          'videoUrl': videoUrl,
+        });
+        visibilityChanged = true;
+      }
+
+      if (newMarkersToCreate.isNotEmpty) {
+        final futures = <Future<void>>[];
+        for (final markerData in newMarkersToCreate) {
+          futures.add(_createVideoMarker(
+            markerData['id'],
+            markerData['coordinates'],
+            markerData['videoUrl'],
+          ));
+        }
+
+        await Future.wait(futures);
+      }
+
+      if (visibilityChanged) {
+        setState(() {});
+        _updateActiveVideos();
+      }
     } catch (e) {
-      debugPrint('❌ Error checking features stability: $e');
-      _featuresCheckTimer?.cancel();
-      _scheduleInitialization();
+      // Ошибка проверки видимых фич
     }
+  }
+
+  Future<void> _ensureMapReady() async {
+    // Ждем загрузки стиля
+    while (!_isStyleLoaded) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    // Простая задержка для стабилизации
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   void _scheduleInitialization() {
@@ -294,11 +529,9 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     }
 
     try {
-      await _ensureMapLoaded();
+      await _ensureMapReady();
 
       _initializationAttempts++;
-      debugPrint(
-          '🔄 Starting marker initialization (attempt $_initializationAttempts)');
 
       final styleURI = await widget.mapboxMap.style.getStyleURI();
       if (styleURI.isEmpty) {
@@ -336,7 +569,6 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
       );
 
       if (features.isEmpty) {
-        debugPrint('ℹ️ No features found to initialize');
         _isInitializing = false;
         if (_initializationAttempts < _maxInitializationAttempts) {
           _scheduleInitialization();
@@ -391,9 +623,7 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
             screenCoordinate.y >= -30 &&
             screenCoordinate.y <= size.height + 30;
 
-        if (isOnScreen) {
-          visibleMarkers.add(id);
-        }
+        visibleMarkers.add(id);
 
         futures.add(_createVideoMarker(id, coordinates, videoUrl));
         batchCount++;
@@ -415,23 +645,7 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
       _startUpdateTimer();
       _isInitialized = true;
       _isInitializing = false;
-
-      // Запускаем воспроизведение только для видимых маркеров
-      for (final id in visibleMarkers) {
-        if (_markersById.containsKey(id)) {
-          final markerData = _markersById[id]!;
-          if (markerData.controller != null &&
-              markerData.controller!.value.isInitialized &&
-              _activeVideoMarkers.length < _maxSimultaneousVideos) {
-            await markerData.controller!.play();
-            _activeVideoMarkers.add(id);
-          }
-        }
-      }
-
-      debugPrint('✅ Marker initialization completed successfully');
     } catch (e) {
-      debugPrint('❌ Error during marker initialization: $e');
       _isInitializing = false;
       if (_initializationAttempts < _maxInitializationAttempts) {
         _scheduleInitialization();
@@ -444,8 +658,10 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
       if (markerData.url.isNotEmpty) {
         VideoControllerCache.releaseController(markerData.url);
       }
+      markerData.dispose();
     }
     _markersById.clear();
+    _activeVideoMarkers.clear();
   }
 
   void _startUpdateTimer() {
@@ -488,15 +704,6 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     if (cameraChanged) {
       setState(() {});
     }
-  }
-
-  void _startVideoRotationTimer() {
-    _videoRotationTimer?.cancel();
-    _videoRotationTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      if (mounted && !_isDisposed && _isInitialized) {
-        _rotateActiveVideos();
-      }
-    });
   }
 
   void _rotateActiveVideos() {
@@ -549,34 +756,125 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
   }
 
   String? _findVideoUrl(Map<dynamic, dynamic> properties) {
-    final nestedProperties = properties['properties'] as Map<dynamic, dynamic>?;
-    final keys = [
-      'marker_type',
-      'markerType',
-      'marker_url',
-      'markerUrl',
-      'video_url',
-      'videoUrl',
-      'url'
-    ];
-
-    for (final key in keys) {
-      final value = properties[key]?.toString();
-      if (value != null && value.endsWith('.webm')) {
-        return value;
-      }
+    // Проверяем основные свойства
+    final markerType = properties['marker_type']?.toString();
+    if (markerType != null && markerType.endsWith('.webm')) {
+      return markerType;
     }
 
+    // Проверяем вложенные свойства, если они есть
+    final nestedProperties = properties['properties'] as Map<dynamic, dynamic>?;
     if (nestedProperties != null) {
-      for (final key in keys) {
-        final value = nestedProperties[key]?.toString();
-        if (value != null && value.endsWith('.webm')) {
-          return value;
-        }
+      final nestedMarkerType = nestedProperties['marker_type']?.toString();
+      if (nestedMarkerType != null && nestedMarkerType.endsWith('.webm')) {
+        return nestedMarkerType;
       }
     }
 
     return null;
+  }
+
+  Future<void> _createVideoMarker(
+      String id, List coordinates, String videoUrl) async {
+    if (_isDisposed) return;
+
+    try {
+      await _ensureMapReady();
+      setState(() {
+        _markersById[id] = _MarkerData(
+          id: id,
+          coordinates: mapbox.Point(
+            coordinates: mapbox.Position(
+              coordinates[0] as double,
+              coordinates[1] as double,
+            ),
+          ),
+          zoom: 15.0,
+          url: videoUrl,
+        );
+      });
+
+      // Создаем и инициализируем контроллер
+      try {
+        final controller = VideoControllerCache.getController(videoUrl);
+        final finalController =
+            controller ?? await VideoControllerCache.createController(videoUrl);
+
+        if (mounted && !_isDisposed && _markersById.containsKey(id)) {
+          setState(() {
+            _markersById[id] = _MarkerData(
+              id: id,
+              coordinates: mapbox.Point(
+                coordinates: mapbox.Position(
+                  coordinates[0] as double,
+                  coordinates[1] as double,
+                ),
+              ),
+              zoom: 15.0,
+              url: videoUrl,
+              controller: finalController,
+              isVisible: true,
+            );
+          });
+
+          // Автоматически запускаем видео, если не превышен лимит
+          if (_activeVideoMarkers.length < _maxSimultaneousVideos) {
+            try {
+              await finalController.play();
+              _activeVideoMarkers.add(id);
+            } catch (e) {
+              // Ошибка воспроизведения видео для маркера
+            }
+          }
+        }
+      } catch (e) {
+        // Ошибка создания контроллера для маркера
+        if (_markersById.containsKey(id)) {
+          _markersById.remove(id);
+        }
+      }
+    } catch (e) {
+    }
+  }
+
+  void _updateActiveVideos() {
+    // Останавливаем видео для маркеров, которые перестали быть видимыми
+    for (final id in _activeVideoMarkers.toList()) {
+      if (!_markersById.containsKey(id) || !_markersById[id]!.isVisible) {
+        final markerData = _markersById[id];
+        if (markerData != null && markerData.controller != null) {
+          markerData.controller!.pause().catchError((_) {});
+        }
+        _activeVideoMarkers.remove(id);
+      }
+    }
+
+    // Находим видимые маркеры, которые не активны
+    final visibleInactiveMarkers = _markersById.entries
+        .where((entry) =>
+            entry.value.isVisible &&
+            entry.value.controller != null &&
+            entry.value.controller!.value.isInitialized &&
+            !_activeVideoMarkers.contains(entry.key))
+        .map((entry) => entry.key)
+        .toList();
+
+    // Запускаем видео для новых маркеров, если не превышен лимит
+    for (final id in visibleInactiveMarkers) {
+      if (_activeVideoMarkers.length >= _maxSimultaneousVideos) break;
+
+      final markerData = _markersById[id]!;
+      if (markerData.controller != null &&
+          markerData.controller!.value.isInitialized) {
+        markerData.controller!.play().then((_) {
+          if (mounted && !_isDisposed && markerData.isVisible) {
+            _activeVideoMarkers.add(id);
+          }
+        }).catchError((error) {
+          // Ошибка воспроизведения видео для маркера
+        });
+      }
+    }
   }
 
   void reinitialize() {
@@ -586,8 +884,6 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     _isInitializing = false;
     _initializationAttempts = 0;
     _processedFeatures.clear();
-    _lastFeaturesCount = 0;
-    _stableFeaturesCount = 0;
     _scheduleInitialization();
   }
 
@@ -612,65 +908,6 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     return markers;
   }
 
-  Future<void> _ensureMapReady() async {
-    // Ждем загрузки стиля
-    while (!_isStyleLoaded) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    // Ждем стабилизации фич
-    while (_lastFeaturesCount < _minFeatureCount ||
-        _lastFeaturesCount > _maxFeatureCount) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    // Дополнительная задержка для полной стабилизации
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
-
-  Future<void> _createVideoMarker(
-      String id, List coordinates, String videoUrl) async {
-    if (_isDisposed) return;
-
-    try {
-      // Ждем полной готовности карты
-      await _ensureMapReady();
-
-      setState(() {
-        _markersById[id] = _MarkerData(
-          controller: null,
-          coordinates: [coordinates[0] as double, coordinates[1] as double],
-          url: videoUrl,
-          isInitialized: false,
-        );
-      });
-
-      try {
-        final controller = VideoControllerCache.getController(videoUrl);
-        final finalController =
-            controller ?? await VideoControllerCache.createController(videoUrl);
-
-        if (mounted && !_isDisposed && _markersById.containsKey(id)) {
-          setState(() {
-            _markersById[id] = _MarkerData(
-              controller: finalController,
-              coordinates: [coordinates[0] as double, coordinates[1] as double],
-              url: videoUrl,
-              isInitialized: true,
-            );
-          });
-        }
-      } catch (e) {
-        if (_markersById.containsKey(id)) {
-          _markersById.remove(id);
-        }
-        return;
-      }
-    } catch (e) {
-      debugPrint('❌ VideoMarkerManager: Error creating marker $id: $e');
-    }
-  }
-
   @override
   void dispose() {
     _isDisposed = true;
@@ -683,240 +920,4 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     VideoControllerCache.clear();
     super.dispose();
   }
-}
-
-class _MarkerWidget extends StatefulWidget {
-  final mapbox.MapboxMap mapboxMap;
-  final _MarkerData markerData;
-
-  const _MarkerWidget({
-    super.key,
-    required this.mapboxMap,
-    required this.markerData,
-  });
-
-  @override
-  State<_MarkerWidget> createState() => _MarkerWidgetState();
-}
-
-class _MarkerWidgetState extends State<_MarkerWidget>
-    with SingleTickerProviderStateMixin {
-  Offset? _screenPoint;
-  Offset? _targetScreenPoint;
-  Offset? _lastScreenPoint;
-  bool _isVisible = false;
-  late AnimationController _animationController;
-  bool _videoStarted = false;
-  Timer? _videoCheckTimer;
-  int _restartAttempts = 0;
-  static const int _maxRestartAttempts = 5;
-  static const double _smoothingFactor =
-      0.1; // Уменьшенный коэффициент сглаживания
-  static const double _maxPositionDelta =
-      50.0; // Максимальное допустимое изменение позиции
-
-  bool get _isSystemUnderLoad {
-    final parentState = VideoMarkerManager.globalKey.currentState;
-    if (parentState != null) {
-      return parentState._isSystemUnderLoad;
-    }
-    return false;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: false);
-
-    _animationController.addListener(_updatePosition);
-    _updatePosition();
-    _checkAndStartVideo();
-    _startVideoCheckTimer();
-  }
-
-  void _startVideoCheckTimer() {
-    _videoCheckTimer?.cancel();
-    _videoCheckTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _forceRestartVideoIfNeeded();
-    });
-  }
-
-  void _forceRestartVideoIfNeeded() {
-    if (!mounted) return;
-
-    final controller = widget.markerData.controller;
-    if (controller == null) return;
-
-    if (controller.value.isInitialized && !controller.value.isPlaying) {
-      if (_restartAttempts < _maxRestartAttempts) {
-        _restartAttempts++;
-        debugPrint(
-            '🔄 _MarkerWidget: Force restarting video (attempt $_restartAttempts)');
-        controller.play().catchError((error) {
-          debugPrint('❌ _MarkerWidget: Error restarting video: $error');
-        });
-      }
-    } else if (controller.value.isPlaying) {
-      _restartAttempts = 0;
-    }
-  }
-
-  void _checkAndStartVideo() {
-    if (!mounted || _videoStarted) return;
-
-    final controller = widget.markerData.controller;
-    if (controller == null) return;
-
-    if (!_videoStarted && controller.value.isInitialized) {
-      _videoStarted = true;
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        controller.play().catchError((error) {
-          debugPrint('❌ _MarkerWidget: Error playing video: $error');
-        });
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _videoCheckTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(_MarkerWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.markerData.coordinates != widget.markerData.coordinates) {
-      _updatePosition();
-    }
-
-    _checkAndStartVideo();
-
-    if (oldWidget.markerData.controller != widget.markerData.controller) {
-      _startVideoCheckTimer();
-    }
-  }
-
-  void _updatePosition() {
-    widget.mapboxMap
-        .pixelForCoordinate(
-      mapbox.Point(
-        coordinates: mapbox.Position(
-          widget.markerData.coordinates[0],
-          widget.markerData.coordinates[1],
-        ),
-      ),
-    )
-        .then((screenCoordinate) {
-      if (mounted) {
-        final size = MediaQuery.of(context).size;
-        final isOnScreen = screenCoordinate.x >= -30 &&
-            screenCoordinate.x <= size.width + 30 &&
-            screenCoordinate.y >= -30 &&
-            screenCoordinate.y <= size.height + 30;
-
-        final newTargetPoint = Offset(screenCoordinate.x, screenCoordinate.y);
-
-        // Проверяем, не слишком ли резкое изменение позиции
-        if (_targetScreenPoint != null) {
-          final delta = (newTargetPoint - _targetScreenPoint!).distance;
-          if (delta > _maxPositionDelta) {
-            // Если изменение слишком резкое, игнорируем его
-            return;
-          }
-        }
-
-        setState(() {
-          _targetScreenPoint = newTargetPoint;
-          _isVisible = isOnScreen;
-          (widget.markerData).isVisible = isOnScreen;
-        });
-
-        // Если это первое обновление позиции, устанавливаем текущую позицию
-        _screenPoint ??= _targetScreenPoint;
-      }
-    }).catchError((_) {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_screenPoint == null || !_isVisible) {
-      return const SizedBox.shrink();
-    }
-
-    _checkAndStartVideo();
-
-    const markerSize = 25.0;
-    const halfSize = markerSize / 2;
-
-    // Плавно обновляем позицию маркера с уменьшенным коэффициентом сглаживания
-    if (_targetScreenPoint != null && _screenPoint != _targetScreenPoint) {
-      _screenPoint = Offset.lerp(
-        _screenPoint!,
-        _targetScreenPoint!,
-        _smoothingFactor,
-      );
-    }
-
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 100),
-      left: _screenPoint!.dx - halfSize,
-      top: _screenPoint!.dy - halfSize,
-      child: RepaintBoundary(
-        child: Container(
-          width: markerSize,
-          height: markerSize,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: widget.markerData.controller != null &&
-                    widget.markerData.controller!.value.isInitialized
-                ? AspectRatio(
-                    aspectRatio:
-                        widget.markerData.controller!.value.aspectRatio,
-                    child: VideoPlayer(widget.markerData.controller!),
-                  )
-                : const Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MarkerData {
-  final VideoPlayerController? controller;
-  final List<double> coordinates;
-  final String url;
-  final bool isInitialized;
-  bool isVisible = false;
-
-  _MarkerData({
-    this.controller,
-    required this.coordinates,
-    required this.url,
-    this.isInitialized = false,
-  });
 }

@@ -14,12 +14,15 @@ class ConfirmCode extends ResetPasswordEvent {
 }
 
 class SetNewPassword extends ResetPasswordEvent {
-  final String email;
+  final String? uid;
+  final String? token;
   final String newPassword;
   final String confirmPassword;
 
-  SetNewPassword(
-      {required this.email,
-      required this.newPassword,
-      required this.confirmPassword});
+  SetNewPassword({
+    required this.uid,
+    required this.token,
+    required this.newPassword,
+    required this.confirmPassword,
+  });
 }

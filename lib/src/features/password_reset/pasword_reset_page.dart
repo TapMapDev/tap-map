@@ -16,7 +16,9 @@ enum StageOfReset {
 }
 
 class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+  final String? uid;
+  final String? token;
+  const ResetPasswordPage({super.key, this.uid, this.token});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -118,7 +120,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               style: TextStylesManager.headerMain,
               textAlign: TextAlign.right,
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Container(
               decoration: BoxDecoration(
                 color: StyleManager.mainColor,
@@ -159,21 +161,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 height: 1,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               _getDescriptionForStage(stage),
               // style: TextStylesManager.descriptionMain,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildTextFields(),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             stage == StageOfReset.firstStep
                 ? GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: const Row(
                       children: [
                         // SvgPicture.asset('assets/icons/arrow_back.svg'),
-                         SizedBox(width: 8),
+                        SizedBox(width: 8),
                         // Text(
                         //   'Вы забыли пароль?',
                         //   // style: TextStylesManager.descriptionMainGray,
@@ -232,7 +234,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               // color: StyleManager.grayColor),
               textAlign: TextAlign.center,
             ),
-            SizedBox(
+            const SizedBox(
               height: 6,
             ),
             TextField(
@@ -274,7 +276,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 ),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               height: 20,
             ),
             const Text(
@@ -287,7 +289,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               // color: StyleManager.grayColor),
               textAlign: TextAlign.center,
             ),
-            SizedBox(
+            const SizedBox(
               height: 6,
             ),
             TextField(
@@ -404,9 +406,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         break;
       case StageOfReset.thirdStep:
         bloc.add(SetNewPassword(
-            email: emailController.text,
-            newPassword: passwordController.text,
-            confirmPassword: passwordRepeatController.text));
+          uid: widget.uid,
+          token: widget.token,
+          newPassword: passwordController.text,
+          confirmPassword: passwordRepeatController.text,
+        ));
         break;
     }
   }

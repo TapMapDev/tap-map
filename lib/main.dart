@@ -111,7 +111,15 @@ class MyApp extends StatelessWidget {
           '/authorization': (context) => const AuthorizationPage(),
           '/registration': (context) => const RegistrationPage(),
           '/homepage': (context) => const BottomNavbar(),
-          '/password_reset': (context) => const ResetPasswordPage(),
+          '/password_reset': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments
+                as Map<String, dynamic>?;
+
+            return ResetPasswordPage(
+              uid: args?['uid'],
+              token: args?['token'],
+            );
+          },
           '/search': (context) => const SearchPage(),
         },
         home: FutureBuilder<Widget>(

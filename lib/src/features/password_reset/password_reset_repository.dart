@@ -62,8 +62,10 @@ class ResetPasswordRepositoryImpl {
   }
 
   Future<PasswordResetModel> setNewPassword({
-    required String newPassword,
-    required String confrimPassword,
+   required String? uid,
+  required String? token,
+  required String password,
+  required String confirmPassword,
   }) async {
     if (_resetUid == null || _resetToken == null) {
       throw Exception(
@@ -72,11 +74,11 @@ class ResetPasswordRepositoryImpl {
 
     final response = await apiService.postData(
         '/auth/users/reset_password_confirm/',
-        {
-          'uid': _resetUid,
-          'token': _resetToken,
-          'new_password': newPassword,
-          'confirm_password': confrimPassword
+          {
+            'uid': uid,
+            'token': token,
+          'new_password': password,
+          'confirm_password': confirmPassword
         },
         useAuth: false);
 

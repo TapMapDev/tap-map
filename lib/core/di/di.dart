@@ -50,7 +50,7 @@ void setup() {
 
   // Регистрация DeepLinkService
   getIt.registerLazySingleton(
-      () => DeepLinkService(getIt<ResetPasswordRepositoryImpl>()));
+      () => DeepLinkService(navigatorKey));
 
   // Регистрация SearchRepository
   getIt.registerLazySingleton<SearchRepository>(
