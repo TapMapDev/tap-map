@@ -15,12 +15,12 @@ import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/icons_responce_modal.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/geo_location.dart';
-import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart'
     show OpenStatusManager;
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
 
 class MajorMap extends StatefulWidget {
   const MajorMap({super.key});
@@ -31,9 +31,10 @@ class MajorMap extends StatefulWidget {
 
 class _MajorMapState extends State<MajorMap> {
   mp.MapboxMap? mapboxMapController;
-  // Используем константу для ID слоя
   static const String placesLayerId = "places_symbol_layer";
   VideoMarkerManager? _gifMarkerManager;
+  Timer? _cameraUpdateDebouncer;
+  mp.CameraState? _lastCameraState;
 
   /// Позиция пользователя до создания карты
   gl.Position? _initialUserPosition;
@@ -221,39 +222,60 @@ class _MajorMapState extends State<MajorMap> {
                 onMapLoadedListener: _onStyleLoadedCallback,
                 onCameraChangeListener: (eventData) async {
                   if (_isDisposed) return;
+
+                  // Получаем текущее состояние камеры
                   final cameraState =
                       await mapboxMapController?.getCameraState();
                   if (cameraState == null) return;
 
-                  final zoom = cameraState.zoom;
-                  final threshold = getThresholdByZoom(zoom);
-                  final iconExpression = buildIconImageExpression(threshold);
-                  final textExpression = buildTextFieldExpression(threshold);
-
-                  if (_isDisposed) return;
-                  final layers =
-                      await mapboxMapController!.style.getStyleLayers();
-                  final layerExists =
-                      layers.any((layer) => layer?.id == placesLayerId);
-                  if (!layerExists) {
+                  // Проверяем, действительно ли изменилась позиция камеры
+                  if (_lastCameraState != null &&
+                      _lastCameraState!.center == cameraState.center &&
+                      _lastCameraState!.zoom == cameraState.zoom) {
                     return;
                   }
+                  _lastCameraState = cameraState;
 
-                  if (_isDisposed) return;
+                  // Отменяем предыдущий отложенный вызов
+                  _cameraUpdateDebouncer?.cancel();
 
-                  await mapboxMapController?.style.setStyleLayerProperty(
-                    placesLayerId,
-                    "icon-image",
-                    iconExpression,
-                  );
+                  // Создаем новый отложенный вызов
+                  _cameraUpdateDebouncer =
+                      Timer(const Duration(milliseconds: 150), () async {
+                    if (_isDisposed) return;
 
-                  if (_isDisposed) return;
+                    final zoom = cameraState.zoom;
+                    final threshold = getThresholdByZoom(zoom);
+                    final iconExpression = buildIconImageExpression(threshold);
+                    final textExpression = buildTextFieldExpression(threshold);
 
-                  await mapboxMapController?.style.setStyleLayerProperty(
-                    placesLayerId,
-                    "text-field",
-                    textExpression,
-                  );
+                    // Проверяем существование слоя
+                    final layers =
+                        await mapboxMapController!.style.getStyleLayers();
+                    final layerExists =
+                        layers.any((layer) => layer?.id == placesLayerId);
+                    if (!layerExists) return;
+
+                    // Обновляем свойства слоя параллельно
+                    final futures = <Future<void>>[
+                      mapboxMapController!.style.setStyleLayerProperty(
+                        placesLayerId,
+                        "icon-image",
+                        iconExpression,
+                      ),
+                      mapboxMapController!.style.setStyleLayerProperty(
+                        placesLayerId,
+                        "text-field",
+                        textExpression,
+                      ),
+                    ];
+                    await Future.wait(futures);
+
+                    // Обновляем позиции видео-маркеров
+                    if (_gifMarkerManager != null) {
+                      VideoMarkerManager.updateMarkers();
+                    }
+                  });
                 }),
             if (_gifMarkerManager != null) _gifMarkerManager!,
             const Positioned(
@@ -801,7 +823,8 @@ class _MajorMapState extends State<MajorMap> {
 
   @override
   void dispose() {
-    _isDisposed = true; // Устанавливаем флаг при уничтожении
+    _cameraUpdateDebouncer?.cancel();
+    _isDisposed = true;
     super.dispose();
   }
 }

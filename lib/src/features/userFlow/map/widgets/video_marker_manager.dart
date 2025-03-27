@@ -87,7 +87,7 @@ class VideoControllerCache {
 
 class _MarkerData {
   final String id;
-  final mapbox.Point coordinates;
+   mapbox.Point coordinates;
   final double zoom;
   final String url;
 
@@ -774,66 +774,82 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
     return null;
   }
 
-  Future<void> _createVideoMarker(
-      String id, List coordinates, String videoUrl) async {
-    if (_isDisposed) return;
+Future<void> _createVideoMarker(
+    String id,
+    List coordinates,
+    String videoUrl,
+) async {
+  if (_isDisposed) return;
 
-    try {
-      await _ensureMapReady();
-      setState(() {
-        _markersById[id] = _MarkerData(
-          id: id,
-          coordinates: mapbox.Point(
-            coordinates: mapbox.Position(
-              coordinates[0] as double,
-              coordinates[1] as double,
-            ),
-          ),
-          zoom: 15.0,
-          url: videoUrl,
-        );
-      });
+  try {
+    await _ensureMapReady();
 
-      // Создаем и инициализируем контроллер
-      try {
-        final controller = VideoControllerCache.getController(videoUrl);
-        final finalController =
-            controller ?? await VideoControllerCache.createController(videoUrl);
+    // Смотрим, есть ли уже такой MarkerData
+    final existingMarker = _markersById[id];
 
-        if (mounted && !_isDisposed && _markersById.containsKey(id)) {
-          setState(() {
-            _markersById[id] = _MarkerData(
-              id: id,
-              coordinates: mapbox.Point(
-                coordinates: mapbox.Position(
-                  coordinates[0] as double,
-                  coordinates[1] as double,
-                ),
-              ),
-              zoom: 15.0,
-              url: videoUrl,
-              controller: finalController,
-              isVisible: true,
-            );
-          });
+    // Формируем новые координаты
+    final point = mapbox.Point(
+      coordinates: mapbox.Position(
+        coordinates[0] as double,
+        coordinates[1] as double,
+      ),
+    );
 
-          // Автоматически запускаем видео, если не превышен лимит
-          if (_activeVideoMarkers.length < _maxSimultaneousVideos) {
-            try {
-              await finalController.play();
-              _activeVideoMarkers.add(id);
-            } catch (e) {
-              // Ошибка воспроизведения видео для маркера
-            }
-          }
-        }
-      } catch (e) {
-        // Ошибка создания контроллера для маркера
-        if (_markersById.containsKey(id)) {
-          _markersById.remove(id);
-        }
+    if (existingMarker != null) {
+      // 1. _MarkerData уже существует — обновим поля
+
+      // Обновим координаты
+      existingMarker.coordinates = point;
+      // Сделаем маркер видимым
+      existingMarker.isVisible = true;
+
+      // 2. Обновим контроллер
+      final existingController =
+          VideoControllerCache.getController(videoUrl) ?? existingMarker.controller;
+
+      if (existingController != null) {
+        existingMarker.controller = existingController;
+      } else {
+        existingMarker.controller =
+            await VideoControllerCache.createController(videoUrl);
       }
-    } catch (e) {
+      if (existingMarker.controller != null &&
+          !_activeVideoMarkers.contains(id) &&
+          _activeVideoMarkers.length < _maxSimultaneousVideos) {
+        await existingMarker.controller!.play();
+        _activeVideoMarkers.add(id);
+      }
+      return;
+    }
+
+    // 4. Если маркер не существует, создаём его:
+    final initialController =
+        VideoControllerCache.getController(videoUrl) ??
+            await VideoControllerCache.createController(videoUrl);
+
+    final newMarker = _MarkerData(
+      id: id,
+      coordinates: point,
+      zoom: 15.0,
+      url: videoUrl,
+      controller: initialController,
+      isVisible: true,
+    );
+
+    setState(() {
+      _markersById[id] = newMarker;
+    });
+
+    // 5. Автоматически запускаем видео, если не превышен лимит
+    if (_activeVideoMarkers.length < _maxSimultaneousVideos) {
+      try {
+        await initialController.play();
+        _activeVideoMarkers.add(id);
+      } catch (e) {
+        // Ошибка при воспроизведении видео
+      }
+    }
+  } catch (e) {
     }
   }
 
