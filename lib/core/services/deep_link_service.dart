@@ -19,7 +19,6 @@ class DeepLinkService {
   }
 
   void _handleUri(Uri uri) {
-    print('[deeplink] Пойман линк: $uri');
     if (uri.host == 'reset_password_confirm') {
       final uid = uri.queryParameters['uid'];
       final token = uri.queryParameters['token'];

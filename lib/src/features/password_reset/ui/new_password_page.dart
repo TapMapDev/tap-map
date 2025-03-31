@@ -130,7 +130,12 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
     if (passwordController.text.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Пароль должен содержать минимум 8 символов'),
+          content: Text(
+            'Пароль должен содержать минимум 8 символов',
+            style: TextStyle(
+              // fontSize: 10,
+            ),
+          ),
         ),
       );
       return;

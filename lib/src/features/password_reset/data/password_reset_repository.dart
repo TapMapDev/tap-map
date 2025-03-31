@@ -41,7 +41,7 @@ class ResetPasswordRepositoryImpl {
       if (response['data'] == null || response['data'].toString().isEmpty) {
         return PasswordResetModel(
           statusCode: response['statusCode'] ?? 200,
-          message: 'Password reset link has been sent to your email',
+          message: 'Линк для сброса пароля отправлен ​​на вашу электронную почты.',
         );
       }
 
@@ -79,7 +79,7 @@ class ResetPasswordRepositoryImpl {
       if (response['data'] == null || response['data'].toString().isEmpty) {
         return PasswordResetModel(
           statusCode: response['statusCode'] ?? 200,
-          message: 'Password has been reset successfully',
+          message: 'Пароль успешно изменен!',
         );
       }
 
