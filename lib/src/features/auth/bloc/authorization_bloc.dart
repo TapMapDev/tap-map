@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
-import 'package:tap_map/src/features/auth/authorization_repository.dart';
+import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 
 
 part 'authorization_event.dart';

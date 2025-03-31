@@ -1,7 +1,7 @@
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/src/features/password_reset/password_reset_response_model.dart';
+import 'package:tap_map/src/features/password_reset/model/password_reset_response_model.dart';
 
 class ResetPasswordRepositoryImpl {
   final ApiService apiService;
@@ -14,7 +14,6 @@ class ResetPasswordRepositoryImpl {
 
   // Метод для обработки глубокой ссылки
   void handleResetPasswordLink(String url) {
-
     final uidMatch = RegExp(r'uid=([^&]+)').firstMatch(url);
     final tokenMatch = RegExp(r'token=([^&]+)').firstMatch(url);
 
@@ -62,28 +61,45 @@ class ResetPasswordRepositoryImpl {
   }
 
   Future<PasswordResetModel> setNewPassword({
-   required String? uid,
-  required String? token,
-  required String password,
-  required String confirmPassword,
+    required String? uid,
+    required String? token,
+    required String newPassword,
   }) async {
-    if (_resetUid == null || _resetToken == null) {
-      throw Exception(
-          'Reset credentials not found. Please click the link from your email first.');
-    }
-
-    final response = await apiService.postData(
-        '/auth/users/reset_password_confirm/',
+    try {
+      final response = await apiService.postData(
+          '/auth/users/reset_password_confirm/',
           {
             'uid': uid,
             'token': token,
-          'new_password': password,
-          'confirm_password': confirmPassword
-        },
-        useAuth: false);
+            'new_password': newPassword,
+          },
+          useAuth: false);
 
-    final responseModel =
-        PasswordResetModel.fromJson(response['data'], response['statusCode']);
-    return responseModel;
+      // Обработка пустого ответа
+      if (response['data'] == null || response['data'].toString().isEmpty) {
+        return PasswordResetModel(
+          statusCode: response['statusCode'] ?? 200,
+          message: 'Password has been reset successfully',
+        );
+      }
+
+      // Обработка строкового ответа
+      if (response['data'] is String) {
+        final data = response['data'] as String;
+        return PasswordResetModel.fromJson(
+            {'message': data}, response['statusCode']);
+      }
+
+      // Обработка JSON ответа
+      if (response['data'] is Map) {
+        return PasswordResetModel.fromJson(
+            response['data'], response['statusCode']);
+      }
+
+      // Неожиданный формат ответа
+      throw Exception('Unexpected response format: ${response['data']}');
+    } catch (e) {
+      rethrow;
+    }
   }
 }

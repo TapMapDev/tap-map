@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:tap_map/core/network/api_service.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_response_modal.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/model/search_response_modal.dart';
 
 abstract class SearchRepository {
   Future<List<ScreenResponseModal>> getPlaces({

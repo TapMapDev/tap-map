@@ -1,7 +1,7 @@
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/src/features/registration/registration_response_model.dart';
+import 'package:tap_map/src/features/registration/model/registration_response_model.dart';
 
 abstract class RegistrationRepository {
   Future<RegistrationResponseModel> register({

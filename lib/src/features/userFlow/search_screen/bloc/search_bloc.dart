@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_response_modal.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/model/search_response_modal.dart';
 
 part 'search_event.dart';
 part 'search_state.dart';

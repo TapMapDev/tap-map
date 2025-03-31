@@ -3,7 +3,7 @@ import 'dart:core';
 import 'package:bloc/bloc.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_event.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_state.dart';
-import 'package:tap_map/src/features/password_reset/password_reset_repository.dart';
+import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 
 class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
   final ResetPasswordRepositoryImpl repository;
@@ -31,8 +31,7 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
         final response = await repository.setNewPassword(
           uid: event.uid,
           token: event.token,
-          password: event.newPassword,
-          confirmPassword: event.confirmPassword,
+          newPassword: event.newPassword,
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {

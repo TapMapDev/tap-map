@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/map_styles_responce_modal.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/model/map_styles_responce_modal.dart';
 
 part 'map_styles_event.dart';
 part 'map_styles_state.dart';

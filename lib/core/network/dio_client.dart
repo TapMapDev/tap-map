@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/router/routes.dart';
 
 class DioClient {
   late final Dio _dio;
@@ -84,12 +86,12 @@ class DioClient {
                   await prefs.deleteRefreshToken();
                   print('🗑️ Tokens deleted due to refresh error');
 
-                  // Перенаправляем на страницу авторизации
-                  Navigator.of(getIt
-                          .get<GlobalKey<NavigatorState>>()
-                          .currentContext!)
-                      .pushNamedAndRemoveUntil(
-                          '/authorization', (route) => false);
+                  // Перенаправляем на страницу авторизации используя GoRouter
+                  final context =
+                      getIt.get<GlobalKey<NavigatorState>>().currentContext;
+                  if (context != null) {
+                    context.go(AppRoutes.authorization);
+                  }
                 }
               } else {
                 print('❌ No refresh token available');

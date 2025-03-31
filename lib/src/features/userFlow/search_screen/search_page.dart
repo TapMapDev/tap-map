@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/widgets/search_silver.dart';
 
 bool _enableDetailedLogs = false;

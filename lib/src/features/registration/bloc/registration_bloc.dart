@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:tap_map/src/features/registration/registration_repository.dart';
+import 'package:tap_map/src/features/registration/data/registration_repository.dart';
 
 part 'registration_event.dart';
 part 'registration_state.dart';

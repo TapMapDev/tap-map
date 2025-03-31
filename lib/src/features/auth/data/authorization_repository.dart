@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/src/features/auth/authorization_response_model.dart';
+import 'package:tap_map/src/features/auth/model/authorization_response_model.dart';
 
 class AuthorizationRepositoryImpl {
   final ApiService apiService;

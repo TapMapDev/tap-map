@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/core/di/di.dart';
@@ -8,19 +9,19 @@ import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/services/deep_link_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/router/app_router.dart';
-import 'package:tap_map/src/features/auth/authorization_repository.dart';
+import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
-import 'package:tap_map/src/features/password_reset/password_reset_repository.dart';
+import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
-import 'package:tap_map/src/features/registration/registration_repository.dart';
+import 'package:tap_map/src/features/registration/data/registration_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/icons/icons_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/styles/map_styles_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/search_repository.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -37,12 +38,17 @@ void main() async {
     debugPrint("Ошибка при инициализации токенов: $e");
   }
 
-  // Initialize deep link service
-  final deepLinkService = getIt<DeepLinkService>();
-  await deepLinkService.initialize();
+  // Создаем роутер после инициализации токенов
+  final router = appRouter;
+  getIt.registerSingleton<GoRouter>(router);
+
+  // Создаем DeepLinkService с роутером
+  final deepLinkService = DeepLinkService(router);
+  getIt.registerSingleton<DeepLinkService>(deepLinkService);
+  
 
   runApp(const MyApp());
-  // await _setupPositionTracking();
+  await deepLinkService.initialize();
 }
 
 // Функция для инициализации токенов при запуске
@@ -53,11 +59,6 @@ Future<void> _initializeTokens() async {
   // Проверяем наличие токенов
   final refreshToken = await prefs.getRefreshToken();
   final accessToken = await prefs.getAccessToken();
-
-  debugPrint(
-      "🔑 При запуске: access_token ${accessToken != null ? "существует" : "отсутствует"}");
-  debugPrint(
-      "🔑 При запуске: refresh_token ${refreshToken != null ? "существует" : "отсутствует"}");
 
   // Если есть refresh_token, пробуем обновить токены
   if (refreshToken != null) {

@@ -17,12 +17,10 @@ class SetNewPassword extends ResetPasswordEvent {
   final String? uid;
   final String? token;
   final String newPassword;
-  final String confirmPassword;
 
   SetNewPassword({
     required this.uid,
     required this.token,
     required this.newPassword,
-    required this.confirmPassword,
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tap_map/core/di/di.dart';
-import 'package:tap_map/src/features/auth/authorization_repository.dart';
+import 'package:tap_map/router/routes.dart';
+import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:go_router/go_router.dart';
 
 class UserProfileScreen extends StatelessWidget {
@@ -11,7 +12,7 @@ class UserProfileScreen extends StatelessWidget {
       child: GestureDetector(
         onTap: () async {
           await getIt.get<AuthorizationRepositoryImpl>().logout();
-          context.go('/');
+          context.go(AppRoutes.authorization);
         },
         child: Container(
           decoration: BoxDecoration(

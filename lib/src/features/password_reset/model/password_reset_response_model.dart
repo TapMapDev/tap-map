@@ -27,11 +27,21 @@ class PasswordResetModel {
       message = json['message'].toString();
     } else if (json['detail'] != null) {
       message = json['detail'].toString();
+    } else if (json['non_field_errors'] != null) {
+      if (json['non_field_errors'] is List) {
+        message = (json['non_field_errors'] as List).first.toString();
+      } else {
+        message = json['non_field_errors'].toString();
+      }
+    } else if (json['new_password'] != null) {
+      if (json['new_password'] is List) {
+        message = (json['new_password'] as List).first.toString();
+      } else {
+        message = json['new_password'].toString();
+      }
     }
-
     return PasswordResetModel(
-      message:
-          message ?? 'Password reset instructions have been sent to your email',
+      message: message ?? 'Operation completed successfully',
       statusCode: statusCode,
     );
   }
