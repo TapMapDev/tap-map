@@ -10,7 +10,7 @@ import 'package:tap_map/src/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/user_profile.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GoRouter appRouter = GoRouter(
@@ -29,7 +29,8 @@ final GoRouter appRouter = GoRouter(
       AppRoutes.passwordReset,
       AppRoutes.newPassword,
     ];
-    final isPublic = publicRoutes.any((route) => state.matchedLocation.startsWith(route));
+    final isPublic =
+        publicRoutes.any((route) => state.matchedLocation.startsWith(route));
 
     if (token == null && !isPublic) {
       return AppRoutes.authorization;
@@ -76,8 +77,10 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AppRoutes.map,
-              builder: (context, state) => const MajorMap(),
+              path: AppRoutes.afisha,
+              builder: (context, state) {
+                return const Center(child: Text('Афиша'));
+              },
             ),
           ],
         ),
@@ -92,9 +95,17 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
+              path: AppRoutes.map,
+              builder: (context, state) => const MajorMap(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
               path: '/chat',
               builder: (context, state) {
-                return const Center(child: Text('Чат Placeholder'));
+                return const Center(child: Text('Чат'));
               },
             ),
           ],
@@ -104,16 +115,6 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: AppRoutes.profile,
               builder: (context, state) => const UserProfileScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/afisha',
-              builder: (context, state) {
-                return const Center(child: Text('Афиша Placeholder'));
-              },
             ),
           ],
         ),

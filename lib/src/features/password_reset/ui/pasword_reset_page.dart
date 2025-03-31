@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_event.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_state.dart';

@@ -11,7 +11,8 @@ import 'package:tap_map/src/features/registration/data/registration_repository.d
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
-
+import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -22,10 +23,7 @@ void setup() {
   // Регистрация DioClient
   getIt.registerLazySingleton<DioClient>(() => DioClient());
 
-  // Регистрация ApiService
   getIt.registerLazySingleton<ApiService>(() => ApiService(getIt<DioClient>()));
-
-  // Регистрации Registaration
 
   getIt.registerLazySingleton<RegistrationRepositoryImpl>(
       () => RegistrationRepositoryImpl(apiService: getIt<ApiService>()));
@@ -37,11 +35,10 @@ void setup() {
 
   getIt.registerLazySingleton<SharedPrefsRepository>(
       () => SharedPrefsRepository());
-  // изменение стилей карты
+
   getIt.registerLazySingleton<MapStyleRepository>(
       () => MapStyleRepositoryImpl(apiService: getIt<ApiService>()));
 
-  // подключение стилей иконок
   getIt.registerLazySingleton<IconsRepository>(
       () => IconsRepositoryImpl(apiService: getIt<ApiService>()));
 
@@ -50,4 +47,9 @@ void setup() {
 
   getIt.registerLazySingleton<SearchRepository>(
       () => SearchRepositoryImpl(apiService: getIt<ApiService>()));
+
+  getIt.registerLazySingleton<UserRepository>(
+      () => UserRepository(apiService: getIt<ApiService>()));
+
+  getIt.registerFactory<UserBloc>(() => UserBloc(getIt<UserRepository>()));
 }

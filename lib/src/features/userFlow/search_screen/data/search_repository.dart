@@ -53,20 +53,14 @@ class SearchRepositoryImpl implements SearchRepository {
       final response = await apiService
           .getData('/cards/?lat=7.884296908086358&lon=98.38744968835519');
 
-      print("Ответ API: $response");
-
       if (response['statusCode'] == 200) {
         // Проверяем разные варианты структуры ответа
         dynamic data = response['data'];
 
         if (data is Map<String, dynamic>) {
-          print("Data как Map: ${data.keys.join(', ')}");
-
           // Используем безопасные преобразования
           return [_parseFromRawData(data)];
         } else if (data is List) {
-          print("Data как List: ${data.length} элементов");
-
           // Обрабатываем список мест
           List<ScreenResponseModal> results = [];
           for (var item in data) {
@@ -76,47 +70,33 @@ class SearchRepositoryImpl implements SearchRepository {
           }
 
           if (results.isEmpty) {
-            print("Список пуст или не содержит валидных элементов");
             return [_createMockData()];
           }
 
           return results;
         } else {
-          print("Неизвестный формат data: ${data.runtimeType}");
-          // В случае проблем с форматом, возвращаем тестовые данные
           return [_createMockData()];
         }
       } else {
-        print(
-            "Ошибка API: ${response['statusCode']} - ${response['statusMessage']}");
-
         // Проверяем, есть ли какие-то данные в ответе, даже если код не 200
         if (response['data'] != null) {
-          try {
-            dynamic data = response['data'];
+          dynamic data = response['data'];
 
-            // Пытаемся извлечь хоть какие-то данные из ответа
-            if (data is Map<String, dynamic>) {
-              return [_parseFromRawData(data)];
-            } else if (data is List && data.isNotEmpty) {
-              List<ScreenResponseModal> results = [];
-              for (var item in data) {
-                if (item is Map<String, dynamic>) {
-                  results.add(_parseFromRawData(item));
-                }
-              }
-              if (results.isNotEmpty) {
-                return results;
+          // Пытаемся извлечь хоть какие-то данные из ответа
+          if (data is Map<String, dynamic>) {
+            return [_parseFromRawData(data)];
+          } else if (data is List && data.isNotEmpty) {
+            List<ScreenResponseModal> results = [];
+            for (var item in data) {
+              if (item is Map<String, dynamic>) {
+                results.add(_parseFromRawData(item));
               }
             }
-          } catch (e) {
-            print("Ошибка при попытке извлечь данные из ошибочного ответа: $e");
+            if (results.isNotEmpty) {
+              return results;
+            }
           }
         }
-
-        // Если сервер недоступен или вернул ошибку, используем кэшированные данные
-        // или создаем тестовые данные
-        print("Используем тестовые данные из-за ошибки API");
 
         // Создаем 3 тестовых места для демонстрации
         return [
@@ -175,18 +155,9 @@ class SearchRepositoryImpl implements SearchRepository {
       data.forEach((key, value) {
         print("Ключ: $key, Тип: ${value.runtimeType}");
       });
-
-      // Некоторые API возвращают вложенный JSON в виде строки
-      // Проверим это для важных полей
       dynamic images = data['images'];
       if (images is String) {
-        try {
-          // Пробуем распарсить строку как JSON
-          images = jsonDecode(images);
-          print("Успешно распарсили строку images как JSON");
-        } catch (e) {
-          print("Не удалось распарсить images как JSON: $e");
-        }
+        images = jsonDecode(images);
       }
 
       // Также проверяем tinder_info и under_card_data

@@ -9,8 +9,8 @@ import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/services/deep_link_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/router/app_router.dart';
-import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
+import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
@@ -22,6 +22,8 @@ import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_reposit
 import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -45,7 +47,6 @@ void main() async {
   // Создаем DeepLinkService с роутером
   final deepLinkService = DeepLinkService(router);
   getIt.registerSingleton<DeepLinkService>(deepLinkService);
-  
 
   runApp(const MyApp());
   await deepLinkService.initialize();
@@ -63,8 +64,6 @@ Future<void> _initializeTokens() async {
   // Если есть refresh_token, пробуем обновить токены
   if (refreshToken != null) {
     final success = await apiService.refreshTokens();
-    debugPrint(
-        "🔄 Обновление токенов при запуске: ${success ? "успешно" : "не удалось"}");
   }
 }
 
@@ -97,6 +96,9 @@ class MyApp extends StatelessWidget {
             create: (context) => SearchBloc(
               getIt.get<SearchRepository>(),
             ),
+          ),
+          BlocProvider<UserBloc>(
+            create: (context) => UserBloc(getIt.get<UserRepository>()),
           ),
         ],
         child: MaterialApp.router(
