@@ -10,32 +10,27 @@ class ApiService {
 
   ApiService(this.dioClient);
 
-  getAuthTokens() async {
-    String? accessToken =
-        await getIt.get<SharedPrefsRepository>().getString('access_token');
-    String? refreshToken =
-        await getIt.get<SharedPrefsRepository>().getString('refresh_token');
+  Future<Map<String, String?>> _getAuthTokens() async {
+    final prefs = getIt.get<SharedPrefsRepository>();
     return {
-      'refresh_token': refreshToken,
-      'access_token': accessToken,
+      'access_token': await prefs.getString('access_token'),
+      'refresh_token': await prefs.getString('refresh_token'),
     };
   }
 
   Future<Map<String, dynamic>> getData(
     String path, {
-    Map<String, Object>? map,
     Map<String, dynamic>? queryParams,
     Map<String, dynamic>? headers,
   }) async {
     try {
-      final tokens = await getAuthTokens();
-      final accessToken = tokens['access_token'];
-
-      final defaultHeaders = {
-        'Authorization': 'Bearer $accessToken',
+      final tokens = await _getAuthTokens();
+      final mergedHeaders = {
+        ...?headers,
+        'Authorization': 'Bearer ${tokens['access_token']}',
       };
-      final mergedHeaders = {...?headers, ...defaultHeaders};
 
+      talker.info('GET $path');
       final response = await dioClient.client.get(
         path,
         queryParameters: queryParams,
@@ -48,12 +43,8 @@ class ApiService {
         'statusMessage': response.statusMessage,
       };
     } on DioException catch (e) {
-      talker.error('DioError при выполнении GET-запроса: $e');
-      return {
-        'data': e.response?.data,
-        'statusCode': e.response?.statusCode ?? 500,
-        'statusMessage': e.response?.statusMessage ?? 'Unknown Error',
-      };
+      talker.error('GET error: $e');
+      return _handleDioError(e);
     }
   }
 
@@ -64,37 +55,17 @@ class ApiService {
     Map<String, dynamic>? headers,
   }) async {
     try {
-      Map<String, dynamic>? mergedHeaders;
-
-      // Если нужен токен, добавляем его в заголовки
-      if (useAuth) {
-        final tokens = await getAuthTokens();
-        final accessToken = tokens['access_token'];
-
-        final defaultHeaders = {
-          'Authorization': 'Bearer $accessToken',
-        };
-        mergedHeaders = {...?headers, ...defaultHeaders};
-      } else {
-        mergedHeaders = headers;
-      }
+      final mergedHeaders = await _buildHeaders(useAuth, headers);
+      talker.info('POST $path with data: $data');
 
       final response = await dioClient.client.post(
         path,
         data: data,
         options: Options(
           headers: mergedHeaders,
-          validateStatus: (status) => status != null && status < 500,
+          validateStatus: (status) => status != null && status < 400,
         ),
       );
-
-      if (response.statusCode == 404) {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          error: 'Endpoint not found: $path',
-        );
-      }
 
       return {
         'data': response.data,
@@ -102,29 +73,68 @@ class ApiService {
         'statusMessage': response.statusMessage,
       };
     } on DioException catch (e) {
-      talker.error('DioError при выполнении POST-запроса: $e');
-      if (e.response?.statusCode == 404) {
-        throw DioException(
-          requestOptions: e.requestOptions,
-          response: e.response,
-          error: 'Endpoint not found: $path',
-        );
-      }
-      return {
-        'data': e.response?.data,
-        'statusCode': e.response?.statusCode ?? 500,
-        'statusMessage': e.response?.statusMessage ?? 'Unknown Error',
-      };
+      talker.error('POST error: $e');
+      return _handleDioError(e);
     }
+  }
+
+  Future<Map<String, dynamic>> patchData(
+    String path,
+    dynamic data, {
+    bool useAuth = true,
+    Map<String, dynamic>? headers,
+  }) async {
+    try {
+      final mergedHeaders = await _buildHeaders(useAuth, headers);
+      talker.info('PATCH $path with data: $data');
+
+      final response = await dioClient.client.patch(
+        path,
+        data: data,
+        options: Options(
+          headers: mergedHeaders,
+          validateStatus: (status) => status != null && status < 400,
+        ),
+      );
+
+      return {
+        'data': response.data,
+        'statusCode': response.statusCode,
+        'statusMessage': response.statusMessage,
+      };
+    } on DioException catch (e) {
+      talker.error('PATCH error: $e');
+      return _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> _buildHeaders(
+    bool useAuth,
+    Map<String, dynamic>? headers,
+  ) async {
+    if (!useAuth) return headers ?? {};
+
+    final tokens = await _getAuthTokens();
+    return {
+      ...?headers,
+      'Authorization': 'Bearer ${tokens['access_token']}',
+    };
+  }
+
+  Map<String, dynamic> _handleDioError(DioException e) {
+    return {
+      'data': e.response?.data,
+      'statusCode': e.response?.statusCode ?? 500,
+      'statusMessage': e.response?.statusMessage ?? 'Unknown Error',
+    };
   }
 
   Future<bool> refreshTokens() async {
     final prefs = getIt.get<SharedPrefsRepository>();
-    final refreshToken =
-        await prefs.getRefreshToken(); // Используем getRefreshToken
+    final refreshToken = await prefs.getRefreshToken();
 
     if (refreshToken == null) {
-      talker.error('Не удалось обновить токены: refresh_token отсутствует');
+      talker.error('Refresh token is null');
       return false;
     }
 
@@ -136,18 +146,15 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final newAccessToken = response.data['access'];
-        final newRefreshToken = response.data['refresh'];
-        await prefs.setString('access_token', newAccessToken);
-        await prefs
-            .saveRefreshToken(newRefreshToken); // Используем saveRefreshToken
+        await prefs.setString('access_token', response.data['access']);
+        await prefs.saveRefreshToken(response.data['refresh']);
         return true;
       } else {
-        talker.error('Ошибка обновления токена: ${response.statusCode}');
+        talker.error('Failed to refresh tokens: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      talker.error('Ошибка при обновлении токенов: $e');
+      talker.error('Error refreshing tokens: $e');
       return false;
     }
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_event.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_state.dart';
@@ -37,7 +39,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                   duration: Duration(seconds: 2),
                 ),
               );
-              Navigator.pop(context);
+              context.go(AppRoutes.authorization);
             } else if (state is SetNewPasswordError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

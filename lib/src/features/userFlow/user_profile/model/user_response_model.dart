@@ -85,39 +85,31 @@ class UserModel {
     //   "password": "...",
     //   "username": "...",
     //   "first_name": "...",
-    //   "last_name": "...",
-    //   "website": "...",
-    //   "description": "...",
-    //   "date_of_birth": "...",
-    //   "gender": "...",
-    //   "selected_map_style": {
-    //     "name": "...",
-    //     "style_url": "..."
-    //   }
     // }
     // Не все поля нужны при POST – только те, что реально меняются.
     final data = <String, dynamic>{};
 
-    if (email != null) data['email'] = email;
-    if (password != null) data['password'] = password;
-    if (username != null) data['username'] = username;
+    // Добавляем только не-null поля и не пустые строки
+    if (email != null && email!.isNotEmpty) data['email'] = email;
+    if (password != null && password!.isNotEmpty) data['password'] = password;
+    if (username != null && username!.isNotEmpty) data['username'] = username;
     if (firstName != null) data['first_name'] = firstName;
     if (lastName != null) data['last_name'] = lastName;
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
-    if (dateOfBirth != null) data['date_of_birth'] = dateOfBirth;
-    if (gender != null) data['gender'] = gender;
+    if (dateOfBirth != null && dateOfBirth!.isNotEmpty)
+      data['date_of_birth'] = dateOfBirth;
+    if (gender != null && gender!.isNotEmpty) data['gender'] = gender;
     if (isOnline != null) data['is_online'] = isOnline;
     if (lastActivity != null)
       data['last_activity'] = lastActivity!.toIso8601String();
+    if (phone != null) data['phone'] = phone;
 
-    // В POST тоже бывает selected_map_style
-    if (selectedMapStyle != null) {
-      data['selected_map_style'] = selectedMapStyle!.toJson();
+    // В POST для selected_map_style должен быть ID, а не объект
+    if (selectedMapStyle != null && selectedMapStyle!.id != null) {
+      data['selected_map_style'] = selectedMapStyle!.id;
     }
 
-    // avatarUrl, phone, etc. – зависит от того,
-    // нужно ли бэку их отправлять. Если да – добавляй.
     return data;
   }
 }
@@ -162,20 +154,25 @@ class SecuritySettings {
 
 /// Для selected_map_style
 class SelectedMapStyle {
+  final int? id;
   final String? name;
   final String? styleUrl;
 
-  SelectedMapStyle({this.name, this.styleUrl});
+  SelectedMapStyle({this.id, this.name, this.styleUrl});
 
   factory SelectedMapStyle.fromJson(Map<String, dynamic> json) {
     return SelectedMapStyle(
+      id: json['id'] as int?,
       name: json['name'] as String?,
       styleUrl: json['style_url'] as String?,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'style_url': styleUrl,
-      };
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{};
+    if (id != null) json['id'] = id;
+    if (name != null) json['name'] = name;
+    if (styleUrl != null) json['style_url'] = styleUrl;
+    return json;
+  }
 }

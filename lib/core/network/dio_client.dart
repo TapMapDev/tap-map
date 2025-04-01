@@ -31,12 +31,9 @@ class DioClient {
               !_isRefreshing &&
               !skipAuthRefresh) {
             _isRefreshing = true;
-            print('🔄 Starting token refresh process...');
             try {
               final prefs = getIt.get<SharedPrefsRepository>();
               final refreshToken = await prefs.getRefreshToken();
-              print(
-                  '📝 Current refresh token: ${refreshToken?.substring(0, 10)}...');
 
               if (refreshToken != null) {
                 // Создаем новый Dio для запроса обновления токена
@@ -46,7 +43,6 @@ class DioClient {
                 ));
 
                 try {
-                  print('🔄 Sending refresh token request...');
                   final response = await tokenDio.post(
                     '/auth/jwt/refresh/',
                     data: {'refresh': refreshToken},
@@ -55,17 +51,14 @@ class DioClient {
                   if (response.statusCode == 200) {
                     final newAccessToken = response.data['access'];
                     final newRefreshToken = response.data['refresh'];
-                    print('✅ New tokens received');
 
                     // Сохраняем новые токены, используя правильные методы
                     await prefs.saveAccessToken(newAccessToken);
                     await prefs.saveRefreshToken(newRefreshToken);
-                    print('💾 New tokens saved');
 
                     // Повторяем исходный запрос с новым токеном
                     error.requestOptions.headers['Authorization'] =
                         'Bearer $newAccessToken';
-                    print('🔄 Retrying original request with new token...');
                     final clonedRequest = await _dio.request(
                       error.requestOptions.path,
                       options: Options(
@@ -77,14 +70,12 @@ class DioClient {
                     );
 
                     _isRefreshing = false;
-                    print('✅ Token refresh completed successfully');
                     return handler.resolve(clonedRequest);
                   }
                 } catch (refreshError) {
-                  print('❌ Error refreshing token: $refreshError');
                   await prefs.deleteAccessToken();
                   await prefs.deleteRefreshToken();
-                  print('🗑️ Tokens deleted due to refresh error');
+
 
                   // Перенаправляем на страницу авторизации используя GoRouter
                   final context =

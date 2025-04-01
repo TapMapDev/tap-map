@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/common/styles.dart';
+import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/widget/custom_elevated_button.dart';
+
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
 
@@ -32,10 +33,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
       body: BlocConsumer<RegistrationBloc, RegistrationState>(
         listener: (context, state) {
           if (state is RegistarationStatenError) {
-            Get.snackbar('Error', state.errorMessage ?? 'Something went wrong');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Something went wrong'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
           if (state is RegistarationStateSuccess) {
-            context.go('/homepage');
+            context.go(AppRoutes.authorization);
           }
         },
         builder: (context, state) {
@@ -261,7 +267,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   ),
                                 );
                           } else {
-                            Get.snackbar('Warning', 'Passwords must match');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Passwords must match'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
                           }
                         },
                         text: 'Создайте аккаунт',

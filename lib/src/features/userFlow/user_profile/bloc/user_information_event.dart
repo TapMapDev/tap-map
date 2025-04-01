@@ -8,7 +8,6 @@ abstract class UserEvent extends Equatable {
 /// Загрузка профиля
 class LoadUserProfile extends UserEvent {}
 
-/// Обновление профиля
 class UpdateUserProfile extends UserEvent {
   final UserModel user;
 

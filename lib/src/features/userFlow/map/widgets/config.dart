@@ -7,4 +7,3 @@ class MapConfig {
 
   static String get accessToken => dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 }
-

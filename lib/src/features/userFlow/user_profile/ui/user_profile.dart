@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
@@ -30,8 +30,26 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(
         title: const Text('Профиль'),
         actions: [
+          // Иконка настроек/редактирования профиля
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Редактировать профиль',
+            onPressed: () {
+              if (userBloc.state is UserLoaded) {
+                final user = (userBloc.state as UserLoaded).user;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditProfileScreen(user: user),
+                  ),
+                );
+              }
+            },
+          ),
+          // Иконка выхода
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Выйти',
             onPressed: () async {
               await getIt<AuthorizationRepositoryImpl>().logout();
               context.go(AppRoutes.authorization);
@@ -77,46 +95,65 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           const SizedBox(height: 16),
 
           // Имя и Фамилия
-          Text('${user.firstName ?? ''} ${user.lastName ?? ''}',
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          if (user.firstName != null || user.lastName != null) ...[
+            Text(
+              '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim(),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+          ],
 
           // Username
           if (user.username != null) ...[
-            const SizedBox(height: 8),
             Text('@${user.username}'),
+            const SizedBox(height: 8),
+          ],
+
+          // Email
+          if (user.email != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.email, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(user.email!, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 12),
           ],
 
           // Описание
-          if (user.description != null) ...[
-            const SizedBox(height: 8),
+          if (user.description != null && user.description!.isNotEmpty) ...[
             Text(user.description!),
+            const SizedBox(height: 8),
           ],
 
           // Телефон
-          if (user.phone != null) ...[
+          if (user.phone != null && user.phone!.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.phone, size: 16),
+                const SizedBox(width: 4),
+                Text('Телефон: ${user.phone}'),
+              ],
+            ),
             const SizedBox(height: 8),
-            Text('Телефон: ${user.phone}'),
           ],
 
           // Дата рождения
-          if (user.dateOfBirth != null) ...[
+          if (user.dateOfBirth != null && user.dateOfBirth!.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cake, size: 16),
+                const SizedBox(width: 4),
+                Text('Дата рождения: ${user.dateOfBirth}'),
+              ],
+            ),
             const SizedBox(height: 8),
-            Text('Дата рождения: ${user.dateOfBirth}'),
           ],
-
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditProfileScreen(user: user),
-                ),
-              );
-            },
-            child: const Text('Редактировать профиль'),
-          ),
         ],
       ),
     );
