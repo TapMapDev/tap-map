@@ -13,6 +13,9 @@ abstract class IUserRepository {
   Future<String> updateAvatar(File imageFile);
   Future<List<UserAvatarModel>> getUserAvatars();
   Future<bool> deleteAvatar(int avatarId);
+  Future<PrivacySettings> updatePrivacySettings(
+      PrivacySettings privacySettings);
+  Future<PrivacySettings> getPrivacySettings();
 }
 
 class UserRepository implements IUserRepository {
@@ -30,7 +33,6 @@ class UserRepository implements IUserRepository {
       if (response['data'] is Map<String, dynamic>) {
         data = response['data'];
       } else if (response['data'] is String) {
-        // If the response is a string, try to parse it as JSON
         try {
           data = json.decode(response['data']);
         } catch (e) {
@@ -229,6 +231,89 @@ class UserRepository implements IUserRepository {
             'Failed to delete avatar: ${e.response?.data ?? e.message}');
       }
       throw Exception('Failed to delete avatar: $e');
+    }
+  }
+
+  @override
+  Future<PrivacySettings> updatePrivacySettings(
+      PrivacySettings privacySettings) async {
+    try {
+      final body = {
+        'is_searchable_by_email': privacySettings.isSearchableByEmail == true,
+        'is_searchable_by_phone': privacySettings.isSearchableByPhone == true
+      };
+
+      // Добавляем дополнительные поля, если они не null
+      if (privacySettings.isShowGeolocationToFriends != null) {
+        body['is_show_geolocation_to_friends'] =
+            privacySettings.isShowGeolocationToFriends == true;
+      }
+
+      if (privacySettings.isPreciseGeolocation != null) {
+        body['is_precise_geolocation'] =
+            privacySettings.isPreciseGeolocation == true;
+      }
+
+      // Отправляем запрос на обновление настроек приватности
+      final response = await apiService.patchData('/users/me/privacy/', body);
+
+      // Проверяем ошибки
+      if (response['statusCode'] >= 400) {
+        throw Exception(
+            'Server returned error ${response['statusCode']}: ${response['data']}');
+      }
+
+      // Handle different response formats
+      dynamic data;
+      if (response['data'] is Map<String, dynamic>) {
+        data = response['data'];
+      } else if (response['data'] is String) {
+        // If the response is a string, try to parse it as JSON
+        try {
+          data = json.decode(response['data']);
+        } catch (e) {
+          throw Exception('Invalid JSON string: ${response['data']}');
+        }
+      } else {
+        throw Exception('Unexpected response format: ${response['data']}');
+      }
+
+      return PrivacySettings.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to update privacy settings: $e');
+    }
+  }
+
+  @override
+  Future<PrivacySettings> getPrivacySettings() async {
+    try {
+      // Отправляем запрос на получение настроек приватности
+      final response = await apiService.getData('/users/me/privacy/');
+
+      // Проверяем ошибки
+      if (response['statusCode'] >= 400) {
+        throw Exception(
+            'Server returned error ${response['statusCode']}: ${response['data']}');
+      }
+
+      // Handle different response formats
+      dynamic data;
+      if (response['data'] is Map<String, dynamic>) {
+        data = response['data'];
+      } else if (response['data'] is String) {
+        // If the response is a string, try to parse it as JSON
+        try {
+          data = json.decode(response['data']);
+        } catch (e) {
+          throw Exception('Invalid JSON string: ${response['data']}');
+        }
+      } else {
+        throw Exception('Unexpected response format: ${response['data']}');
+      }
+
+      return PrivacySettings.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to get privacy settings: $e');
     }
   }
 }

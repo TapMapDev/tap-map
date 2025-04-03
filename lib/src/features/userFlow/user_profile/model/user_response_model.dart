@@ -39,6 +39,44 @@ class UserModel {
     this.selectedMapStyle,
   });
 
+  UserModel copyWith({
+    int? id,
+    String? email,
+    String? username,
+    String? firstName,
+    String? lastName,
+    String? website,
+    String? avatarUrl,
+    String? description,
+    String? gender,
+    String? phone,
+    bool? isOnline,
+    String? lastActivity,
+    bool? isEmailVerified,
+    PrivacySettings? privacy,
+    String? dateOfBirth,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      website: website ?? this.website,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      description: description ?? this.description,
+      gender: gender ?? this.gender,
+      phone: phone ?? this.phone,
+      isOnline: isOnline ?? this.isOnline,
+      lastActivity: lastActivity != null
+          ? DateTime.parse(lastActivity)
+          : this.lastActivity,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      privacy: privacy ?? this.privacy,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int?,

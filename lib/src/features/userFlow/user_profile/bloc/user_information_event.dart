@@ -26,3 +26,11 @@ class DeleteUserAvatar extends UserEvent {
 
   DeleteUserAvatar(this.avatarId);
 }
+
+class UpdatePrivacySettings extends UserEvent {
+  final PrivacySettings privacySettings;
+
+  UpdatePrivacySettings(this.privacySettings);
+}
+
+class LoadPrivacySettings extends UserEvent {}

@@ -15,6 +15,6 @@ final class AuthorizationFailed extends AuthorizationState {
 
 final class AuthorizationSuccess extends AuthorizationState {}
 
-class AuthorizedState extends AuthorizationState {} // Авторизован
+class AuthorizedState extends AuthorizationState {}
 
-class UnAuthorizedState extends AuthorizationState {} // 
+class UnAuthorizedState extends AuthorizationState {}

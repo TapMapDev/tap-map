@@ -61,96 +61,97 @@ class _ClientAvatarState extends State<ClientAvatar> {
     }
   }
 
-void _showAvatarGallery() {
-  if (_userAvatars == null || _userAvatars!.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('У вас нет доступных аватаров')),
-    );
-    return;
-  }
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Выберите аватар'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: _userAvatars!.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemBuilder: (context, index) {
-              final avatar = _userAvatars![index];
-
-              return Stack(
-                children: [
-                  // Выбор аватара при тапе
-                  GestureDetector(
-                    onTap: () {
-                      widget.onAvatarUpdated?.call(avatar.imageUrl);
-                      // Закрываем только диалог выбора аватаров
-                      Navigator.of(context).pop();
-                    },
-                    child: CircleAvatar(
-                      backgroundImage: NetworkImage(avatar.imageUrl),
-                      radius: 40,
-                    ),
-                  ),
-                  // Кнопка удаления (крестик)
-                  Positioned(
-                    top: -10,
-                    right: -10,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                      onPressed: () async {
-                        // Показываем диалог подтверждения удаления
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Удалить аватар?'),
-                            content: const Text(
-                                'Вы уверены, что хотите удалить этот аватар?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(dialogContext, false),
-                                child: const Text('Отмена'),
-                              ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(dialogContext, true),
-                                child: const Text('Удалить'),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (confirmed == true) {
-                          _userBloc.add(DeleteUserAvatar(avatar.id));
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
-          ),
-        ],
+  void _showAvatarGallery() {
+    if (_userAvatars == null || _userAvatars!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('У вас нет доступных аватаров')),
       );
-    },
-  );
-}
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Выберите аватар'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.builder(
+              shrinkWrap: true,
+              itemCount: _userAvatars!.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemBuilder: (context, index) {
+                final avatar = _userAvatars![index];
+
+                return Stack(
+                  children: [
+                    // Выбор аватара при тапе
+                    GestureDetector(
+                      onTap: () {
+                        widget.onAvatarUpdated?.call(avatar.imageUrl);
+                        // Закрываем только диалог выбора аватаров
+                        Navigator.of(context).pop();
+                      },
+                      child: CircleAvatar(
+                        backgroundImage: NetworkImage(avatar.imageUrl),
+                        radius: 40,
+                      ),
+                    ),
+                    // Кнопка удаления (крестик)
+                    Positioned(
+                      top: -10,
+                      right: -10,
+                      child: IconButton(
+                        icon: const Icon(Icons.close,
+                            size: 18, color: Colors.grey),
+                        onPressed: () async {
+                          // Показываем диалог подтверждения удаления
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: const Text('Удалить аватар?'),
+                              content: const Text(
+                                  'Вы уверены, что хотите удалить этот аватар?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: const Text('Отмена'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: const Text('Удалить'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed == true) {
+                            _userBloc.add(DeleteUserAvatar(avatar.id));
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Отмена'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -71,5 +71,26 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         emit(UserError(e.toString()));
       }
     });
+
+    on<UpdatePrivacySettings>((event, emit) async {
+      emit(PrivacySettingsUpdating());
+      try {
+        final updatedPrivacy =
+            await repository.updatePrivacySettings(event.privacySettings);
+        emit(PrivacySettingsUpdated(updatedPrivacy));
+      } catch (e) {
+        emit(UserError(e.toString()));
+      }
+    });
+
+    on<LoadPrivacySettings>((event, emit) async {
+      emit(UserLoading());
+      try {
+        final privacySettings = await repository.getPrivacySettings();
+        emit(PrivacySettingsLoaded(privacySettings));
+      } catch (e) {
+        emit(UserError(e.toString()));
+      }
+    });
   }
 }

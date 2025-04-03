@@ -22,7 +22,7 @@ class AuthorizationBloc extends Bloc<AuthorizationEvent, AuthorizationState> {
     });
     on<CheckAuthorizationEvent>((event, emit) async {
       try {
-        final isAuthorized = await authorizationRepositoryImpl.isAuth orized();
+        final isAuthorized = await authorizationRepositoryImpl.isAuthorized();
         if (isAuthorized) {
           emit(AuthorizedState()); // Авторизован
         } else {

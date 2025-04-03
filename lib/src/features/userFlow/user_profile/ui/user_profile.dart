@@ -47,7 +47,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               }
             },
           ),
-          // Иконка выхода
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Выйти',
@@ -62,7 +61,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         bloc: userBloc,
         builder: (context, state) {
           if (state is UserLoading) {
-            return const Center(child: CircularProgressIndicator());
           } else if (state is UserError) {
             return Center(
               child: Text('Ошибка: ${state.error}'),

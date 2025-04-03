@@ -47,3 +47,17 @@ class AvatarsLoaded extends UserState {
   @override
   List<Object?> get props => [avatars, user];
 }
+
+class PrivacySettingsLoaded extends UserState {
+  final PrivacySettings privacySettings;
+
+  PrivacySettingsLoaded(this.privacySettings);
+}
+
+class PrivacySettingsUpdating extends UserState {}
+
+class PrivacySettingsUpdated extends UserState {
+  final PrivacySettings privacySettings;
+
+  PrivacySettingsUpdated(this.privacySettings);
+}
