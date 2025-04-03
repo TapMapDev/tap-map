@@ -1,17 +1,22 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:talker/talker.dart';
+import 'package:dio/dio.dart';
+import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
+import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 
 abstract class IUserRepository {
   Future<UserModel> getCurrentUser();
   Future<UserModel> updateUser(UserModel user);
+  Future<String> updateAvatar(File imageFile);
+  Future<List<UserAvatarModel>> getUserAvatars();
+  Future<bool> deleteAvatar(int avatarId);
 }
 
 class UserRepository implements IUserRepository {
   final ApiService apiService;
-  final Talker talker = Talker();
 
   UserRepository({required this.apiService});
 
@@ -46,44 +51,13 @@ class UserRepository implements IUserRepository {
     try {
       final body = user.toJson();
 
-      // Логируем информацию о стиле карты
-      if (user.selectedMapStyle != null) {
-        talker.info(
-            'Original selectedMapStyle: id=${user.selectedMapStyle!.id}, name=${user.selectedMapStyle!.name}, url=${user.selectedMapStyle!.styleUrl}');
-      } else {
-        talker.info('Original selectedMapStyle is null');
-      }
-
       // Удаляем пустые строки, чтобы не вызывать ошибки валидации
       body.removeWhere((key, value) => value is String && value.isEmpty);
 
-      // Проверяем, какой тип данных для selected_map_style
-      if (body.containsKey('selected_map_style')) {
-        talker.info(
-            'selected_map_style before sending: ${body['selected_map_style']} (${body['selected_map_style'].runtimeType})');
-      } else {
-        talker.info('selected_map_style is not in body');
-      }
-
-      // Обработка вложенных объектов больше не нужна, так как мы используем только ID
-      // if (body['selected_map_style'] != null &&
-      //     body['selected_map_style'] is Map) {
-      //   final mapStyle = body['selected_map_style'] as Map<String, dynamic>;
-      //   mapStyle.removeWhere((key, value) => value is String && value.isEmpty);
-
-      //   // Если все поля пустые, удаляем весь объект
-      //   if (mapStyle.isEmpty) {
-      //     body.remove('selected_map_style');
-      //   }
-      // }
-
-      talker.info('Sending PATCH with cleaned data: $body');
       final response = await apiService.patchData('/users/me/', body);
 
       // Проверяем ошибки
       if (response['statusCode'] >= 400) {
-        talker.error('Server returned error: ${response['statusCode']}');
-        talker.error('Error response data: ${response['data']}');
         throw Exception(
             'Server returned error ${response['statusCode']}: ${response['data']}');
       }
@@ -105,8 +79,156 @@ class UserRepository implements IUserRepository {
 
       return UserModel.fromJson(data);
     } catch (e) {
-      talker.error('Failed to update user data: $e');
       throw Exception('Failed to update user data: $e');
+    }
+  }
+
+  @override
+  Future<String> updateAvatar(File imageFile) async {
+    try {
+      // Подготавливаем MultipartFile для отправки файла
+      final fileName = imageFile.path.split('/').last;
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: fileName,
+        ),
+      });
+
+      // Получаем токен авторизации из SharedPrefs
+      final prefs = getIt.get<SharedPrefsRepository>();
+      final authToken = await prefs.getAccessToken();
+
+      if (authToken == null) {
+        throw Exception('Access token is null');
+      }
+
+      // Отправляем запрос на обновление аватара
+      final response = await apiService.dioClient.client.post(
+        '/users/me/avatars/',
+        data: formData,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $authToken',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      // Проверяем ответ
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data;
+
+        // Извлекаем URL аватара из ответа
+        if (responseData is Map<String, dynamic>) {
+          if (responseData.containsKey('avatar_url') &&
+              responseData['avatar_url'] != null) {
+            return responseData['avatar_url'] as String;
+          } else if (responseData.containsKey('url') &&
+              responseData['url'] != null) {
+            return responseData['url'] as String;
+          } else if (responseData.containsKey('avatar') &&
+              responseData['avatar'] != null) {
+            return responseData['avatar'] as String;
+          } else if (responseData.containsKey('image') &&
+              responseData['image'] != null) {
+            return responseData['image'] as String;
+          } else {
+            throw Exception('Server response does not contain avatar URL');
+          }
+        } else {
+          throw Exception('Invalid response format from server');
+        }
+      } else {
+        throw Exception(
+            'Error uploading avatar: ${response.statusCode} - ${response.data}');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(
+            'Failed to update avatar: ${e.response?.data ?? e.message}');
+      }
+      throw Exception('Failed to update avatar: $e');
+    }
+  }
+
+  @override
+  Future<List<UserAvatarModel>> getUserAvatars() async {
+    try {
+      // Получаем токен авторизации из SharedPrefs
+      final prefs = getIt.get<SharedPrefsRepository>();
+      final authToken = await prefs.getAccessToken();
+
+      if (authToken == null) {
+        throw Exception('Access token is null');
+      }
+
+      // Отправляем запрос на получение списка аватаров
+      final response = await apiService.dioClient.client.get(
+        '/users/me/avatars/',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $authToken',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = response.data;
+
+        // Преобразуем список dynamic в список UserAvatarModel
+        return responseData
+            .map<UserAvatarModel>((item) =>
+                UserAvatarModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception(
+            'Error fetching avatars: ${response.statusCode} - ${response.data}');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(
+            'Failed to get avatars: ${e.response?.data ?? e.message}');
+      }
+      throw Exception('Failed to get avatars: $e');
+    }
+  }
+
+  @override
+  Future<bool> deleteAvatar(int avatarId) async {
+    try {
+      // Получаем токен авторизации из SharedPrefs
+      final prefs = getIt.get<SharedPrefsRepository>();
+      final authToken = await prefs.getAccessToken();
+
+      if (authToken == null) {
+        throw Exception('Access token is null');
+      }
+
+      // Отправляем запрос на удаление аватара
+      final response = await apiService.dioClient.client.delete(
+        '/users/me/avatars/$avatarId/',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $authToken',
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      // Проверяем ответ
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception(
+            'Error deleting avatar: ${response.statusCode} - ${response.data}');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(
+            'Failed to delete avatar: ${e.response?.data ?? e.message}');
+      }
+      throw Exception('Failed to delete avatar: $e');
     }
   }
 }

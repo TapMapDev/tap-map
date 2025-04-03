@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:talker/talker.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 
@@ -20,7 +19,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _phoneController;
   late TextEditingController _websiteController;
-  final Talker talker = Talker();
+  late TextEditingController _dateOfBirthController;
+  DateTime? _selectedDate;
+  bool _isSearchableByEmail = true;
+  bool _isSearchableByPhone = true;
 
   @override
   void initState() {
@@ -32,35 +34,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextEditingController(text: widget.user.description);
     _phoneController = TextEditingController(text: widget.user.phone);
     _websiteController = TextEditingController(text: widget.user.website);
-
-    // Логируем информацию о стиле карты при загрузке экрана
-    if (widget.user.selectedMapStyle != null) {
-      talker.info(
-          'Initial selectedMapStyle: id=${widget.user.selectedMapStyle!.id}, name=${widget.user.selectedMapStyle!.name}, url=${widget.user.selectedMapStyle!.styleUrl}');
-    } else {
-      talker.info('Initial selectedMapStyle is null');
-    }
+    _selectedDate = widget.user.dateOfBirth != null
+        ? DateTime.tryParse(widget.user.dateOfBirth!)
+        : null;
+    _dateOfBirthController = TextEditingController(
+      text: _selectedDate != null ? _formatDate(_selectedDate!) : '',
+    );
+    final privacy = widget.user.privacy;
+    _isSearchableByEmail = privacy?.isSearchableByEmail ?? true;
+    _isSearchableByPhone = privacy?.isSearchableByPhone ?? true;
   }
 
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _usernameController.dispose();
-    _descriptionController.dispose();
-    _phoneController.dispose();
-    _websiteController.dispose();
-    super.dispose();
+  String _formatDate(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   void _saveProfile() {
-    // Логируем информацию о стиле карты перед созданием модели
-    if (widget.user.selectedMapStyle != null) {
-      talker.info(
-          'Before update - selectedMapStyle: id=${widget.user.selectedMapStyle!.id}, name=${widget.user.selectedMapStyle!.name}, url=${widget.user.selectedMapStyle!.styleUrl}');
-    } else {
-      talker.info('Before update - selectedMapStyle is null');
-    }
+    // Отладочная печать текущих значений приватности
+    print('Сохранение профиля:');
+    print('_isSearchableByEmail: $_isSearchableByEmail');
+    print('_isSearchableByPhone: $_isSearchableByPhone');
+
+    // Создаем объект настроек приватности
+    final privacySettings = PrivacySettings(
+      isSearchableByEmail: _isSearchableByEmail,
+      isSearchableByPhone: _isSearchableByPhone,
+      isShowGeolocationToFriends:
+          widget.user.privacy?.isShowGeolocationToFriends,
+      isPreciseGeolocation: widget.user.privacy?.isPreciseGeolocation,
+    );
+
+    // Отладочная печать созданного объекта
+    print('Созданные настройки приватности: ${privacySettings.toJson()}');
 
     // Не передаем selectedMapStyle, чтобы избежать ошибок валидации
     final updatedUser = UserModel(
@@ -72,20 +77,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       website: _websiteController.text,
       avatarUrl: widget.user.avatarUrl,
       description: _descriptionController.text,
-      dateOfBirth: widget.user.dateOfBirth,
       gender: widget.user.gender,
       phone: _phoneController.text,
       isOnline: widget.user.isOnline,
       lastActivity: widget.user.lastActivity,
       isEmailVerified: widget.user.isEmailVerified,
-      privacy: widget.user.privacy,
       security: widget.user.security,
+      dateOfBirth: _selectedDate != null ? _formatDate(_selectedDate!) : null,
       // Не обновляем стиль карты при обновлении профиля
       // selectedMapStyle: widget.user.selectedMapStyle,
+      privacy: privacySettings,
     );
 
-    // Логируем информацию о созданной модели
-    talker.info('Created updatedUser without selectedMapStyle');
+    // Отладочная печать JSON объекта пользователя
+    print('Объект пользователя для отправки: ${updatedUser.toJson()}');
 
     context.read<UserBloc>().add(UpdateUserProfile(updatedUser));
   }
@@ -108,7 +113,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Профиль успешно обновлен')),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           } else if (state is UserError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Ошибка: ${state.error}')),
@@ -160,6 +165,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              Builder(
+                builder: (context) => TextField(
+                  controller: _dateOfBirthController,
+                  decoration: const InputDecoration(
+                    labelText: 'Дата рождения',
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  readOnly: true,
+                  onTap: () async {
+                    final now = DateTime.now();
+                    final initialDate =
+                        _selectedDate ?? DateTime(now.year - 18);
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _selectedDate = picked;
+                        _dateOfBirthController.text = _formatDate(picked);
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Настройки приватности',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                title: const Text('Разрешить поиск по email'),
+                value: _isSearchableByEmail,
+                onChanged: (value) {
+                  print('Изменение isSearchableByEmail на: $value');
+                  setState(() {
+                    _isSearchableByEmail = value;
+                  });
+                  // Дополнительная проверка
+                  Future.delayed(Duration.zero, () {
+                    print(
+                        'После setState isSearchableByEmail: $_isSearchableByEmail');
+                  });
+                },
+              ),
+              SwitchListTile(
+                title: const Text('Разрешить поиск по телефону'),
+                value: _isSearchableByPhone,
+                onChanged: (value) {
+                  print('Изменение isSearchableByPhone на: $value');
+                  setState(() {
+                    _isSearchableByPhone = value;
+                  });
+                  // Дополнительная проверка
+                  Future.delayed(Duration.zero, () {
+                    print(
+                        'После setState isSearchableByPhone: $_isSearchableByPhone');
+                  });
+                },
               ),
             ],
           ),

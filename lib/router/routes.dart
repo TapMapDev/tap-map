@@ -8,4 +8,5 @@ class AppRoutes {
   static const String map = '/map';
   static const String profile = '/profile';
   static const String afisha = '/afisha';
+  static const String editProfile = '/edit_profile';
 }

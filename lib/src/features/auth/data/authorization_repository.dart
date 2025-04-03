@@ -43,6 +43,35 @@ class AuthorizationRepositoryImpl {
   }
 
   Future<void> logout() async {
+    try {
+      // 1. Делаем POST-запрос на логаут
+      //    Тело запроса не требуется, можем передавать пустой объект {} или null
+      final response = await apiService.postData(
+        '/api/users/sessions/logout/',
+        {},
+        useAuth: true, // передаём заголовок Authorization
+      );
+
+      final statusCode = response['statusCode'] as int?;
+
+      // 2. Проверяем ответ
+      if (statusCode != null && (statusCode == 200 || statusCode == 204)) {
+        // Успешно логаут
+        // Можно вывести лог, если нужно
+      } else {
+        // Сервер вернул ошибку
+        // Можно кинуть Exception, чтобы поймать в Bloc, но чаще логаут
+        // делается принудительно (не важно, что вернул сервер).
+        // throw Exception('Ошибка логаута: ${response['data']}');
+      }
+    } catch (e) {
+      // 3. Обработка любых ошибок Dio/сети
+      //    Мы всё равно чистим локальные токены,
+      //    потому что клиент всё равно «забывает» локальную сессию
+      // print('Ошибка: $e'); // или throw
+    }
+
+    // 4. В любом случае чистим локальные токены
     await prefs.deleteKey('access_token');
     await prefs.deleteKey('refresh_token');
   }

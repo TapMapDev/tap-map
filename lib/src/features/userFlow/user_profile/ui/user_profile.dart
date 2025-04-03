@@ -6,7 +6,8 @@ import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/client_avatar.dart';
+
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -30,19 +31,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(
         title: const Text('Профиль'),
         actions: [
-          // Иконка настроек/редактирования профиля
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Редактировать профиль',
-            onPressed: () {
+            onPressed: () async {
               if (userBloc.state is UserLoaded) {
                 final user = (userBloc.state as UserLoaded).user;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProfileScreen(user: user),
-                  ),
+                final result = await context.push<bool>(
+                  AppRoutes.editProfile,
+                  extra: user,
                 );
+                if (result == true) {
+                  userBloc.add(LoadUserProfile());
+                }
               }
             },
           ),
@@ -82,15 +83,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Column(
         children: [
           // Аватар
-          CircleAvatar(
+          ClientAvatar(
+            user: user,
             radius: 50,
-            backgroundImage:
-                (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
-                    ? NetworkImage(user.avatarUrl!)
-                    : null,
-            child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
-                ? const Icon(Icons.person, size: 50)
-                : null,
+            editable: true,
+            showAllAvatars: true,
+            onAvatarUpdated: (String newAvatarUrl) {
+              final updatedUser = UserModel(
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                website: user.website,
+                avatarUrl: newAvatarUrl,
+                description: user.description,
+                dateOfBirth: user.dateOfBirth,
+                gender: user.gender,
+                phone: user.phone,
+                isOnline: user.isOnline,
+                lastActivity: user.lastActivity,
+                privacy: user.privacy,
+                security: user.security,
+                isEmailVerified: user.isEmailVerified,
+                selectedMapStyle: user.selectedMapStyle,
+              );
+
+              userBloc.add(UpdateUserProfile(updatedUser));
+            },
           ),
           const SizedBox(height: 16),
 

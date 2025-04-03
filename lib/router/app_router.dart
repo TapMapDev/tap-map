@@ -11,6 +11,8 @@ import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GoRouter appRouter = GoRouter(
@@ -67,6 +69,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.passwordReset,
       builder: (context, state) => const PasswordRequestPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.editProfile,
+      builder: (context, state) {
+        final user = state.extra as UserModel;
+        return EditProfileScreen(user: user);
+      },
     ),
     StatefulShellRoute.indexedStack(
       // redirect: authGuard,

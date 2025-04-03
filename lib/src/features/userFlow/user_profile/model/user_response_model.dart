@@ -1,22 +1,22 @@
 class UserModel {
   final int? id;
   final String? email;
-  final String? password; // POST для обновления
+  final String? password;
   final String? username;
   final String? firstName;
   final String? lastName;
   final String? website;
-  final String? avatarUrl; // GET приходит
+  final String? avatarUrl;
   final String? description;
   final String? dateOfBirth;
   final String? gender;
   final String? phone;
-  final bool? isOnline; // Changed from String? to bool?
-  final DateTime? lastActivity; // Changed from String? to DateTime?
-  final bool? isEmailVerified; // GET приходит
+  final bool? isOnline;
+  final DateTime? lastActivity;
+  final bool? isEmailVerified;
   final PrivacySettings? privacy;
   final SecuritySettings? security;
-  final SelectedMapStyle? selectedMapStyle; // POST требует
+  final SelectedMapStyle? selectedMapStyle;
 
   UserModel({
     this.id,
@@ -39,7 +39,6 @@ class UserModel {
     this.selectedMapStyle,
   });
 
-  /// Парсим 1 объект из JSON (GET)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int?,
@@ -79,17 +78,8 @@ class UserModel {
 
   /// Конвертация в JSON (POST)
   Map<String, dynamic> toJson() {
-    // для POST /api/users/ бэк ждёт:
-    // {
-    //   "email": "...",
-    //   "password": "...",
-    //   "username": "...",
-    //   "first_name": "...",
-    // }
-    // Не все поля нужны при POST – только те, что реально меняются.
     final data = <String, dynamic>{};
 
-    // Добавляем только не-null поля и не пустые строки
     if (email != null && email!.isNotEmpty) data['email'] = email;
     if (password != null && password!.isNotEmpty) data['password'] = password;
     if (username != null && username!.isNotEmpty) data['username'] = username;
@@ -105,9 +95,12 @@ class UserModel {
       data['last_activity'] = lastActivity!.toIso8601String();
     if (phone != null) data['phone'] = phone;
 
-    // В POST для selected_map_style должен быть ID, а не объект
     if (selectedMapStyle != null && selectedMapStyle!.id != null) {
       data['selected_map_style'] = selectedMapStyle!.id;
+    }
+
+    if (privacy != null) {
+      data['privacy'] = privacy!.toJson();
     }
 
     return data;
@@ -136,6 +129,24 @@ class PrivacySettings {
           json['is_show_geolocation_to_friends'] as bool?,
       isPreciseGeolocation: json['is_precise_geolocation'] as bool?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{};
+
+    // Явно указываем false вместо null, чтобы сервер точно получил значение
+    json['is_searchable_by_email'] = isSearchableByEmail ?? false;
+    json['is_searchable_by_phone'] = isSearchableByPhone ?? false;
+
+    // Для других полей сохраняем возможность null (если это допустимо для API)
+    if (isShowGeolocationToFriends != null) {
+      json['is_show_geolocation_to_friends'] = isShowGeolocationToFriends;
+    }
+    if (isPreciseGeolocation != null) {
+      json['is_precise_geolocation'] = isPreciseGeolocation;
+    }
+
+    return json;
   }
 }
 
@@ -174,5 +185,37 @@ class SelectedMapStyle {
     if (name != null) json['name'] = name;
     if (styleUrl != null) json['style_url'] = styleUrl;
     return json;
+  }
+}
+
+class UserAvatarModel {
+  final int id;
+  final String image;
+  final String imageUrl;
+  final String createdAt;
+
+  UserAvatarModel({
+    required this.id,
+    required this.image,
+    required this.imageUrl,
+    required this.createdAt,
+  });
+
+  factory UserAvatarModel.fromJson(Map<String, dynamic> json) {
+    return UserAvatarModel(
+      id: json['id'] as int,
+      image: json['image'] as String,
+      imageUrl: json['image_url'] as String,
+      createdAt: json['created_at'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'image': image,
+      'image_url': imageUrl,
+      'created_at': createdAt,
+    };
   }
 }
