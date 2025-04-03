@@ -2,59 +2,85 @@ import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/auth/model/authorization_response_model.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthorizationRepositoryImpl {
   final ApiService apiService;
-  final prefs = getIt.get<SharedPrefsRepository>();
+  final SharedPrefsRepository prefs = getIt.get<SharedPrefsRepository>();
+
   AuthorizationRepositoryImpl({required this.apiService});
 
   Future<AuthorizationResponseModel> authorize({
     required String login,
     required String password,
   }) async {
-    final response = await apiService.postData(
+    try {
+      final response = await apiService.postData(
         '/auth/token/login/',
         {
           'login': login,
           'password': password,
         },
-        useAuth: false);
+        useAuth: false,
+      );
 
-    final responseModel = AuthorizationResponseModel.fromJson(
-        response['data'], response['statusCode']);
+      final responseModel = AuthorizationResponseModel.fromJson(
+        response['data'],
+        response['statusCode'],
+      );
 
-    if (responseModel.accessToken != null &&
-        responseModel.refreshToken != null) {
-      await prefs.saveAccessToken(responseModel.accessToken!);
-      await prefs.saveRefreshToken(responseModel.refreshToken!);
+      if (responseModel.accessToken != null && responseModel.refreshToken != null) {
+        await prefs.saveAccessToken(responseModel.accessToken!);
+        await prefs.saveRefreshToken(responseModel.refreshToken!);
+      }
+
+      return responseModel;
+    } catch (e, stackTrace) {
+      debugPrint('Authorization error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
     }
-
-    return responseModel;
   }
 
   Future<bool> isAuthorized() async {
     final accessToken = await prefs.getString('access_token');
     final refreshToken = await prefs.getString('refresh_token');
-
-    if (accessToken == null || refreshToken == null) {
-      return false;
-    }
-    return true;
+    return accessToken != null && refreshToken != null;
   }
 
   Future<void> logout() async {
     try {
+      final accessToken = await prefs.getString('access_token');
+      final refreshToken = await prefs.getString('refresh_token');
+
+      if (accessToken == null || refreshToken == null) {
+        debugPrint('Logout aborted: Missing tokens');
+        return;
+      }
+
       final response = await apiService.postData(
         '/sessions/logout/',
-        {},
-        useAuth: true,
+        {'refresh': refreshToken},
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        useAuth: false,
       );
 
       final statusCode = response['statusCode'] as int?;
 
-      if (statusCode != null && (statusCode == 200 || statusCode == 204)) {}
-    } catch (e) {}
-    await prefs.deleteKey('access_token');
-    await prefs.deleteKey('refresh_token');
+      if (statusCode == 200 || statusCode == 204) {
+        await prefs.deleteKey('access_token');
+        await prefs.deleteKey('refresh_token');
+        debugPrint('Logout successful');
+      } else {
+        debugPrint('Logout failed with status code: $statusCode');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Logout error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
   }
 }
