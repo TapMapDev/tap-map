@@ -25,6 +25,7 @@ import 'package:tap_map/src/features/userFlow/search_screen/data/search_reposito
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
+
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -32,15 +33,8 @@ void main() async {
   setup();
   await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(MapConfig.accessToken);
+  await _initializeTokens();
 
-  // Инициализация токена - пробуем обновить при каждом запуске
-  try {
-    await _initializeTokens();
-  } catch (e) {
-    debugPrint("Ошибка при инициализации токенов: $e");
-  }
-
-  // Создаем роутер после инициализации токенов
   final router = appRouter;
   getIt.registerSingleton<GoRouter>(router);
 
