@@ -6,7 +6,8 @@ import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/ui/client_avatar.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/widget/client_avatar.dart';
+
 
 
 class UserProfileScreen extends StatefulWidget {
@@ -29,11 +30,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профиль'),
         actions: [
+           IconButton(
+            icon: const Icon(Icons.qr_code),
+            tooltip: 'QR-код профиля',
+            onPressed: () async {
+              if (userBloc.state is UserLoaded) {
+                final user = (userBloc.state as UserLoaded).user;
+                await context.push(
+                  AppRoutes.shareProfile,
+                  extra: user,
+                );
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Редактировать профиль',
             onPressed: () async {
               if (userBloc.state is UserLoaded) {
                 final user = (userBloc.state as UserLoaded).user;

@@ -13,6 +13,7 @@ import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/widget/profile_share.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GoRouter appRouter = GoRouter(
@@ -75,6 +76,13 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final user = state.extra as UserModel;
         return EditProfileScreen(user: user);
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.shareProfile,
+      builder: (context, state) {
+        final username = state.uri.queryParameters['username'];
+        return ProfileShareSection(username: username ?? '');
       },
     ),
     StatefulShellRoute.indexedStack(

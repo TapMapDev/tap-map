@@ -37,7 +37,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _firstNameController = TextEditingController(text: widget.user.firstName);
     _lastNameController = TextEditingController(text: widget.user.lastName);
     _usernameController = TextEditingController(text: widget.user.username);
-    _descriptionController = TextEditingController(text: widget.user.description);
+    _descriptionController =
+        TextEditingController(text: widget.user.description);
     _phoneController = TextEditingController(text: widget.user.phone);
     _websiteController = TextEditingController(text: widget.user.website);
 
@@ -71,7 +72,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final privacySettings = PrivacySettings(
       isSearchableByEmail: _isSearchableByEmail,
       isSearchableByPhone: _isSearchableByPhone,
-      isShowGeolocationToFriends: widget.user.privacy?.isShowGeolocationToFriends,
+      isShowGeolocationToFriends:
+          widget.user.privacy?.isShowGeolocationToFriends,
       isPreciseGeolocation: widget.user.privacy?.isPreciseGeolocation,
     );
 
@@ -106,8 +108,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } else if (state is PrivacySettingsLoaded) {
       setState(() {
         _isPrivacyLoaded = true;
-        _isSearchableByEmail = state.privacySettings.isSearchableByEmail ?? false;
-        _isSearchableByPhone = state.privacySettings.isSearchableByPhone ?? false;
+        _isSearchableByEmail =
+            state.privacySettings.isSearchableByEmail ?? false;
+        _isSearchableByPhone =
+            state.privacySettings.isSearchableByPhone ?? false;
       });
     } else if (state is PrivacySettingsUpdated) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,11 +145,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ProfileTextField(label: 'Имя', controller: _firstNameController),
+                    ProfileTextField(
+                        label: 'Имя', controller: _firstNameController),
                     const SizedBox(height: 16),
-                    ProfileTextField(label: 'Фамилия', controller: _lastNameController),
+                    ProfileTextField(
+                        label: 'Фамилия', controller: _lastNameController),
                     const SizedBox(height: 16),
-                    ProfileTextField(label: 'Имя пользователя', controller: _usernameController),
+                    ProfileTextField(
+                        label: 'Имя пользователя',
+                        controller: _usernameController),
                     const SizedBox(height: 16),
                     ProfileTextField(
                       label: 'Описание',
@@ -164,8 +172,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     PrivacySettingsSection(
                       isSearchableByEmail: _isSearchableByEmail,
                       isSearchableByPhone: _isSearchableByPhone,
-                      onEmailChanged: (value) => _updatePrivacySettings(isSearchableByEmail: value),
-                      onPhoneChanged: (value) => _updatePrivacySettings(isSearchableByPhone: value),
+                      onEmailChanged: (value) =>
+                          _updatePrivacySettings(isSearchableByEmail: value),
+                      onPhoneChanged: (value) =>
+                          _updatePrivacySettings(isSearchableByPhone: value),
                     ),
                   ],
                 ),
