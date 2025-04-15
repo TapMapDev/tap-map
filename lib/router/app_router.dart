@@ -10,21 +10,36 @@ import 'package:tap_map/src/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/profile_share.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+// final GoRouter appRouter = GoRouter(
+//   initialLocation: '/',
+//   routes: [
+//     GoRoute(
+//       path: '/',
+//       builder: (context, state) => const Scaffold(
+//         body: Center(
+//           child: Text('🧪 GoRouter отрисовался!'),
+//         ),
+//       ),
+//     ),
+//   ],
+// );
+
 final GoRouter appRouter = GoRouter(
   debugLogDiagnostics: true,
   navigatorKey: _rootNavigatorKey,
   initialLocation: AppRoutes.map,
-  redirect: (context, state) async {
+  redirect: (context, state) {
     final prefs = GetIt.I<SharedPrefsRepository>();
-    final token = await prefs.getAccessToken();
+    final token = prefs.getAccessToken();
 
-    print('Redirecting to ${state.matchedLocation}, token: $token');
+    print('🔁 Redirecting from ${state.matchedLocation}, token: $token');
 
     final publicRoutes = [
       AppRoutes.authorization,
@@ -32,6 +47,7 @@ final GoRouter appRouter = GoRouter(
       AppRoutes.passwordReset,
       AppRoutes.newPassword,
     ];
+
     final isPublic =
         publicRoutes.any((route) => state.matchedLocation.startsWith(route));
 
@@ -39,9 +55,8 @@ final GoRouter appRouter = GoRouter(
       return AppRoutes.authorization;
     }
 
-    if (token != null &&
-        (state.matchedLocation == AppRoutes.authorization ||
-            state.matchedLocation == AppRoutes.registration)) {
+    if ((state.matchedLocation == AppRoutes.authorization ||
+        state.matchedLocation == AppRoutes.registration)) {
       return AppRoutes.map;
     }
 
@@ -50,17 +65,14 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.authorization,
-      // redirect: guestGuard,
       builder: (context, state) => const AuthorizationPage(),
     ),
     GoRoute(
       path: AppRoutes.registration,
-      // redirect: guestGuard,
       builder: (context, state) => const RegistrationPage(),
     ),
     GoRoute(
       path: AppRoutes.newPassword,
-      // redirect: guestGuard,
       builder: (context, state) {
         final uid = state.uri.queryParameters['uid'];
         final token = state.uri.queryParameters['token'];
@@ -86,7 +98,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     StatefulShellRoute.indexedStack(
-      // redirect: authGuard,
       builder: (context, state, navigationShell) {
         return BottomNavbar(shell: navigationShell);
       },
@@ -95,9 +106,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: AppRoutes.afisha,
-              builder: (context, state) {
-                return const Center(child: Text('Афиша'));
-              },
+              builder: (context, state) => const Center(child: Text('Афиша')),
             ),
           ],
         ),
@@ -121,9 +130,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/chat',
-              builder: (context, state) {
-                return const Center(child: Text('Чат'));
-              },
+              builder: (context, state) => const Center(child: Text('Чат')),
             ),
           ],
         ),
