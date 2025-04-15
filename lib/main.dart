@@ -25,15 +25,16 @@ import 'package:tap_map/src/features/userFlow/search_screen/data/search_reposito
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
-
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setup();
   await dotenv.load(fileName: ".env");
+  setup();
   MapboxOptions.setAccessToken(MapConfig.accessToken);
-  await _initializeTokens();
+
+  // Инициализируем токены и проверяем авторизацию
+  final isAuthorized = await _initializeTokens();
 
   final router = appRouter;
   getIt.registerSingleton<GoRouter>(router);
@@ -42,27 +43,43 @@ void main() async {
   final deepLinkService = DeepLinkService(router);
   getIt.registerSingleton<DeepLinkService>(deepLinkService);
 
-  runApp(const MyApp());
+  runApp(MyApp(isAuthorized: isAuthorized));
   await deepLinkService.initialize();
 }
 
 // Функция для инициализации токенов при запуске
-Future<void> _initializeTokens() async {
+Future<bool> _initializeTokens() async {
   final prefs = getIt.get<SharedPrefsRepository>();
   final apiService = getIt.get<ApiService>();
 
-  // Проверяем наличие токенов
-  final refreshToken = await prefs.getRefreshToken();
-  final accessToken = await prefs.getAccessToken();
+  try {
+    // Проверяем наличие токенов
+    final refreshToken = await prefs.getRefreshToken();
+    final accessToken = await prefs.getAccessToken();
 
-  // Если есть refresh_token, пробуем обновить токены
-  if (refreshToken != null) {
-    final success = await apiService.refreshTokens();
+    // Если есть refresh_token, пробуем обновить токены
+    if (refreshToken != null) {
+      final success = await apiService.refreshTokens();
+      if (!success) {
+        // Если обновление не удалось, очищаем токены
+        await prefs.clear();
+        return false;
+      }
+      return true;
+    }
+    return false;
+  } catch (e) {
+    debugPrint('Error initializing tokens: $e');
+    // В случае ошибки очищаем токены
+    await prefs.clear();
+    return false;
   }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isAuthorized;
+
+  const MyApp({super.key, required this.isAuthorized});
 
   @override
   Widget build(BuildContext context) {

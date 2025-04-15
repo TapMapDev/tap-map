@@ -8,8 +8,6 @@ import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/widget/client_avatar.dart';
 
-
-
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
 
@@ -31,7 +29,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-           IconButton(
+          IconButton(
             icon: const Icon(Icons.qr_code),
             tooltip: 'QR-код профиля',
             onPressed: () async {

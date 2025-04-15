@@ -11,8 +11,6 @@ Future<String?> authGuard(BuildContext context, GoRouterState state) async {
   if (token == null || token.isEmpty) {
     return AppRoutes.authorization;
   }
-
-  // Всё ок, пускаем
   return null;
 }
 

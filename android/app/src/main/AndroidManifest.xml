@@ -8,7 +8,9 @@
         android:label="tap_map"
         android:enableOnBackInvokedCallback="true"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -33,12 +35,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="tapmap"
-                   android:pathPrefix="/reset_password_confirm" />
+                    android:pathPrefix="/reset_password_confirm" />
             </intent-filter>
         </activity>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Mapbox Access Token -->
+        <meta-data
+            android:name="com.mapbox.token"
+            android:value="@string/mapbox_access_token" />
     </application>
     <queries>
         <intent>

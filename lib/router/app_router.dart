@@ -17,27 +17,13 @@ import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart'
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-// final GoRouter appRouter = GoRouter(
-//   initialLocation: '/',
-//   routes: [
-//     GoRoute(
-//       path: '/',
-//       builder: (context, state) => const Scaffold(
-//         body: Center(
-//           child: Text('🧪 GoRouter отрисовался!'),
-//         ),
-//       ),
-//     ),
-//   ],
-// );
-
 final GoRouter appRouter = GoRouter(
   debugLogDiagnostics: true,
   navigatorKey: _rootNavigatorKey,
-  initialLocation: AppRoutes.map,
-  redirect: (context, state) {
+  initialLocation: AppRoutes.authorization,
+  redirect: (context, state) async {
     final prefs = GetIt.I<SharedPrefsRepository>();
-    final token = prefs.getAccessToken();
+    final token = await prefs.getAccessToken();
 
     print('🔁 Redirecting from ${state.matchedLocation}, token: $token');
 
@@ -55,8 +41,9 @@ final GoRouter appRouter = GoRouter(
       return AppRoutes.authorization;
     }
 
-    if ((state.matchedLocation == AppRoutes.authorization ||
-        state.matchedLocation == AppRoutes.registration)) {
+    if (token != null &&
+        (state.matchedLocation == AppRoutes.authorization ||
+            state.matchedLocation == AppRoutes.registration)) {
       return AppRoutes.map;
     }
 
