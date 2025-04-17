@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tap_map/core/di/di.dart';
-import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 
 class MapStyleButton extends StatelessWidget {
@@ -28,25 +26,31 @@ class MapStyleButton extends StatelessWidget {
   }
 
   void _showStyleSelectionDialog(BuildContext context) {
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => const MapStyleDialog(),
-        );
-      }
-    });
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => const MapStyleDialog(),
+      );
+    }
   }
 }
 
-final List<String> imagePaths = [
-  'assets/jpeg/cyberpunk.jpeg',
-  'assets/jpeg/standart.jpeg',
-  'assets/jpeg/sputnik.jpeg',
-  'assets/jpeg/GTA5.jpeg',
-  'assets/jpeg/fallout.jpeg',
-  'assets/jpeg/rd2.jpeg',
-];
+class StyleImages {
+  static final List<String> paths = [
+    'assets/jpeg/cyberpunk.jpeg',
+    'assets/jpeg/standart.jpeg',
+    'assets/jpeg/sputnik.jpeg',
+    'assets/jpeg/GTA5.jpeg',
+    'assets/jpeg/fallout.jpeg',
+    'assets/jpeg/rd2.jpeg',
+  ];
+
+  static Future<void> preloadImages(BuildContext context) async {
+    for (final path in paths) {
+      precacheImage(AssetImage(path), context);
+    }
+  }
+}
 
 class MapStyleDialog extends StatefulWidget {
   const MapStyleDialog({super.key});
@@ -59,18 +63,32 @@ class _MapStyleDialogState extends State<MapStyleDialog>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  bool _imagesPreloaded = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
     )..forward();
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
+
+    _preloadImages();
+  }
+
+  Future<void> _preloadImages() async {
+    if (!_imagesPreloaded) {
+      await StyleImages.preloadImages(context);
+      if (mounted) {
+        setState(() {
+          _imagesPreloaded = true;
+        });
+      }
+    }
   }
 
   @override
@@ -81,8 +99,6 @@ class _MapStyleDialogState extends State<MapStyleDialog>
 
   @override
   Widget build(BuildContext context) {
-    final mapStyleBloc = context.read<MapStyleBloc>();
-
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Dialog(
@@ -95,7 +111,10 @@ class _MapStyleDialogState extends State<MapStyleDialog>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         alignment: Alignment.topCenter,
         child: BlocBuilder<MapStyleBloc, MapStyleState>(
-          buildWhen: (previous, current) => current is! MapStyleUpdateSuccess,
+          buildWhen: (previous, current) =>
+              current is MapStyleLoading ||
+              current is MapStyleSuccess ||
+              current is MapStyleError,
           builder: (context, state) {
             if (state is MapStyleLoading) {
               return const Padding(
@@ -103,80 +122,7 @@ class _MapStyleDialogState extends State<MapStyleDialog>
                 child: Center(child: CircularProgressIndicator()),
               );
             } else if (state is MapStyleSuccess) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                // height: 400,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Стиль карты",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: GridView.builder(
-                        itemCount: state.mapStyles.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 1.3,
-                        ),
-                        itemBuilder: (context, index) {
-                          final style = state.mapStyles[index];
-                          return GestureDetector(
-                            onTap: () async {
-                              /// Сохраняем ссылку на стиль
-                              await getIt
-                                  .get<SharedPrefsRepository>()
-                                  .saveMapStyle(style.styleUrl!);
-
-                              /// Сохраняем ID стиля
-                              await getIt
-                                  .get<SharedPrefsRepository>()
-                                  .saveMapStyleId(style.id!);
-                              Future.delayed(const Duration(milliseconds: 500),
-                                  () {
-                                mapStyleBloc.add(ResetMapStyleEvent());
-                              });
-
-                              /// Запускаем ивент обновления стиля в BLoC
-                              mapStyleBloc.add(UpdateMapStyleEvent(
-                                newStyleId: style.id!,
-                                uriStyle: style.styleUrl!,
-                              ));
-
-                              /// Закрываем окно
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                              }
-                            },
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.asset(
-                                      imagePaths[index],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(style.name!,
-                                    style: const TextStyle(fontSize: 14)),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return _buildStyleGrid(context, state);
             } else if (state is MapStyleError) {
               return const Padding(
                 padding: EdgeInsets.all(16.0),
@@ -188,5 +134,80 @@ class _MapStyleDialogState extends State<MapStyleDialog>
         ),
       ),
     );
+  }
+
+  Widget _buildStyleGrid(BuildContext context, MapStyleSuccess state) {
+    final mapStyleBloc = context.read<MapStyleBloc>();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Стиль карты",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: GridView.builder(
+              itemCount: state.mapStyles.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.3,
+              ),
+              itemBuilder: (context, index) {
+                final style = state.mapStyles[index];
+                final imagePath = index < StyleImages.paths.length
+                    ? StyleImages.paths[index]
+                    : StyleImages.paths[0];
+
+                return GestureDetector(
+                  onTap: () {
+                    _selectMapStyle(
+                        context, mapStyleBloc, style.id!, style.styleUrl!);
+                  },
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            cacheWidth: 200,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        style.name ?? '',
+                        style: const TextStyle(fontSize: 14),
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _selectMapStyle(BuildContext context, MapStyleBloc mapStyleBloc,
+      int styleId, String styleUrl) {
+    mapStyleBloc.add(UpdateMapStyleEvent(
+      newStyleId: styleId,
+      uriStyle: styleUrl,
+    ));
+
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 }

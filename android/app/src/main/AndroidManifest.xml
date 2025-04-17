@@ -10,6 +10,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true"
         android:largeHeap="true">
         <activity
             android:name=".MainActivity"
@@ -41,10 +42,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Mapbox Access Token -->
-        <meta-data
-            android:name="com.mapbox.token"
-            android:value="@string/mapbox_access_token" />
     </application>
     <queries>
         <intent>

@@ -108,8 +108,5 @@
 		</array>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false />
-		<key>MBXAccessToken</key>
-		<string>
-			sk.eyJ1IjoibWFwMjN0cmF2ZWwiLCJhIjoiY202cTk2MXZ6MW5yaTJrczhvdTk1cXFscSJ9.EJoG_KNSUzBOMe44F2DZtA</string>
 	</dict>
 </plist>

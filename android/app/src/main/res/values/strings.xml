@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="mapbox_access_token">
-        sk.eyJ1IjoibWFwMjN0cmF2ZWwiLCJhIjoiY202cTk2MXZ6MW5yaTJrczhvdTk1cXFscSJ9.EJoG_KNSUzBOMe44F2DZtA</string>
-    <string name="app_name">Tap Map</string>
-</resources> 

@@ -33,7 +33,6 @@ void main() async {
   setup();
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 
-  // Инициализируем токены и проверяем авторизацию
   final isAuthorized = await _initializeTokens();
 
   final router = appRouter;

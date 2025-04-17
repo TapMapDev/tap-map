@@ -47,7 +47,7 @@ class _MajorMapState extends State<MajorMap> {
 
   /// Словарь "имя_иконки -> уже_загружено?"
   final Map<String, bool> loadedIcons = {};
-
+ 
   /// Сохранённый styleId
   int? currentStyleId;
 
@@ -585,13 +585,15 @@ class _MajorMapState extends State<MajorMap> {
     } catch (e) {}
   }
 
-  Future<void> _clearIcons() async {
-    if (mapboxMapController == null) return;
-    for (final iconKey in loadedIcons.keys) {
-      await mapboxMapController?.style.removeStyleImage(iconKey);
+Future<void> _clearIcons() async {
+  if (mapboxMapController == null) return;
+  for (final iconKey in List<String>.from(loadedIcons.keys)) {
+    if (await mapboxMapController!.style.styleLayerExists(iconKey)) {
+      await mapboxMapController!.style.removeStyleImage(iconKey);
     }
-    loadedIcons.clear();
   }
+  loadedIcons.clear();
+}
 
   Future<void> _loadIcons(List<IconsResponseModel> icons,
       {required int styleId}) async {

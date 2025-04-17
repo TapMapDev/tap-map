@@ -10,7 +10,6 @@ import android.util.Log
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.tapmap.app/deep_links"
-    private val MAPBOX_CHANNEL = "com.tap_map/native_communication"
     private val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,25 +44,6 @@ class MainActivity: FlutterActivity() {
                 }
                 else -> {
                     Log.d(TAG, "Method not implemented: ${call.method}")
-                    result.notImplemented()
-                }
-            }
-        }
-        
-        // Mapbox channel - только для обработки запросов из Flutter
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MAPBOX_CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "initializeMapbox" -> {
-                    try {
-                        Log.d(TAG, "Mapbox initialization request from Flutter")
-                        // Просто подтверждаем успех, так как инициализация происходит через Flutter плагин
-                        result.success(true)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error handling Mapbox init: ${e.message}")
-                        result.error("ERROR", "Failed to handle request: ${e.message}", null)
-                    }
-                }
-                else -> {
                     result.notImplemented()
                 }
             }
