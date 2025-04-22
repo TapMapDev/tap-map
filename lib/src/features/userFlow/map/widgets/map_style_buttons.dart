@@ -22,7 +22,7 @@ class MapStyleButton extends StatelessWidget {
           size: 20,
         ),
       ),
-    );
+    );  
   }
 
   void _showStyleSelectionDialog(BuildContext context) {
@@ -76,9 +76,14 @@ class _MapStyleDialogState extends State<MapStyleDialog>
     _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-
-    _preloadImages();
   }
+
+    @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _preloadImages();   
+  }
+
 
   Future<void> _preloadImages() async {
     if (!_imagesPreloaded) {

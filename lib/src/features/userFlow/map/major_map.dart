@@ -47,7 +47,7 @@ class _MajorMapState extends State<MajorMap> {
 
   /// Словарь "имя_иконки -> уже_загружено?"
   final Map<String, bool> loadedIcons = {};
- 
+
   /// Сохранённый styleId
   int? currentStyleId;
 
@@ -421,6 +421,10 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _applyLayerSettings(double threshold) async {
     if (_isDisposed || mapboxMapController == null) return;
 
+    final layers = await mapboxMapController!.style.getStyleLayers();
+    final layerExists = layers.any((layer) => layer?.id == placesLayerId);
+    if (!layerExists) return;
+
     final iconExpr = buildIconImageExpression(threshold);
     final textExpr = buildTextFieldExpression(threshold);
 
@@ -515,27 +519,13 @@ class _MajorMapState extends State<MajorMap> {
             id: placesLayerId,
             sourceId: "places_source",
             sourceLayer: "mylayer",
-            iconImageExpression: <Object>[
-              "let",
-              "myThreshold",
-              500,
-              [
-                "case",
-                [
-                  "<",
-                  [
-                    "to-number",
-                    [
-                      "coalesce",
-                      ["get", "min_dist"],
-                      0
-                    ]
-                  ],
-                  ["var", "myThreshold"]
-                ],
-                "my_dot_icon",
-                ["get", "subcategory"]
-              ]
+            iconSizeExpression: <Object>[
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              5, 1,
+              18,
+              1.5
             ],
             iconSize: 0.3,
             iconAllowOverlap: true,
@@ -585,15 +575,15 @@ class _MajorMapState extends State<MajorMap> {
     } catch (e) {}
   }
 
-Future<void> _clearIcons() async {
-  if (mapboxMapController == null) return;
-  for (final iconKey in List<String>.from(loadedIcons.keys)) {
-    if (await mapboxMapController!.style.styleLayerExists(iconKey)) {
-      await mapboxMapController!.style.removeStyleImage(iconKey);
+  Future<void> _clearIcons() async {
+    if (mapboxMapController == null) return;
+    for (final iconKey in List<String>.from(loadedIcons.keys)) {
+      if (await mapboxMapController!.style.styleLayerExists(iconKey)) {
+        await mapboxMapController!.style.removeStyleImage(iconKey);
+      }
     }
+    loadedIcons.clear();
   }
-  loadedIcons.clear();
-}
 
   Future<void> _loadIcons(List<IconsResponseModel> icons,
       {required int styleId}) async {
@@ -653,7 +643,10 @@ Future<void> _clearIcons() async {
 
   Future<void> _loadSingleIcon(String iconName, String url, int styleId) async {
     if (mapboxMapController == null) return;
-
+    if (url.isEmpty || !url.startsWith('http')) {
+      debugPrint('❌ Некорректный URL для иконки $iconName: $url');
+      return;
+    }
     final compositeKey = '$styleId-$iconName';
     final prefs = getIt.get<SharedPrefsRepository>();
     final cached = await prefs.getIconBytes(compositeKey);
