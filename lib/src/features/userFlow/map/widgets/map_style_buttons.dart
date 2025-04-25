@@ -131,7 +131,7 @@ class _MapStyleDialogState extends State<MapStyleDialog>
             } else if (state is MapStyleError) {
               return const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Center(child: Text("Ошибка загрузки стилей")),
+                child: Center(child: Text('Ошибка загрузки стилей')),
               );
             }
             return const SizedBox.shrink();
@@ -150,7 +150,7 @@ class _MapStyleDialogState extends State<MapStyleDialog>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Стиль карты",
+            'Стиль карты',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),

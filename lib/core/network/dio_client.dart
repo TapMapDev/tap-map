@@ -1,26 +1,29 @@
+import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
-import 'package:talker/talker.dart';
 import 'package:synchronized/synchronized.dart';
-
+import 'package:talker/talker.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/router/routes.dart';
 
 class DioClient {
-  static const String _baseUrl = 'https://api.tap-map.net/api';
+  final String _baseUrl = dotenv.env['API_BASE_URL']!;
   final Dio _dio;
   final Talker _talker = Talker();
   final Lock _refreshTokenLock = Lock();
   static final DioClient _instance = DioClient._internal();
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   factory DioClient() => _instance;
 
   DioClient._internal()
       : _dio = Dio(BaseOptions(
-          baseUrl: _baseUrl,
+          baseUrl: dotenv.env['API_BASE_URL']!,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
           sendTimeout: const Duration(seconds: 30),
@@ -96,8 +99,7 @@ class DioClient {
                 responseType: options.responseType,
                 followRedirects: options.followRedirects,
                 validateStatus: options.validateStatus,
-                receiveDataWhenStatusError:
-                    options.receiveDataWhenStatusError,
+                receiveDataWhenStatusError: options.receiveDataWhenStatusError,
                 extra: options.extra,
               ),
               data: options.data,
@@ -125,4 +127,58 @@ class DioClient {
   }
 
   Dio get client => _dio;
+
+  Future<void> registerFcmToken(String fcmToken) async {
+    try {
+      final prefs = getIt<SharedPrefsRepository>();
+      final refreshToken = await prefs.getRefreshToken();
+
+      if (refreshToken == null) {
+        throw Exception('No refresh token available');
+      }
+
+      String deviceType;
+      String deviceIdentifier;
+
+      if (Platform.isAndroid) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        deviceType = 'android';
+        deviceIdentifier = androidInfo.id;
+        _talker.info('📱 Android device info: $androidInfo');
+      } else if (Platform.isIOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        deviceType = 'ios';
+        deviceIdentifier = iosInfo.identifierForVendor ?? 'unknown';
+        _talker.info('📱 iOS device info: $iosInfo');
+      } else {
+        throw Exception('Unsupported platform');
+      }
+
+      _talker.info('📱 Device type: $deviceType');
+      _talker.info('📱 Device identifier: $deviceIdentifier');
+      _talker.info('🔑 FCM token: $fcmToken');
+
+      final response = await _dio.post(
+        '/users/me/device_tokens/',
+        data: {
+          'token': fcmToken,
+          'device_type': deviceType,
+          'device_identifier': deviceIdentifier,
+          'refresh_token': refreshToken,
+        },
+      );
+
+      _talker.info('📡 Response status: ${response.statusCode}');
+      _talker.info('📡 Response data: ${response.data}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to register FCM token: ${response.statusCode}');
+      }
+
+      _talker.info('✅ FCM token registered successfully');
+    } catch (e) {
+      _talker.error('❌ Failed to register FCM token: $e');
+      rethrow;
+    }
+  }
 }

@@ -563,7 +563,7 @@ class _VideoMarkerManagerState extends State<VideoMarkerManager>
           }),
         ),
         mapbox.RenderedQueryOptions(
-          layerIds: ["places_symbol_layer"],
+          layerIds: ["places_symbol_layer"  ],
           filter: null,
         ),
       );

@@ -20,8 +20,8 @@ class IconsResponseModel extends Equatable {
       name: json['name'] as String,
       logo: json['logo'] != null
           ? LogoModel.fromJson(json['logo'])
-          : const LogoModel(id: 0, name: "Unknown", logoUrl: ""),
-      textColor: json['text_color'] as String? ?? "#ffffff", // Защита от null
+          : const LogoModel(id: 0, name: 'Unknown', logoUrl: ''),
+      textColor: json['text_color'] as String? ?? '#ffffff', // Защита от null
     );
   }
 
@@ -45,7 +45,7 @@ class LogoModel extends Equatable {
     return LogoModel(
       id: json['id'] as int,
       name: json['name'] as String,
-      logoUrl: json['logo'] as String? ?? "", // Защита от null
+      logoUrl: json['logo'] as String? ?? '', // Защита от null
     );
   }
 

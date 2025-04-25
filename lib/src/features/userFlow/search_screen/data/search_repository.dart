@@ -103,46 +103,43 @@ class SearchRepositoryImpl implements SearchRepository {
           _createMockData(),
           _createMockData().copyWith(
               id: 2,
-              name: "Coffee Shop",
+              name: 'Coffee Shop',
               description:
-                  "Perfect place for coffee lovers with a great variety of coffee beans",
+                  'Perfect place for coffee lovers with a great variety of coffee beans',
               images: [
-                ScreenImage(id: 1, image: "https://picsum.photos/500/802"),
-                ScreenImage(id: 2, image: "https://picsum.photos/500/803")
+                ScreenImage(id: 1, image: 'https://picsum.photos/500/802'),
+                ScreenImage(id: 2, image: 'https://picsum.photos/500/803')
               ]),
           _createMockData().copyWith(
               id: 3,
-              name: "Beachfront Bar",
-              description: "Enjoy cocktails with a stunning sea view",
+              name: 'Beachfront Bar',
+              description: 'Enjoy cocktails with a stunning sea view',
               images: [
-                ScreenImage(id: 1, image: "https://picsum.photos/500/804"),
-                ScreenImage(id: 2, image: "https://picsum.photos/500/805")
+                ScreenImage(id: 1, image: 'https://picsum.photos/500/804'),
+                ScreenImage(id: 2, image: 'https://picsum.photos/500/805')
               ])
         ];
       }
-    } catch (e, stackTrace) {
-      print("Исключение в fetchPlace: $e");
-      print("Stack trace: $stackTrace");
-
+    } catch (e) {   
       // Возвращаем несколько тестовых мест при ошибке
       return [
         _createMockData(),
         _createMockData().copyWith(
             id: 2,
-            name: "Coffee Shop",
+            name: 'Coffee Shop',
             description:
-                "Perfect place for coffee lovers with a great variety of coffee beans",
+                'Perfect place for coffee lovers with a great variety of coffee beans',
             images: [
-              ScreenImage(id: 1, image: "https://picsum.photos/500/802"),
-              ScreenImage(id: 2, image: "https://picsum.photos/500/803")
+              ScreenImage(id: 1, image: 'https://picsum.photos/500/802'),
+              ScreenImage(id: 2, image: 'https://picsum.photos/500/803')
             ]),
         _createMockData().copyWith(
             id: 3,
-            name: "Beachfront Bar",
-            description: "Enjoy cocktails with a stunning sea view",
+            name: 'Beachfront Bar',
+            description: 'Enjoy cocktails with a stunning sea view',
             images: [
-              ScreenImage(id: 1, image: "https://picsum.photos/500/804"),
-              ScreenImage(id: 2, image: "https://picsum.photos/500/805")
+              ScreenImage(id: 1, image: 'https://picsum.photos/500/804'),
+              ScreenImage(id: 2, image: 'https://picsum.photos/500/805')
             ])
       ];
     }
@@ -153,7 +150,7 @@ class SearchRepositoryImpl implements SearchRepository {
     try {
       // Логируем все ключи и значения, чтобы лучше понять структуру
       data.forEach((key, value) {
-        print("Ключ: $key, Тип: ${value.runtimeType}");
+        print('Ключ: $key, Тип: ${value.runtimeType}');
       });
       dynamic images = data['images'];
       if (images is String) {
@@ -165,9 +162,9 @@ class SearchRepositoryImpl implements SearchRepository {
       if (tinderInfo is String) {
         try {
           tinderInfo = jsonDecode(tinderInfo);
-          print("Успешно распарсили строку tinder_info как JSON");
+          print('Успешно распарсили строку tinder_info как JSON');
         } catch (e) {
-          print("Не удалось распарсить tinder_info как JSON: $e");
+          print('Не удалось распарсить tinder_info как JSON: $e');
         }
       }
 
@@ -175,9 +172,9 @@ class SearchRepositoryImpl implements SearchRepository {
       if (underCardData is String) {
         try {
           underCardData = jsonDecode(underCardData);
-          print("Успешно распарсили строку under_card_data как JSON");
+          print('Успешно распарсили строку under_card_data как JSON');
         } catch (e) {
-          print("Не удалось распарсить under_card_data как JSON: $e");
+          print('Не удалось распарсить under_card_data как JSON: $e');
         }
       }
 
@@ -196,8 +193,8 @@ class SearchRepositoryImpl implements SearchRepository {
         objectType: _parseStringSafely(data['object_type'], 'point'),
       );
     } catch (e, stackTrace) {
-      print("Ошибка при парсинге данных: $e");
-      print("Stack trace: $stackTrace");
+      print('Ошибка при парсинге данных: $e');
+      print('Stack trace: $stackTrace');
 
       // Создаем модель с минимальными данными из ответа
       return ScreenResponseModal(
@@ -206,13 +203,13 @@ class SearchRepositoryImpl implements SearchRepository {
         description:
             _parseStringSafely(data['description'], 'Описание отсутствует'),
         images: _extractImagesFromAnyField(data) ??
-            [ScreenImage(id: 1, image: "https://picsum.photos/500/800")],
+            [ScreenImage(id: 1, image: 'https://picsum.photos/500/800')],
         openStatus: _parseStringSafely(data['open_status'], 'unknown'),
         distance: _parseStringSafely(data['distance'], '0 км'),
         timeInfo: _parseStringSafely(data['time_info'], ''),
         category: _parseStringSafely(data['category'], 'Место'),
-        tinderInfo: [TinderInfo(label: "Информация", value: "Недоступна")],
-        underCardData: [UnderCardData(label: "Данные", value: "Недоступны")],
+        tinderInfo: [TinderInfo(label: 'Информация', value: 'Недоступна')],
+        underCardData: [UnderCardData(label: 'Данные', value: 'Недоступны')],
         objectType: _parseStringSafely(data['object_type'], 'point'),
       );
     }
@@ -353,18 +350,18 @@ class SearchRepositoryImpl implements SearchRepository {
         }
       }
     } catch (e) {
-      print("Ошибка при парсинге изображений: $e");
+      print('Ошибка при парсинге изображений: $e');
     }
 
     // Если ничего не удалось распарсить, добавляем несколько тестовых изображений
     if (result.isEmpty) {
-      print("Не удалось получить изображения, используем тестовые");
+      print('Не удалось получить изображения, используем тестовые');
       result.add(
-          ScreenImage(id: 1, image: "https://picsum.photos/id/1/800/1200"));
+          ScreenImage(id: 1, image: 'https://picsum.photos/id/1/800/1200'));
       result.add(
-          ScreenImage(id: 2, image: "https://picsum.photos/id/2/800/1200"));
+          ScreenImage(id: 2, image: 'https://picsum.photos/id/2/800/1200'));
       result.add(
-          ScreenImage(id: 3, image: "https://picsum.photos/id/3/800/1200"));
+          ScreenImage(id: 3, image: 'https://picsum.photos/id/3/800/1200'));
     }
 
     return result;
@@ -376,13 +373,13 @@ class SearchRepositoryImpl implements SearchRepository {
       try {
         return tinderInfoData.map((info) => TinderInfo.fromJson(info)).toList();
       } catch (e) {
-        print("Ошибка при парсинге tinder_info: $e");
+        print('Ошибка при парсинге tinder_info: $e');
       }
     }
     // Возвращаем тестовую информацию
     return [
-      TinderInfo(label: "Рейтинг", value: "4.5"),
-      TinderInfo(label: "Цена", value: "Средняя"),
+      TinderInfo(label: 'Рейтинг', value: '4.5'),
+      TinderInfo(label: 'Цена', value: 'Средняя'),
     ];
   }
 
@@ -394,13 +391,13 @@ class SearchRepositoryImpl implements SearchRepository {
             .map((data) => UnderCardData.fromJson(data))
             .toList();
       } catch (e) {
-        print("Ошибка при парсинге under_card_data: $e");
+        print('Ошибка при парсинге under_card_data: $e');
       }
     }
     // Возвращаем тестовые данные
     return [
-      UnderCardData(label: "Адрес", value: "Phuket, Thailand"),
-      UnderCardData(label: "Часы работы", value: "09:00 - 22:00"),
+      UnderCardData(label: 'Адрес', value: 'Phuket, Thailand'),
+      UnderCardData(label: 'Часы работы', value: '09:00 - 22:00'),
     ];
   }
 
@@ -408,25 +405,25 @@ class SearchRepositoryImpl implements SearchRepository {
   ScreenResponseModal _createMockData() {
     return ScreenResponseModal(
       id: 1,
-      name: "Restaurant Demo",
-      description: "A beautiful restaurant with amazing food",
+      name: 'Restaurant Demo',
+      description: 'A beautiful restaurant with amazing food',
       images: [
-        ScreenImage(id: 1, image: "https://picsum.photos/500/800"),
-        ScreenImage(id: 2, image: "https://picsum.photos/500/801"),
+        ScreenImage(id: 1, image: 'https://picsum.photos/500/800'),
+        ScreenImage(id: 2, image: 'https://picsum.photos/500/801'),
       ],
-      openStatus: "open",
-      distance: "2.5 км",
-      timeInfo: "20 мин",
-      category: "Ресторан",
+      openStatus: 'open',
+      distance: '2.5 км',
+      timeInfo: '20 мин',
+      category: 'Ресторан',
       tinderInfo: [
-        TinderInfo(label: "Рейтинг", value: "4.8"),
-        TinderInfo(label: "Цена", value: "Средняя"),
+        TinderInfo(label: 'Рейтинг', value: '4.8'),
+        TinderInfo(label: 'Цена', value: 'Средняя'),
       ],
       underCardData: [
-        UnderCardData(label: "Адрес", value: "Phuket, Thailand"),
-        UnderCardData(label: "Часы работы", value: "09:00 - 23:00"),
+        UnderCardData(label: 'Адрес', value: 'Phuket, Thailand'),
+        UnderCardData(label: 'Часы работы', value: '09:00 - 23:00'),
       ],
-      objectType: "point",
+      objectType: 'point',
     );
   }
 

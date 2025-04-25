@@ -12,7 +12,6 @@ class SharedPrefsRepository {
   static const String _mapStyleIdKey = 'selected_map_style_id';
   final Talker talker = getIt.get<Talker>();
 
-  // Ключ, под которым храним JSON с картой "имя иконки" -> base64-данные"
   static const String _iconsCacheKey = 'icons_cache_map';
 
   /// Получаем текущую карту иконок из SharedPreferences
@@ -22,13 +21,10 @@ class SharedPrefsRepository {
     if (jsonString == null) {
       return {};
     }
-    // Парсим JSON в Map<String, String>
     final Map<String, dynamic> decoded = json.decode(jsonString);
-    // Приводим dynamic к String в значениях
     return decoded.map((key, value) => MapEntry(key, value as String));
   }
 
-  /// Сохраняем карту иконок обратно в SharedPreferences
   Future<void> _saveIconsCacheMap(Map<String, String> map) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = json.encode(map);
@@ -76,13 +72,13 @@ class SharedPrefsRepository {
   // ✅ Универсальный метод для сохранения строки
   Future<void> setString(String key, String value) async {
     try {
-      talker.info("Saving string with key: $key, value: $value");
+      talker.info('Saving string with key: $key, value: $value');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, value);
-      talker.info("Saved string with key: $key");
+      talker.info('Saved string with key: $key');
     } catch (e) {
-      talker.error("Error saving string with key: $key, exception: $e");
-      throw Exception("Error saving string with key: $key, exception: $e");
+      talker.error('Error saving string with key: $key, exception: $e');
+      throw Exception('Error saving string with key: $key, exception: $e');
     }
   }
 
@@ -91,24 +87,24 @@ class SharedPrefsRepository {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final result = prefs.getString(key);
-      talker.info("Received string for key: $key: $result");
+      talker.info('Received string for key: $key: $result');
       return result;
     } catch (e) {
-      talker.error("Error fetching string with key: $key, exception: $e");
-      throw Exception("Error fetching string with key: $key, exception: $e");
+      talker.error('Error fetching string with key: $key, exception: $e');
+      throw Exception('Error fetching string with key: $key, exception: $e');
     }
   }
 
   // ✅ Универсальный метод для удаления ключа
   Future<void> deleteKey(String key) async {
     try {
-      talker.info("Deleting key: $key");
+      talker.info('Deleting key: $key');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove(key);
-      talker.info("Deleted key: $key");
+      talker.info('Deleted key: $key');
     } catch (e) {
-      talker.error("Error deleting key: $key, exception: $e");
-      throw Exception("Error deleting key: $key, exception: $e");
+      talker.error('Error deleting key: $key, exception: $e');
+      throw Exception('Error deleting key: $key, exception: $e');
     }
   }
 
@@ -127,13 +123,13 @@ class SharedPrefsRepository {
   // ✅ Очистка всех данных
   Future<void> clear() async {
     try {
-      talker.info("Clearing all data from SharedPreferences");
+      talker.info('Clearing all data from SharedPreferences');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      talker.info("All data cleared from SharedPreferences");
+      talker.info('All data cleared from SharedPreferences');
     } catch (e) {
-      talker.error("Error in clear, exception: $e");
-      throw Exception("Error in clear, exception: $e");
+      talker.error('Error in clear, exception: $e');
+      throw Exception('Error in clear, exception: $e');
     }
   }
 
@@ -142,7 +138,7 @@ class SharedPrefsRepository {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_mapStyleKey, styleUri);
     } catch (e) {
-      throw Exception("Ошибка сохранения стиля карты: $e");
+      throw Exception('Ошибка сохранения стиля карты: $e');
     }
   }
 
@@ -152,7 +148,7 @@ class SharedPrefsRepository {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       return prefs.getString(_mapStyleKey);
     } catch (e) {
-      throw Exception("Ошибка загрузки сохранённого стиля карты: $e");
+      throw Exception('Ошибка загрузки сохранённого стиля карты: $e');
     }
   }
 
@@ -169,12 +165,12 @@ class SharedPrefsRepository {
   /// Сохраняем шрифт пользователя
   Future<void> saveSelectedFont(String fontName) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("selectedFontName", fontName);
+    await prefs.setString('selectedFontName', fontName);
   }
 
   /// Получаем сохранённый шрифт
   Future<String?> getSelectedFont() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("selectedFontName");
+    return prefs.getString('selectedFontName');
   }
 }

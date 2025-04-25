@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">665756653815</string>
+    <string name="google_api_key" translatable="false">AIzaSyAz0lMiZcvSB-HIhDe9baEBdI3IpVnMPak</string>
+    <string name="google_app_id" translatable="false">1:665756653815:android:446b2eb5fb59bde189dbf2</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAz0lMiZcvSB-HIhDe9baEBdI3IpVnMPak</string>
+    <string name="google_storage_bucket" translatable="false">tapmap-46ff4.firebasestorage.app</string>
+    <string name="project_id" translatable="false">tapmap-46ff4</string>
+</resources>

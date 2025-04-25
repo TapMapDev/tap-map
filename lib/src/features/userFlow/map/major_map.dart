@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -20,7 +19,7 @@ import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart'
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
-import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
+// import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
 
 class MajorMap extends StatefulWidget {
   const MajorMap({super.key});
@@ -31,8 +30,8 @@ class MajorMap extends StatefulWidget {
 
 class _MajorMapState extends State<MajorMap> {
   mp.MapboxMap? mapboxMapController;
-  static const String placesLayerId = "places_symbol_layer";
-  VideoMarkerManager? _gifMarkerManager;
+  static const String placesLayerId = 'places_symbol_layer';
+  // VideoMarkerManager? _gifMarkerManager;
   Timer? _cameraUpdateDebouncer;
   mp.CameraState? _lastCameraState;
 
@@ -45,7 +44,7 @@ class _MajorMapState extends State<MajorMap> {
   /// Флаг готовности стиля
   bool isStyleLoaded = false; // Нужно дождаться загрузки стиля
 
-  /// Словарь "имя_иконки -> уже_загружено?"
+  /// Словарь 'имя_иконки -> уже_загружено?'
   final Map<String, bool> loadedIcons = {};
 
   /// Сохранённый styleId
@@ -122,7 +121,7 @@ class _MajorMapState extends State<MajorMap> {
     }
     int hexValue = int.parse(hexColor, radix: 16);
     Color color = Color(hexValue);
-    return ["rgba", color.red, color.green, color.blue, 1.0];
+    return ['rgba', color.red, color.green, color.blue, 1.0];
   }
 
   @override
@@ -137,25 +136,25 @@ class _MajorMapState extends State<MajorMap> {
     }
 
     // Проверяем, нужно ли создать GifMarkerManager
-    if (mapboxMapController != null &&
-        _gifMarkerManager == null &&
-        !_isDisposed &&
-        mounted) {
-      Future.microtask(() {
-        if (mounted && !_isDisposed) {
-          // Принудительно запускаем сборку мусора перед созданием нового менеджера
-          _forceGarbageCollection().then((_) {
-            if (mounted && !_isDisposed) {
-              setState(() {
-                _gifMarkerManager = VideoMarkerManager(
-                    key: VideoMarkerManager.globalKey,
-                    mapboxMap: mapboxMapController!);
-              });
-            }
-          });
-        }
-      });
-    }
+    // if (mapboxMapController != null &&
+    //     _gifMarkerManager == null &&
+    //     !_isDisposed &&
+    //     mounted) {
+    //   Future.microtask(() {
+    //     if (mounted && !_isDisposed) {
+    //       // Принудительно запускаем сборку мусора перед созданием нового менеджера
+    //       _forceGarbageCollection().then((_) {
+    //         if (mounted && !_isDisposed) {
+    //           setState(() {
+    //             _gifMarkerManager = VideoMarkerManager(
+    //                 key: VideoMarkerManager.globalKey,
+    //                 mapboxMap: mapboxMapController!);
+    //           });
+    //         }
+    //       });
+    //     }
+    //   });
+    // }
 
     return MultiBlocListener(
       listeners: [
@@ -171,7 +170,7 @@ class _MajorMapState extends State<MajorMap> {
                   buildTextColorExpression(state.textColors);
               await mapboxMapController?.style.setStyleLayerProperty(
                 placesLayerId,
-                "text-color",
+                'text-color',
                 textColorExpression,
               );
             }
@@ -260,24 +259,24 @@ class _MajorMapState extends State<MajorMap> {
                     final futures = <Future<void>>[
                       mapboxMapController!.style.setStyleLayerProperty(
                         placesLayerId,
-                        "icon-image",
+                        'icon-image',
                         iconExpression,
                       ),
                       mapboxMapController!.style.setStyleLayerProperty(
                         placesLayerId,
-                        "text-field",
+                        'text-field',
                         textExpression,
                       ),
                     ];
                     await Future.wait(futures);
 
                     // Обновляем позиции видео-маркеров
-                    if (_gifMarkerManager != null) {
-                      VideoMarkerManager.updateMarkers();
-                    }
+                    // if (_gifMarkerManager != null) {
+                    //   VideoMarkerManager.updateMarkers();
+                    // }
                   });
                 }),
-            if (_gifMarkerManager != null) _gifMarkerManager!,
+            // if (_gifMarkerManager != null) _gifMarkerManager!,
             const Positioned(
               top: 30,
               right: 13,
@@ -350,21 +349,21 @@ class _MajorMapState extends State<MajorMap> {
     updateOpenCloseStates();
 
     // Создаем GifMarkerManager сразу после загрузки стиля
-    if (_gifMarkerManager == null && !_isDisposed && mounted) {
-      setState(() {
-        _gifMarkerManager = VideoMarkerManager(
-          key: VideoMarkerManager.globalKey,
-          mapboxMap: mapboxMapController!,
-        );
-      });
+    // if (_gifMarkerManager == null && !_isDisposed && mounted) {
+    //   setState(() {
+    //     _gifMarkerManager = VideoMarkerManager(
+    //       key: VideoMarkerManager.globalKey,
+    //       mapboxMap: mapboxMapController!,
+    //     );
+    //   });
 
-      // Добавляем задержку перед обновлением маркеров
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted && !_isDisposed) {
-          VideoMarkerManager.updateMarkers();
-        }
-      });
-    }
+    //   // Добавляем задержку перед обновлением маркеров
+    //   Future.delayed(const Duration(seconds: 1), () {
+    //     if (mounted && !_isDisposed) {
+    //       VideoMarkerManager.updateMarkers();
+    //     }
+    //   });
+    // }
 
     if (_isDisposed) return;
 
@@ -384,38 +383,38 @@ class _MajorMapState extends State<MajorMap> {
   }
 
   /// Инициализирует или обновляет GifMarkerManager
-  void _initializeGifMarkerManager() {
-    if (_isDisposed) return;
+  // void _initializeGifMarkerManager() {
+  //   if (_isDisposed) return;
 
-    // Если GifMarkerManager уже существует, вызываем forceUpdate
-    if (_gifMarkerManager != null) {
-      VideoMarkerManager.updateMarkers();
-      return;
-    }
+  //   // Если GifMarkerManager уже существует, вызываем forceUpdate
+  //   if (_gifMarkerManager != null) {
+  //     VideoMarkerManager.updateMarkers();
+  //     return;
+  //   }
 
-    // Пересоздаем GifMarkerManager при загрузке стиля
-    setState(() {
-      _gifMarkerManager = null; // Сначала обнуляем старый менеджер
-    });
+  //   // Пересоздаем GifMarkerManager при загрузке стиля
+  //   setState(() {
+  //     _gifMarkerManager = null; // Сначала обнуляем старый менеджер
+  //   });
 
-    // Создаем новый менеджер
-    Future.microtask(() {
-      if (mounted && !_isDisposed && mapboxMapController != null) {
-        setState(() {
-          _gifMarkerManager = VideoMarkerManager(
-            key: VideoMarkerManager.globalKey,
-            mapboxMap: mapboxMapController!,
-          );
-        });
-        // Добавляем задержку перед обновлением маркеров
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted && !_isDisposed) {
-            VideoMarkerManager.updateMarkers();
-          }
-        });
-      }
-    });
-  }
+  //   // Создаем новый менеджер
+  //   Future.microtask(() {
+  //     if (mounted && !_isDisposed && mapboxMapController != null) {
+  //       setState(() {
+  //         _gifMarkerManager = VideoMarkerManager(
+  //           key: VideoMarkerManager.globalKey,
+  //           mapboxMap: mapboxMapController!,
+  //         );
+  //       });
+  //       // Добавляем задержку перед обновлением маркеров
+  //       Future.delayed(const Duration(seconds: 1), () {
+  //         if (mounted && !_isDisposed) {
+  //           VideoMarkerManager.updateMarkers();
+  //         }
+  //       });
+  //     }
+  //   });
+  // }
 
   /// Применяет настройки слоев асинхронно
   Future<void> _applyLayerSettings(double threshold) async {
@@ -430,28 +429,28 @@ class _MajorMapState extends State<MajorMap> {
 
     await mapboxMapController?.style.setStyleLayerProperty(
       placesLayerId,
-      "icon-image",
+      'icon-image',
       iconExpr,
     );
 
     await mapboxMapController?.style.setStyleLayerProperty(
       placesLayerId,
-      "text-field",
+      'text-field',
       textExpr,
     );
   }
 
   List<Object> buildTextColorExpression(Map<String, String> textColors) {
     List<Object> matchExpression = [
-      "match",
-      ["get", "subcategory"],
+      'match',
+      ['get', 'subcategory'],
     ];
 
     textColors.forEach((subcategory, color) {
       matchExpression.add(subcategory);
       matchExpression.add(_convertHexToRGBA(color));
     });
-    matchExpression.add(["rgba", 255, 255, 255, 1.0]);
+    matchExpression.add(['rgba', 255, 255, 255, 1.0]);
     return matchExpression;
   }
 
@@ -468,12 +467,12 @@ class _MajorMapState extends State<MajorMap> {
       }
 
       final sourceExists =
-          sources.any((source) => source?.id == "places_source");
+          sources.any((source) => source?.id == 'places_source');
 
       if (!sourceExists) {
         final vectorSource = mp.VectorSource(
-          id: "places_source",
-          tiles: ["https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf"],
+          id: 'places_source',
+          tiles: ['https://map-travel.net/tilesets/data/tiles/{z}/{x}/{y}.pbf'],
           minzoom: 0,
           maxzoom: 20,
         );
@@ -482,33 +481,33 @@ class _MajorMapState extends State<MajorMap> {
       }
 
       // Добавляем источник для видео-маркеров
-      final videoSourceExists =
-          sources.any((source) => source?.id == "video_markers_source");
-      if (!videoSourceExists) {
-        await mapboxMapController?.style.addSource(
-          mp.GeoJsonSource(
-            id: "video_markers_source",
-            data: jsonEncode({"type": "FeatureCollection", "features": []}),
-          ),
-        );
-      }
+      // final videoSourceExists =
+      //     sources.any((source) => source?.id == 'video_markers_source');
+      // if (!videoSourceExists) {
+      //   await mapboxMapController?.style.addSource(
+      //     mp.GeoJsonSource(
+      //       id: 'video_markers_source',
+      //       data: jsonEncode({'type': 'FeatureCollection', 'features': []}),
+      //     ),
+      //   );
+      // }
 
       // Проверяем существование слоя для видео
-      final videoLayerExists =
-          layers.any((layer) => layer?.id == "video_markers_layer");
-      if (!videoLayerExists) {
-        await mapboxMapController?.style.addLayer(
-          mp.SymbolLayer(
-            id: "video_markers_layer",
-            sourceId: "video_markers_source",
-            minZoom: 0,
-            maxZoom: 22,
-            iconAllowOverlap: true,
-            iconIgnorePlacement: true,
-            symbolSortKey: 1, // Размещаем под основным слоем
-          ),
-        );
-      }
+      // final videoLayerExists =
+      //     layers.any((layer) => layer?.id == 'video_markers_layer');
+      // if (!videoLayerExists) {
+      //   await mapboxMapController?.style.addLayer(
+      //     mp.SymbolLayer(
+      //       id: 'video_markers_layer',
+      //       sourceId: 'video_markers_source',
+      //       minZoom: 0,
+      //       maxZoom: 22,
+      //       iconAllowOverlap: true,
+      //       iconIgnorePlacement: true,
+      //       symbolSortKey: 1, // Размещаем под основным слоем
+      //     ),
+      //   );
+      // }
 
       // Проверяем существование основного слоя
       final layerExists = layers.any((layer) => layer?.id == placesLayerId);
@@ -517,13 +516,14 @@ class _MajorMapState extends State<MajorMap> {
         await mapboxMapController?.style.addLayer(
           mp.SymbolLayer(
             id: placesLayerId,
-            sourceId: "places_source",
-            sourceLayer: "mylayer",
+            sourceId: 'places_source',
+            sourceLayer: 'mylayer',
             iconSizeExpression: <Object>[
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              5, 1,
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              5,
+              1,
               18,
               1.5
             ],
@@ -531,11 +531,11 @@ class _MajorMapState extends State<MajorMap> {
             iconAllowOverlap: true,
             textAllowOverlap: false,
             textOptional: true,
-            textFont: ["DIN Offc Pro Medium"],
+            textFont: ['DIN Offc Pro Medium'],
             textSizeExpression: <Object>[
-              "interpolate",
-              ["linear"],
-              ["zoom"],
+              'interpolate',
+              ['linear'],
+              ['zoom'],
               5,
               3,
               18,
@@ -615,7 +615,7 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _loadMyDotIconFromUrl() async {
     if (mapboxMapController == null) return;
     const iconUrl =
-        "https://tap-maptravel.s3.ap-southeast-2.amazonaws.com/media/svgs/circle/%D0%9A%D1%80%D1%83%D0%B3_rdr.png";
+        'https://tap-maptravel.s3.ap-southeast-2.amazonaws.com/media/svgs/circle/%D0%9A%D1%80%D1%83%D0%B3_rdr.png';
     final downloaded = await NetworkAssetManager().downloadImage(iconUrl);
     if (downloaded == null || downloaded.isEmpty) return;
     final ui.Codec codec = await ui.instantiateImageCodec(downloaded);
@@ -631,7 +631,7 @@ class _MajorMapState extends State<MajorMap> {
       data: pngBytes,
     );
     await mapboxMapController?.style.addStyleImage(
-      "my_dot_icon",
+      'my_dot_icon',
       1.0,
       mbxImage,
       false,
@@ -695,12 +695,12 @@ class _MajorMapState extends State<MajorMap> {
     mapStyleUri = newStyle;
 
     // Сначала убираем маркеры, чтобы не тормозили при переключении
-    setState(() {
-      _gifMarkerManager = null;
-    });
+    // setState(() {
+    //   _gifMarkerManager = null;
+    // });
 
     // Очищаем кэш видео контроллеров перед сменой стиля
-    VideoMarkerManager.updateMarkers();
+    // VideoMarkerManager.updateMarkers();
 
     // Устанавливаем новый стиль без задержки
     await mapboxMapController!.style.setStyleURI(newStyle);
@@ -724,24 +724,24 @@ class _MajorMapState extends State<MajorMap> {
       );
 
       // Создаем новый GifMarkerManager с небольшой задержкой
-      if (mounted && !_isDisposed && mapboxMapController != null) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted && !_isDisposed) {
-            setState(() {
-              _gifMarkerManager = VideoMarkerManager(
-                  key: VideoMarkerManager.globalKey,
-                  mapboxMap: mapboxMapController!);
-            });
+      // if (mounted && !_isDisposed && mapboxMapController != null) {
+      //   Future.delayed(const Duration(milliseconds: 500), () {
+      //     if (mounted && !_isDisposed) {
+      //       setState(() {
+      //         _gifMarkerManager = VideoMarkerManager(
+      //             key: VideoMarkerManager.globalKey,
+      //             mapboxMap: mapboxMapController!);
+      //       });
 
-            // Даем время на инициализацию и затем обновляем маркеры
-            Future.delayed(const Duration(seconds: 1), () {
-              if (mounted && !_isDisposed) {
-                VideoMarkerManager.updateMarkers();
-              }
-            });
-          }
-        });
-      }
+      //       // Даем время на инициализацию и затем обновляем маркеры
+      //       Future.delayed(const Duration(seconds: 1), () {
+      //         if (mounted && !_isDisposed) {
+      //           VideoMarkerManager.updateMarkers();
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
     });
   }
 
@@ -781,33 +781,33 @@ class _MajorMapState extends State<MajorMap> {
     super.didChangeDependencies();
 
     // Если виджет был неактивен и теперь снова активен, переинициализируем GifMarkerManager
-    if (_wasInactive &&
-        mounted &&
-        !_isDisposed &&
-        mapboxMapController != null) {
-      _wasInactive = false;
+    // if (_wasInactive &&
+    //     mounted &&
+    //     !_isDisposed &&
+    //     mapboxMapController != null) {
+    //   _wasInactive = false;
 
-      // Если GifMarkerManager уже существует, вызываем forceUpdate
-      if (_gifMarkerManager != null) {
-        VideoMarkerManager.updateMarkers();
-      } else {
-        // Пересоздаем GifMarkerManager
-        setState(() {
-          _gifMarkerManager = null;
-        });
+    //   // Если GifMarkerManager уже существует, вызываем forceUpdate
+    //   if (_gifMarkerManager != null) {
+    //     VideoMarkerManager.updateMarkers();
+    //   } else {
+    //     // Пересоздаем GifMarkerManager
+    //     setState(() {
+    //       _gifMarkerManager = null;
+    //     });
 
-        // Даем время на обновление состояния
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted && !_isDisposed && mapboxMapController != null) {
-            setState(() {
-              _gifMarkerManager = VideoMarkerManager(
-                  key: VideoMarkerManager.globalKey,
-                  mapboxMap: mapboxMapController!);
-            });
-          }
-        });
-      }
-    }
+    //     // Даем время на обновление состояния
+    //     Future.delayed(const Duration(milliseconds: 300), () {
+    //       if (mounted && !_isDisposed && mapboxMapController != null) {
+    //         setState(() {
+    //           _gifMarkerManager = VideoMarkerManager(
+    //               key: VideoMarkerManager.globalKey,
+    //               mapboxMap: mapboxMapController!);
+    //         });
+    //       }
+    //     });
+    //   }
+    // }
   }
 
   @override

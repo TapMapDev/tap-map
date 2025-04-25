@@ -25,7 +25,7 @@ class CustomBackButton extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                "Back",
+                'Back',
                 style: TextStylesManager.drawerText,
               ),
             ],

@@ -1,5 +1,6 @@
 plugins {
     id "com.android.application"
+    id 'com.google.gms.google-services'
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -29,6 +30,7 @@ signingConfigs {
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled true
     }
 
         compileOptions {
@@ -45,6 +47,10 @@ signingConfigs {
             signingConfig = signingConfigs.release
         }
     }
+}
+
+dependencies {
+    implementation 'com.google.firebase:firebase-messaging:23.0.0'
 }
 
 flutter {

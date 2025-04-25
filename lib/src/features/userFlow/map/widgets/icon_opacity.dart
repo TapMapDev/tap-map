@@ -3,15 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
 
-/// Утилитарный класс для управления статусом открытия/закрытия точек на карте
 class OpenStatusManager {
-  /// Преобразует время из строкового формата "HH:MM" в минуты
   static int parseTime(String time) {
     final parts = time.split(':').map(int.parse).toList();
     return parts[0] * 60 + parts[1];
   }
 
-  /// Определяет, закрыта ли точка (заведение) в указанное время
   static bool isPointClosedNow(String? workingHoursRaw, DateTime now) {
     if (workingHoursRaw == null || workingHoursRaw.isEmpty) return false;
 
@@ -53,12 +50,10 @@ class OpenStatusManager {
 
       return true; // Ни один интервал не подошел
     } catch (e) {
-      debugPrint("❌ Ошибка в isPointClosedNow: $e");
       return false;
     }
   }
 
-  /// Обновляет состояния открытия/закрытия точек на карте
   static Future<void> updateOpenCloseStates(
     mp.MapboxMap? mapboxMapController,
     String placesLayerId,
@@ -73,8 +68,8 @@ class OpenStatusManager {
       mp.RenderedQueryGeometry(
         type: mp.Type.SCREEN_BOX,
         value: jsonEncode({
-          "min": {"x": 0, "y": 0},
-          "max": {"x": 10000, "y": 10000}
+          'min': {'x': 0, 'y': 0},
+          'max': {'x': 10000, 'y': 10000}
         }),
       ),
       mp.RenderedQueryOptions(
@@ -108,10 +103,10 @@ class OpenStatusManager {
           final isClosed = isPointClosedNow(workingHours, now);
 
           await mapboxMapController.setFeatureState(
-            "places_source",
-            "mylayer",
+            'places_source',
+            'mylayer',
             id,
-            jsonEncode({"closed": isClosed}),
+            jsonEncode({'closed': isClosed}),
           );
         }),
       );
@@ -179,10 +174,10 @@ class OpenStatusManager {
   /// Создает Expression для прозрачности иконок в зависимости от статуса открытия
   static List<Object> buildIconOpacityExpression() {
     return [
-      "case",
+      'case',
       [
-        "==",
-        ["feature-state", "closed"],
+        '==',
+        ['feature-state', 'closed'],
         true
       ],
       0.6, // если closed = true, opacity = 0.6
@@ -193,38 +188,38 @@ class OpenStatusManager {
   /// Создает Expression для изображения иконок в зависимости от расстояния и статуса открытия
   static List<Object> buildIconImageExpression(double threshold) {
     return [
-      "let",
-      "myThreshold",
+      'let',
+      'myThreshold',
       threshold,
       [
-        "case",
+        'case',
         // Если расстояние меньше порога, используем my_dot_icon
         [
-          "<",
+          '<',
           [
-            "to-number",
+            'to-number',
             [
-              "coalesce",
-              ["get", "min_dist"],
+              'coalesce',
+              ['get', 'min_dist'],
               0
             ]
           ],
-          ["var", "myThreshold"]
+          ['var', 'myThreshold']
         ],
-        "my_dot_icon",
+        'my_dot_icon',
         // Если заведение закрыто, используем закрытую версию иконки
         [
-          "==",
-          ["feature-state", "closed"],
+          '==',
+          ['feature-state', 'closed'],
           true
         ],
         [
-          "concat",
-          ["get", "subcategory"],
-          "_closed"
+          'concat',
+          ['get', 'subcategory'],
+          '_closed'
         ],
         // В остальных случаях используем обычную иконку
-        ["get", "subcategory"]
+        ['get', 'subcategory']
       ]
     ];
   }
@@ -232,25 +227,25 @@ class OpenStatusManager {
   /// Создает Expression для отображения текста в зависимости от расстояния
   static List<Object> buildTextFieldExpression(double threshold) {
     return [
-      "let",
-      "myThreshold",
+      'let',
+      'myThreshold',
       threshold,
       [
-        "case",
+        'case',
         [
-          "<",
+          '<',
           [
-            "to-number",
+            'to-number',
             [
-              "coalesce",
-              ["get", "min_dist"],
+              'coalesce',
+              ['get', 'min_dist'],
               0
             ]
           ],
-          ["var", "myThreshold"]
+          ['var', 'myThreshold']
         ],
-        "",
-        ["get", "name"]
+        '',
+        ['get', 'name']
       ]
     ];
   }

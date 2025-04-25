@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/network/dio_client.dart';
@@ -14,11 +15,15 @@ import 'package:tap_map/src/features/userFlow/search_screen/data/search_reposito
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
-final GetIt getIt = GetIt.instance;
+final getIt = GetIt.instance;
 
-void setup() {
+Future<void> setup() async {
   // Регистрация навигатора
   getIt.registerSingleton<GlobalKey<NavigatorState>>(navigatorKey);
+
+  // Регистрация SharedPreferences
+  final sharedPreferences = await SharedPreferences.getInstance();
+  getIt.registerSingleton<SharedPreferences>(sharedPreferences);
 
   // Регистрация DioClient
   getIt.registerLazySingleton<DioClient>(() => DioClient());
