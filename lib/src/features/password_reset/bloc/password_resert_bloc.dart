@@ -34,7 +34,9 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
           newPassword: event.newPassword,
         );
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.statusCode == 200 ||
+            response.statusCode == 201 ||
+            response.statusCode == 204) {
           emit(SetNewPassworduccess());
         } else {
           emit(SetNewPasswordError(error: response.message));

@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/auth/model/authorization_response_model.dart';
-import 'package:flutter/foundation.dart';
 
 class AuthorizationRepositoryImpl {
   final ApiService apiService;
@@ -29,7 +29,8 @@ class AuthorizationRepositoryImpl {
         response['statusCode'],
       );
 
-      if (responseModel.accessToken != null && responseModel.refreshToken != null) {
+      if (responseModel.accessToken != null &&
+          responseModel.refreshToken != null) {
         await prefs.saveAccessToken(responseModel.accessToken!);
         await prefs.saveRefreshToken(responseModel.refreshToken!);
       }
@@ -60,7 +61,7 @@ class AuthorizationRepositoryImpl {
 
       final response = await apiService.postData(
         '/sessions/logout/',
-        {'refresh': refreshToken},
+        {'refresh_token': refreshToken},
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',

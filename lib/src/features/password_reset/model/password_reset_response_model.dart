@@ -41,7 +41,7 @@ class PasswordResetModel {
       }
     }
     return PasswordResetModel(
-      message: message ?? 'Operation completed successfully',
+      message: message ?? '',
       statusCode: statusCode,
     );
   }

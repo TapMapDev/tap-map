@@ -17,7 +17,8 @@ class AuthorizationResponseModel {
     final refreshToken = json['refresh'];
 
     if (accessToken == null || refreshToken == null) {
-      throw Exception('Access Token или Refresh Token отсутствует в ответе API.');
+      throw Exception(
+          'Access Token или Refresh Token отсутствует в ответе API.');
     }
 
     return AuthorizationResponseModel(

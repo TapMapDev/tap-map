@@ -24,6 +24,18 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
   bool showRepeatPassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔗 NewPasswordPage initialized with:');
+      print(
+          'Current route: ${GoRouter.of(context).routeInformationProvider.value.location}');
+      print('UID: ${widget.uid}');
+      print('Token: ${widget.token}');
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Новый пароль')),
@@ -31,7 +43,10 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         padding: const EdgeInsets.all(16),
         child: BlocConsumer<ResetPasswordBloc, ResetPasswordState>(
           listener: (context, state) {
+            print('🔄 Current state: ${state.runtimeType}');
+
             if (state is SetNewPassworduccess) {
+              print('✅ Password reset success, navigating to authorization');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Пароль успешно изменён! 🎉'),
@@ -39,8 +54,13 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                   duration: Duration(seconds: 2),
                 ),
               );
-              context.go(AppRoutes.authorization);
+
+              Future.delayed(const Duration(seconds: 2), () {
+                print('🔄 Executing navigation to authorization');
+                context.go(AppRoutes.authorization);
+              });
             } else if (state is SetNewPasswordError) {
+              print('❌ Password reset error: ${state.error}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error ?? 'Не удалось изменить пароль'),
@@ -119,10 +139,26 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
   void _submitNewPassword() {
     final password = passwordController.text;
     final repeat = repeatPasswordController.text;
+
+    print('🔐 Submitting new password:');
+    print('UID from widget: ${widget.uid}');
+    print('Token from widget: ${widget.token}');
+
     if (password != repeat) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Пароли не совпадают'),
+        ),
+      );
+      return;
+    }
+
+    // Проверяем наличие uid и token
+    if (widget.uid == null || widget.token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ошибка: отсутствуют параметры для сброса пароля'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -134,9 +170,6 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         const SnackBar(
           content: Text(
             'Пароль должен содержать минимум 8 символов',
-            style: TextStyle(
-              // fontSize: 10,
-            ),
           ),
         ),
       );
