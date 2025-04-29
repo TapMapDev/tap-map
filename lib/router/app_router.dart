@@ -8,6 +8,7 @@ import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/password_reset/ui/new_password_page.dart';
 import 'package:tap_map/src/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
+import 'package:tap_map/src/features/userFlow/chat/ui/chat_list_screen.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
@@ -24,9 +25,6 @@ final GoRouter appRouter = GoRouter(
   redirect: (context, state) async {
     final prefs = GetIt.I<SharedPrefsRepository>();
     final token = await prefs.getAccessToken();
-
-    print('🔁 Redirecting from ${state.matchedLocation}, token: $token');
-
     final publicRoutes = [
       AppRoutes.authorization,
       AppRoutes.registration,
@@ -116,8 +114,8 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/chat',
-              builder: (context, state) => const Center(child: Text('Чат')),
+              path: AppRoutes.chat,
+              builder: (context, state) => const ChatListScreen(),
             ),
           ],
         ),

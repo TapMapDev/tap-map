@@ -1,8 +1,9 @@
 import 'dart:io';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
 import 'package:synchronized/synchronized.dart';
@@ -127,6 +128,28 @@ class DioClient {
   }
 
   Dio get client => _dio;
+
+  Future<Response> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return _dio.get(
+      path,
+      queryParameters: queryParameters,
+    );
+  }
+
+  Future<Response> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return _dio.post(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+    );
+  }
 
   Future<void> registerFcmToken(String fcmToken) async {
     try {

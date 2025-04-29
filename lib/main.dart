@@ -19,6 +19,8 @@ import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.da
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
@@ -126,6 +128,12 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider<UserBloc>(
             create: (context) => UserBloc(getIt.get<UserRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => ChatBloc(
+              chatRepository: getIt.get<ChatRepository>(),
+              prefsRepository: getIt.get<SharedPrefsRepository>(),
+            ),
           ),
         ],
         child: MaterialApp.router(

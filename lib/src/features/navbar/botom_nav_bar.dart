@@ -6,8 +6,6 @@ class BottomNavbar extends StatelessWidget {
   final StatefulNavigationShell shell;
   const BottomNavbar({super.key, required this.shell});
 
-
-
   void _onItemTapped(int index) {
     shell.goBranch(
       index,
