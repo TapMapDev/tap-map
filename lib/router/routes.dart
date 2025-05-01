@@ -10,4 +10,5 @@ class AppRoutes {
   static const String editProfile = '/edit_profile';
   static const String shareProfile = '/share_profile';
   static const String chat = '/chat';
+  static const String websocketTest = '/websocket_test';
 }

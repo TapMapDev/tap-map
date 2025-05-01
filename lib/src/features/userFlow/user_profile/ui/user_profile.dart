@@ -28,6 +28,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Профиль'),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code),
@@ -63,6 +64,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             onPressed: () async {
               await getIt<AuthorizationRepositoryImpl>().logout();
               context.go(AppRoutes.authorization);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              context.push(AppRoutes.websocketTest);
             },
           ),
         ],

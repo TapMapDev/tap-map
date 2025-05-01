@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/core/websocket/websocket_test.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
@@ -81,6 +82,10 @@ final GoRouter appRouter = GoRouter(
         final username = state.uri.queryParameters['username'];
         return ProfileShareSection(username: username ?? '');
       },
+    ),
+    GoRoute(
+      path: AppRoutes.websocketTest,
+      builder: (context, state) => const WebSocketTestScreen(),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

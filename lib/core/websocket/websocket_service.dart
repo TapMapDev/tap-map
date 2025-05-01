@@ -1,94 +1,53 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebSocketService {
-  final String url;
-  final String jwtToken;
-  WebSocketChannel? _channel;
-  final StreamController<dynamic> _controller = StreamController.broadcast();
-
-  bool _isConnected = false;
+  late WebSocketChannel _channel;
+  final String _jwtToken;
 
   WebSocketService({
-    required this.url,
-    required this.jwtToken,
-  });
+    required String jwtToken,
+  }) : _jwtToken = jwtToken;
 
-  Stream<dynamic> get stream => _controller.stream;
-  bool get isConnected => _isConnected;
+  void connect() {
+    _channel = IOWebSocketChannel.connect(
+      Uri.parse('wss://api.tap-map.net/ws/notifications/'),
+      headers: {
+        'Authorization': 'Bearer $_jwtToken',
+      },
+    );
 
-  Future<void> connect() async {
-    if (_isConnected) {
-      print('WebSocket already connected.');
-      return;
-    }
+    _channel.stream.listen(
+      (message) {
+        print('Socket: Получено сообщение: $message');
+      },
+      onDone: () {
+        print('Socket: Соединение закрыто');
+      },
+      onError: (error) {
+        print('Socket: Ошибка соединения: $error');
+      },
+    );
 
-    final uri = Uri.parse(url);
-    print('Connecting to WebSocket: $uri');
-
-    try {
-      _channel = IOWebSocketChannel.connect(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $jwtToken',
-        },
-      );
-
-      _isConnected = true;
-      print('WebSocket connected.');
-
-      _channel!.stream.listen(
-        (message) {
-          print('Received: $message');
-          try {
-            final data = jsonDecode(message);
-            _controller.add(data);
-          } catch (_) {
-            _controller.add(message);
-          }
-        },
-        onError: (error) {
-          print('WebSocket error: $error');
-          _isConnected = false;
-          reconnect();
-        },
-        onDone: () {
-          print('WebSocket connection closed.');
-          _isConnected = false;
-          reconnect();
-        },
-        cancelOnError: true,
-      );
-    } catch (e) {
-      print('Failed to connect to WebSocket: $e');
-      _isConnected = false;
-      reconnect();
-    }
-  }
-
-  void send(dynamic data) {
-    if (_isConnected && _channel != null) {
-      final message = jsonEncode(data);
-      print('Sending: $message');
-      _channel!.sink.add(message);
-    } else {
-      print('Cannot send: WebSocket not connected.');
-    }
+    print('Socket: Соединение установлено успешно');
   }
 
   void disconnect() {
-    print('Disconnecting WebSocket...');
-    _isConnected = false;
-    _channel?.sink.close();
-    _controller.close();
+    _channel.sink.close();
+    print('Socket: Отключено');
   }
 
-  void reconnect() async {
-    print('Reconnecting in 5 seconds...');
-    await Future.delayed(const Duration(seconds: 5));
-    await connect();
+  void sendMessage(String message) {
+    // Формируем JSON сообщение
+    final jsonMessage = jsonEncode({
+      'type': 'message',
+      'content': message,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    _channel.sink.add(jsonMessage);
+    print('Socket: Отправлено сообщение: $jsonMessage');
   }
 }

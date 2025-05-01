@@ -5,7 +5,6 @@ import 'package:talker/talker.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/core/websocket/websocket_manager.dart';
 import 'package:tap_map/main.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
@@ -64,7 +63,4 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ChatRepository>(
     () => ChatRepository(dioClient: getIt<DioClient>()),
   );
-
-  // Initialize WebSocket
-  await WebSocketManager.initialize();
 }
