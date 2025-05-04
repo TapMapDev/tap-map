@@ -39,12 +39,20 @@ class WebSocketService {
     print('Socket: Отключено');
   }
 
-  void sendMessage(String message) {
-    // Формируем JSON сообщение
+  void sendMessage({
+    required int chatId,
+    required String text,
+    List<Map<String, String>>? attachments,
+    int? replyToId,
+    int? forwardedFromId,
+  }) {
     final jsonMessage = jsonEncode({
-      'type': 'message',
-      'content': message,
-      'timestamp': DateTime.now().toIso8601String(),
+      'type': 'create_message',
+      'chat_id': chatId,
+      'text': text,
+      'attachments': attachments ?? [],
+      'reply_to_id': replyToId,
+      'forwarded_from_id': forwardedFromId,
     });
 
     _channel.sink.add(jsonMessage);

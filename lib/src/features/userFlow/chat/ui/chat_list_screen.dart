@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart';
+import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
@@ -107,7 +108,15 @@ class _ChatListItem extends StatelessWidget {
         ],
       ),
       onTap: () {
-        // TODO: Navigate to chat detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: chat.chatId,
+              chatName: chat.chatName,
+            ),
+          ),
+        );
       },
     );
   }

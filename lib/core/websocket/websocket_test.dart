@@ -13,7 +13,12 @@ class WebSocketTestScreen extends StatefulWidget {
 class _WebSocketTestScreenState extends State<WebSocketTestScreen> {
   late WebSocketService _webSocketService;
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _chatIdController = TextEditingController();
   bool _isConnected = false;
+  final List<ChatMessage> _messages = [];
+  final ScrollController _scrollController = ScrollController();
+  ChatMessage? _replyToMessage;
+  ChatMessage? _forwardFromMessage;
 
   @override
   void initState() {
@@ -39,48 +44,331 @@ class _WebSocketTestScreenState extends State<WebSocketTestScreen> {
   @override
   void dispose() {
     _messageController.dispose();
+    _chatIdController.dispose();
+    _scrollController.dispose();
     _webSocketService.disconnect();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _showMessageActions(ChatMessage message) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.reply),
+            title: const Text('Reply'),
+            onTap: () {
+              setState(() {
+                _replyToMessage = message;
+                _forwardFromMessage = null;
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.forward),
+            title: const Text('Forward'),
+            onTap: () {
+              setState(() {
+                _forwardFromMessage = message;
+                _replyToMessage = null;
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WebSocket Test'),
+        title: const Text('WebSocket Chat'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isConnected ? Icons.wifi : Icons.wifi_off,
+              color: _isConnected ? Colors.green : Colors.red,
+            ),
+            onPressed: () {
+              if (!_isConnected) {
+                _initializeWebSocket();
+              }
+            },
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'Status: ${_isConnected ? 'Connected' : 'Disconnected'}',
-              style: TextStyle(
-                color: _isConnected ? Colors.green : Colors.red,
-                fontSize: 18,
+      body: Column(
+        children: [
+          // Chat ID input
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _chatIdController,
+              decoration: InputDecoration(
+                labelText: 'Chat ID',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.check),
+                  onPressed: () {
+                    if (_chatIdController.text.isNotEmpty) {
+                      setState(() {
+                        _messages.clear();
+                        _replyToMessage = null;
+                        _forwardFromMessage = null;
+                      });
+                    }
+                  },
+                ),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          // Reply/Forward preview
+          if (_replyToMessage != null || _forwardFromMessage != null)
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              color: Colors.grey[200],
+              child: Row(
+                children: [
+                  Icon(
+                    _replyToMessage != null ? Icons.reply : Icons.forward,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _replyToMessage != null
+                              ? 'Replying to'
+                              : 'Forwarding from',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          (_replyToMessage ?? _forwardFromMessage)!.text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _replyToMessage = null;
+                        _forwardFromMessage = null;
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _messageController,
-              decoration: const InputDecoration(
-                labelText: 'Message to send',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                if (_messageController.text.isNotEmpty) {
-                  _webSocketService.sendMessage(_messageController.text);
-                  _messageController.clear();
-                }
+          // Messages list
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _messages.length,
+              padding: const EdgeInsets.all(8.0),
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return GestureDetector(
+                  onLongPress: () => _showMessageActions(message),
+                  child: Align(
+                    alignment: message.isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: message.isMe
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (message.replyTo != null)
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              margin: const EdgeInsets.only(bottom: 8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Replying to:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  Text(
+                                    message.replyTo!.text,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (message.forwardedFrom != null)
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              margin: const EdgeInsets.only(bottom: 8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Forwarded from:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  Text(
+                                    message.forwardedFrom!.text,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Text(
+                            message.text,
+                            style: TextStyle(
+                              color: message.isMe ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
               },
-              child: const Text('Send Message'),
             ),
-          ],
-        ),
+          ),
+          // Message input
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  void _sendMessage() {
+    if (_messageController.text.isNotEmpty &&
+        _chatIdController.text.isNotEmpty) {
+      final message = _messageController.text;
+      _webSocketService.sendMessage(
+        chatId: int.parse(_chatIdController.text),
+        text: message,
+        replyToId: _replyToMessage?.id,
+        forwardedFromId: _forwardFromMessage?.id,
+      );
+
+      setState(() {
+        _messages.add(ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch,
+          text: message,
+          isMe: true,
+          replyTo: _replyToMessage,
+          forwardedFrom: _forwardFromMessage,
+        ));
+        _replyToMessage = null;
+        _forwardFromMessage = null;
+      });
+
+      _messageController.clear();
+      _scrollToBottom();
+    }
+  }
+}
+
+class ChatMessage {
+  final int id;
+  final String text;
+  final bool isMe;
+  final ChatMessage? replyTo;
+  final ChatMessage? forwardedFrom;
+
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isMe,
+    this.replyTo,
+    this.forwardedFrom,
+  });
 }

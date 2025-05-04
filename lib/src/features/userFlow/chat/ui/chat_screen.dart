@@ -1,140 +1,366 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../bloc/chat_bloc.dart';
-import '../bloc/chat_event.dart';
-import '../bloc/chat_state.dart';
-import '../models/message_model.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/core/websocket/websocket_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
+  final String chatName;
 
-  const ChatScreen({super.key, required this.chatId});
+  const ChatScreen({
+    super.key,
+    required this.chatId,
+    required this.chatName,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  late WebSocketService _webSocketService;
   final TextEditingController _messageController = TextEditingController();
+  final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
-  final List<MessageModel> _messages = [];
+  ChatMessage? _replyToMessage;
+  ChatMessage? _forwardFromMessage;
+  bool _isConnected = false;
 
   @override
   void initState() {
     super.initState();
-    // Инициализация чата
-    context.read<ChatBloc>().add(FetchChatById(widget.chatId));
-    context.read<ChatBloc>().add(SendTyping(widget.chatId));
+    _initializeWebSocket();
+  }
+
+  Future<void> _initializeWebSocket() async {
+    final token =
+        await GetIt.instance<SharedPrefsRepository>().getAccessToken();
+    if (token == null) {
+      print('❌ No access token available');
+      return;
+    }
+
+    _webSocketService = WebSocketService(jwtToken: token);
+    _webSocketService.connect();
+    setState(() {
+      _isConnected = true;
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _webSocketService.disconnect();
     super.dispose();
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
-      context.read<ChatBloc>().add(
-            SendMessage(
-              chatId: widget.chatId,
-              text: _messageController.text,
-            ),
-          );
-      _messageController.clear();
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
+  }
+
+  void _showMessageActions(ChatMessage message) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.reply),
+            title: const Text('Ответить'),
+            onTap: () {
+              setState(() {
+                _replyToMessage = message;
+                _forwardFromMessage = null;
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.forward),
+            title: const Text('Переслать'),
+            onTap: () {
+              setState(() {
+                _forwardFromMessage = message;
+                _replyToMessage = null;
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Чат'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.chatName),
+            Text(
+              _isConnected ? 'Подключено' : 'Отключено',
+              style: TextStyle(
+                fontSize: 12,
+                color: _isConnected ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isConnected ? Icons.wifi : Icons.wifi_off,
+              color: _isConnected ? Colors.green : Colors.red,
+            ),
+            onPressed: () {
+              if (!_isConnected) {
+                _initializeWebSocket();
+              }
+            },
+          ),
+        ],
       ),
-      body: BlocConsumer<ChatBloc, ChatState>(
-        listener: (context, state) {
-          if (state is MessageReceived) {
-            final message = MessageModel.fromJson(state.message);
-            setState(() {
-              _messages.add(message);
-            });
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          } else if (state is TypingStatus) {
-            // Показать индикатор печати
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Пользователь ${state.userId} печатает...'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          } else if (state is ChatError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final message = _messages[index];
-                    return ListTile(
-                      title: Text(message.text),
-                      subtitle: Text(
-                        'От: ${message.userId}',
-                      ),
-                      trailing: Text(
-                        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: const InputDecoration(
-                          hintText: 'Введите сообщение...',
-                          border: OutlineInputBorder(),
+      body: Column(
+        children: [
+          // Reply/Forward preview
+          if (_replyToMessage != null || _forwardFromMessage != null)
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              color: Colors.grey[200],
+              child: Row(
+                children: [
+                  Icon(
+                    _replyToMessage != null ? Icons.reply : Icons.forward,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _replyToMessage != null
+                              ? 'Ответ на:'
+                              : 'Переслано из:',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
-                        onChanged: (text) {
-                          if (text.isNotEmpty) {
-                            context
-                                .read<ChatBloc>()
-                                .add(SendTyping(widget.chatId));
-                          }
-                        },
+                        Text(
+                          (_replyToMessage ?? _forwardFromMessage)!.text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _replyToMessage = null;
+                        _forwardFromMessage = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          // Messages list
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _messages.length,
+              padding: const EdgeInsets.all(8.0),
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return GestureDetector(
+                  onLongPress: () => _showMessageActions(message),
+                  child: Align(
+                    alignment: message.isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: message.isMe
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (message.replyTo != null)
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              margin: const EdgeInsets.only(bottom: 8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Ответ на:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  Text(
+                                    message.replyTo!.text,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (message.forwardedFrom != null)
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              margin: const EdgeInsets.only(bottom: 8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Переслано из:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  Text(
+                                    message.forwardedFrom!.text,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: message.isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.black.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Text(
+                            message.text,
+                            style: TextStyle(
+                              color: message.isMe ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _sendMessage,
-                    ),
-                  ],
+                  ),
+                );
+              },
+            ),
+          ),
+          // Message input
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Введите сообщение...',
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  void _sendMessage() {
+    if (_messageController.text.isNotEmpty) {
+      final message = _messageController.text;
+      _webSocketService.sendMessage(
+        chatId: widget.chatId,
+        text: message,
+        replyToId: _replyToMessage?.id,
+        forwardedFromId: _forwardFromMessage?.id,
+      );
+
+      setState(() {
+        _messages.add(ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch,
+          text: message,
+          isMe: true,
+          replyTo: _replyToMessage,
+          forwardedFrom: _forwardFromMessage,
+        ));
+        _replyToMessage = null;
+        _forwardFromMessage = null;
+      });
+
+      _messageController.clear();
+      _scrollToBottom();
+    }
+  }
+}
+
+class ChatMessage {
+  final int id;
+  final String text;
+  final bool isMe;
+  final ChatMessage? replyTo;
+  final ChatMessage? forwardedFrom;
+
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isMe,
+    this.replyTo,
+    this.forwardedFrom,
+  });
 }
