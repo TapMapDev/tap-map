@@ -21,14 +21,18 @@ class FetchChatById extends ChatEvent {
 class SendMessage extends ChatEvent {
   final int chatId;
   final String text;
+  final int? replyToId;
+  final int? forwardedFromId;
 
   const SendMessage({
     required this.chatId,
     required this.text,
+    this.replyToId,
+    this.forwardedFromId,
   });
 
   @override
-  List<Object?> get props => [chatId, text];
+  List<Object?> get props => [chatId, text, replyToId, forwardedFromId];
 }
 
 class SendTyping extends ChatEvent {
@@ -132,3 +136,14 @@ class ReadReceiptReceived extends ChatEvent {
   @override
   List<Object?> get props => [messageId, userId];
 }
+
+class ConnectToChat extends ChatEvent {
+  final int chatId;
+
+  const ConnectToChat(this.chatId);
+
+  @override
+  List<Object?> get props => [chatId];
+}
+
+class DisconnectFromChat extends ChatEvent {}

@@ -112,3 +112,7 @@ class MessageRead extends ChatState {
   @override
   List<Object?> get props => [messageId, userId];
 }
+
+class ChatConnected extends ChatState {}
+
+class ChatDisconnected extends ChatState {}

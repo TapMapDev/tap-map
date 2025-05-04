@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_api_service.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -19,17 +21,85 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   late WebSocketService _webSocketService;
+  late ChatApiService _chatApiService;
+  late UserRepository _userRepository;
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
   ChatMessage? _replyToMessage;
   ChatMessage? _forwardFromMessage;
   bool _isConnected = false;
+  bool _isLoading = true;
+  String? _currentUsername;
 
   @override
   void initState() {
     super.initState();
+    _chatApiService = GetIt.instance<ChatApiService>();
+    _userRepository = GetIt.instance<UserRepository>();
     _initializeWebSocket();
+    _loadCurrentUser();
+    _loadChatHistory();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await _userRepository.getCurrentUser();
+      setState(() {
+        _currentUsername = user.username;
+      });
+    } catch (e) {
+      print('Error loading current user: $e');
+    }
+  }
+
+  Future<void> _loadChatHistory() async {
+    try {
+      final history = await _chatApiService.getChatHistory(widget.chatId);
+      setState(() {
+        _messages.clear();
+        _messages.addAll(history.map((message) => ChatMessage(
+              id: message.id,
+              text: message.text,
+              isMe: message.senderUsername == _currentUsername,
+              replyTo: message.replyToId != null
+                  ? _messages.firstWhere(
+                      (m) => m.id == message.replyToId,
+                      orElse: () => ChatMessage(
+                        id: message.replyToId!,
+                        text: 'Сообщение не найдено',
+                        isMe: false,
+                      ),
+                    )
+                  : null,
+              forwardedFrom: message.forwardedFromId != null
+                  ? _messages.firstWhere(
+                      (m) => m.id == message.forwardedFromId,
+                      orElse: () => ChatMessage(
+                        id: message.forwardedFromId!,
+                        text: 'Сообщение не найдено',
+                        isMe: false,
+                      ),
+                    )
+                  : null,
+            )));
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      print('Error loading chat history: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Не удалось загрузить историю сообщений'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _initializeWebSocket() async {
@@ -178,110 +248,116 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           // Messages list
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: _messages.length,
-              padding: const EdgeInsets.all(8.0),
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return GestureDetector(
-                  onLongPress: () => _showMessageActions(message),
-                  child: Align(
-                    alignment: message.isMe
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 4.0,
-                        horizontal: 8.0,
-                      ),
-                      padding: const EdgeInsets.all(12.0),
-                      decoration: BoxDecoration(
-                        color: message.isMe
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (message.replyTo != null)
-                            Container(
-                              padding: const EdgeInsets.all(8.0),
-                              margin: const EdgeInsets.only(bottom: 8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Ответ на:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: message.isMe
-                                          ? Colors.white.withOpacity(0.7)
-                                          : Colors.black.withOpacity(0.7),
-                                    ),
-                                  ),
-                                  Text(
-                                    message.replyTo!.text,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: message.isMe
-                                          ? Colors.white.withOpacity(0.7)
-                                          : Colors.black.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ],
-                              ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: _messages.length,
+                    padding: const EdgeInsets.all(8.0),
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      return GestureDetector(
+                        onLongPress: () => _showMessageActions(message),
+                        child: Align(
+                          alignment: message.isMe
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                              vertical: 4.0,
+                              horizontal: 8.0,
                             ),
-                          if (message.forwardedFrom != null)
-                            Container(
-                              padding: const EdgeInsets.all(8.0),
-                              margin: const EdgeInsets.only(bottom: 8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Переслано из:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: message.isMe
-                                          ? Colors.white.withOpacity(0.7)
-                                          : Colors.black.withOpacity(0.7),
-                                    ),
-                                  ),
-                                  Text(
-                                    message.forwardedFrom!.text,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: message.isMe
-                                          ? Colors.white.withOpacity(0.7)
-                                          : Colors.black.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: message.isMe
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.grey[300],
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
-                          Text(
-                            message.text,
-                            style: TextStyle(
-                              color: message.isMe ? Colors.white : Colors.black,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (message.replyTo != null)
+                                  Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    margin: const EdgeInsets.only(bottom: 8.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Ответ на:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: message.isMe
+                                                ? Colors.white.withOpacity(0.7)
+                                                : Colors.black.withOpacity(0.7),
+                                          ),
+                                        ),
+                                        Text(
+                                          message.replyTo!.text,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: message.isMe
+                                                ? Colors.white.withOpacity(0.7)
+                                                : Colors.black.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (message.forwardedFrom != null)
+                                  Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    margin: const EdgeInsets.only(bottom: 8.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Переслано из:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: message.isMe
+                                                ? Colors.white.withOpacity(0.7)
+                                                : Colors.black.withOpacity(0.7),
+                                          ),
+                                        ),
+                                        Text(
+                                          message.forwardedFrom!.text,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: message.isMe
+                                                ? Colors.white.withOpacity(0.7)
+                                                : Colors.black.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                Text(
+                                  message.text,
+                                  style: TextStyle(
+                                    color: message.isMe
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           // Message input
           Container(
@@ -339,11 +415,11 @@ class _ChatScreenState extends State<ChatScreen> {
           replyTo: _replyToMessage,
           forwardedFrom: _forwardFromMessage,
         ));
+        _messageController.clear();
         _replyToMessage = null;
         _forwardFromMessage = null;
       });
 
-      _messageController.clear();
       _scrollToBottom();
     }
   }
