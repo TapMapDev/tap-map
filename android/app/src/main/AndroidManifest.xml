@@ -35,8 +35,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="tapmap"
-                    android:pathPrefix="/reset_password_confirm" />
+                    android:pathPrefix="/reset_password_confirm"
+                    android:scheme="tapmap" />
+            </intent-filter>
+            <!-- User Profile Deep Link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="user"
+                    android:pathPrefix="/@"
+                    android:scheme="tapmap" />
             </intent-filter>
         </activity>
         <meta-data

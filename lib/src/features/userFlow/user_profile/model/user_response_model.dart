@@ -1,14 +1,12 @@
 class UserModel {
-  final int? id;
+  final int id;
   final String? email;
-  final String? password;
   final String? username;
   final String? firstName;
   final String? lastName;
   final String? website;
   final String? avatarUrl;
   final String? description;
-  final String? dateOfBirth;
   final String? gender;
   final String? phone;
   final bool? isOnline;
@@ -17,18 +15,18 @@ class UserModel {
   final PrivacySettings? privacy;
   final SecuritySettings? security;
   final SelectedMapStyle? selectedMapStyle;
+  final String? dateOfBirth;
+  final bool isBlocked;
 
-  UserModel({
-    this.id,
+  const UserModel({
+    required this.id,
     this.email,
-    this.password,
     this.username,
     this.firstName,
     this.lastName,
     this.website,
     this.avatarUrl,
     this.description,
-    this.dateOfBirth,
     this.gender,
     this.phone,
     this.isOnline,
@@ -37,6 +35,8 @@ class UserModel {
     this.privacy,
     this.security,
     this.selectedMapStyle,
+    this.dateOfBirth,
+    this.isBlocked = false,
   });
 
   UserModel copyWith({
@@ -51,10 +51,13 @@ class UserModel {
     String? gender,
     String? phone,
     bool? isOnline,
-    String? lastActivity,
+    DateTime? lastActivity,
     bool? isEmailVerified,
     PrivacySettings? privacy,
+    SecuritySettings? security,
+    SelectedMapStyle? selectedMapStyle,
     String? dateOfBirth,
+    bool? isBlocked,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -68,18 +71,19 @@ class UserModel {
       gender: gender ?? this.gender,
       phone: phone ?? this.phone,
       isOnline: isOnline ?? this.isOnline,
-      lastActivity: lastActivity != null
-          ? DateTime.parse(lastActivity)
-          : this.lastActivity,
+      lastActivity: lastActivity ?? this.lastActivity,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       privacy: privacy ?? this.privacy,
+      security: security ?? this.security,
+      selectedMapStyle: selectedMapStyle ?? this.selectedMapStyle,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      isBlocked: isBlocked ?? this.isBlocked,
     );
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as int?,
+      id: json['id'] as int,
       email: json['email'] as String?,
       username: json['username'] as String?,
       firstName: json['first_name'] as String?,
@@ -87,7 +91,6 @@ class UserModel {
       website: json['website'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       description: json['description'] as String?,
-      dateOfBirth: json['date_of_birth'] as String?,
       gender: json['gender'] as String?,
       phone: json['phone'] as String?,
       isOnline: json['is_online'] as bool?,
@@ -106,6 +109,8 @@ class UserModel {
               json['selected_map_style'] as Map<String, dynamic>,
             )
           : null,
+      dateOfBirth: json['date_of_birth'] as String?,
+      isBlocked: json['is_blocked'] as bool? ?? false,
     );
   }
 
@@ -119,7 +124,6 @@ class UserModel {
     final data = <String, dynamic>{};
 
     if (email != null && email!.isNotEmpty) data['email'] = email;
-    if (password != null && password!.isNotEmpty) data['password'] = password;
     if (username != null && username!.isNotEmpty) data['username'] = username;
     if (firstName != null) data['first_name'] = firstName;
     if (lastName != null) data['last_name'] = lastName;
@@ -140,6 +144,8 @@ class UserModel {
     if (privacy != null) {
       data['privacy'] = privacy!.toJson();
     }
+
+    data['is_blocked'] = isBlocked;
 
     return data;
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
@@ -31,14 +32,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         title: const Text('Профиль'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Поделиться профилем',
+            onPressed: () {
+              if (userBloc.state is UserLoaded) {
+                final user = (userBloc.state as UserLoaded).user;
+                final profileUrl =
+                    'https://api.tap-map.net/api/users/link/@${user.username}/';
+                Share.share('Мой профиль: $profileUrl');
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.qr_code),
             tooltip: 'QR-код профиля',
             onPressed: () async {
               if (userBloc.state is UserLoaded) {
                 final user = (userBloc.state as UserLoaded).user;
                 await context.push(
-                  AppRoutes.shareProfile,
-                  extra: user,
+                  '${AppRoutes.shareProfile}?username=${user.username}',
                 );
               }
             },
@@ -64,12 +76,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             onPressed: () async {
               await getIt<AuthorizationRepositoryImpl>().logout();
               context.go(AppRoutes.authorization);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              context.push(AppRoutes.websocketTest);
             },
           ),
         ],

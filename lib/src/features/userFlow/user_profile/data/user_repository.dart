@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -9,6 +10,7 @@ import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_m
 
 abstract class IUserRepository {
   Future<UserModel> getCurrentUser();
+  Future<UserModel> getUserByUsername(String username);
   Future<UserModel> updateUser(UserModel user);
   Future<String> updateAvatar(File imageFile);
   Future<List<UserAvatarModel>> getUserAvatars();
@@ -16,6 +18,8 @@ abstract class IUserRepository {
   Future<PrivacySettings> updatePrivacySettings(
       PrivacySettings privacySettings);
   Future<PrivacySettings> getPrivacySettings();
+  Future<void> blockUser(int userId);
+  Future<void> unblockUser(int userId);
 }
 
 class UserRepository implements IUserRepository {
@@ -45,6 +49,27 @@ class UserRepository implements IUserRepository {
       return UserModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to get user data: $e');
+    }
+  }
+
+  @override
+  Future<UserModel> getUserByUsername(String username) async {
+    try {
+      debugPrint('🔄 Making API request for username: $username');
+      final response = await apiService.getData('/api/users/link/@$username/');
+      debugPrint('📥 API Response: $response');
+
+      if (response['statusCode'] == 200) {
+        final userData = response['data'];
+        debugPrint('✅ Parsing user data: $userData');
+        return UserModel.fromJson(userData);
+      } else {
+        debugPrint('❌ API Error: ${response['data']}');
+        throw Exception(response['data'] ?? 'Failed to load user profile');
+      }
+    } catch (e) {
+      debugPrint('❌ Repository Error: $e');
+      rethrow;
     }
   }
 
@@ -314,6 +339,24 @@ class UserRepository implements IUserRepository {
       return PrivacySettings.fromJson(data);
     } catch (e) {
       throw Exception('Failed to get privacy settings: $e');
+    }
+  }
+
+  @override
+  Future<void> blockUser(int userId) async {
+    try {
+      await apiService.postData('/users/block/$userId/', {});
+    } catch (e) {
+      throw Exception('Failed to block user: $e');
+    }
+  }
+
+  @override
+  Future<void> unblockUser(int userId) async {
+    try {
+      await apiService.postData('/users/unblock/$userId/', {});
+    } catch (e) {
+      throw Exception('Failed to unblock user: $e');
     }
   }
 }

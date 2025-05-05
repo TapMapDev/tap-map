@@ -254,6 +254,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     controller: _scrollController,
                     itemCount: _messages.length,
                     padding: const EdgeInsets.all(8.0),
+                    reverse: true,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
                       return GestureDetector(
@@ -343,13 +344,28 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ],
                                     ),
                                   ),
-                                Text(
-                                  message.text,
-                                  style: TextStyle(
-                                    color: message.isMe
-                                        ? Colors.white
-                                        : Colors.black,
-                                  ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      message.text,
+                                      style: TextStyle(
+                                        color: message.isMe
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: message.isMe
+                                            ? Colors.white.withOpacity(0.7)
+                                            : Colors.black.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -414,6 +430,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: true,
           replyTo: _replyToMessage,
           forwardedFrom: _forwardFromMessage,
+          timestamp: DateTime.now(),
         ));
         _messageController.clear();
         _replyToMessage = null;
@@ -431,6 +448,7 @@ class ChatMessage {
   final bool isMe;
   final ChatMessage? replyTo;
   final ChatMessage? forwardedFrom;
+  final DateTime timestamp;
 
   ChatMessage({
     required this.id,
@@ -438,5 +456,6 @@ class ChatMessage {
     required this.isMe,
     this.replyTo,
     this.forwardedFrom,
-  });
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 }

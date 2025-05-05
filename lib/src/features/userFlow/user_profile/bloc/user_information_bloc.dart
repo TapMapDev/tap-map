@@ -28,7 +28,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       try {
         final updatedUser = await repository.updateUser(event.user);
         emit(UserLoaded(updatedUser));
-        add(LoadUserAvatars());
+        add(const LoadUserAvatars());
       } catch (e) {
         emit(UserError(e.toString()));
       }
@@ -40,7 +40,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         final file = File(event.image.path);
         final avatarUrl = await repository.updateAvatar(file);
         emit(AvatarUpdated(avatarUrl));
-        add(LoadUserProfile());
+        add(const LoadUserProfile());
       } catch (e) {
         emit(UserError(e.toString()));
       }
@@ -65,7 +65,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       try {
         final success = await repository.deleteAvatar(event.avatarId);
         if (success) {
-          add(LoadUserAvatars());
+          add(const LoadUserAvatars());
         }
       } catch (e) {
         emit(UserError(e.toString()));
@@ -92,5 +92,56 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         emit(UserError(e.toString()));
       }
     });
+
+    on<LoadUserByUsername>(_onLoadUserByUsername);
+    on<BlockUser>(_onBlockUser);
+    on<UnblockUser>(_onUnblockUser);
+  }
+
+  Future<void> _onLoadUserByUsername(
+    LoadUserByUsername event,
+    Emitter<UserState> emit,
+  ) async {
+    try {
+      emit(UserLoading());
+      final user = await repository.getUserByUsername(event.username);
+      emit(UserLoaded(user));
+    } catch (e) {
+      emit(UserError(e.toString()));
+    }
+  }
+
+  Future<void> _onBlockUser(
+    BlockUser event,
+    Emitter<UserState> emit,
+  ) async {
+    try {
+      emit(UserLoading());
+      await repository.blockUser(event.userId);
+      if (state is UserLoaded) {
+        final currentUser = (state as UserLoaded).user;
+        final updatedUser = currentUser.copyWith(isBlocked: true);
+        emit(UserLoaded(updatedUser));
+      }
+    } catch (e) {
+      emit(UserError(e.toString()));
+    }
+  }
+
+  Future<void> _onUnblockUser(
+    UnblockUser event,
+    Emitter<UserState> emit,
+  ) async {
+    try {
+      emit(UserLoading());
+      await repository.unblockUser(event.userId);
+      if (state is UserLoaded) {
+        final currentUser = (state as UserLoaded).user;
+        final updatedUser = currentUser.copyWith(isBlocked: false);
+        emit(UserLoaded(updatedUser));
+      }
+    } catch (e) {
+      emit(UserError(e.toString()));
+    }
   }
 }

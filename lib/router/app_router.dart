@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/core/websocket/websocket_test.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
@@ -15,6 +14,7 @@ import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/profile_share.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/ui/public_user_profile.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/user_profile.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -31,6 +31,7 @@ final GoRouter appRouter = GoRouter(
       AppRoutes.registration,
       AppRoutes.passwordReset,
       AppRoutes.newPassword,
+      AppRoutes.publicProfile,
     ];
 
     final isPublic =
@@ -84,8 +85,11 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: AppRoutes.websocketTest,
-      builder: (context, state) => const WebSocketTestScreen(),
+      path: AppRoutes.publicProfile,
+      builder: (context, state) {
+        final username = state.pathParameters['username']!;
+        return PublicUserProfileScreen(username: username);
+      },
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

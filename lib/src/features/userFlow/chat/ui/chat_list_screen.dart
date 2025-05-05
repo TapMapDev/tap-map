@@ -54,12 +54,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Widget _buildChatList(List<ChatModel> chats) {
-    return ListView.builder(
-      itemCount: chats.length,
-      itemBuilder: (context, index) {
-        final chat = chats[index];
-        return _ChatListItem(chat: chat);
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<ChatBloc>().add(FetchChats());
       },
+      child: ListView.builder(
+        itemCount: chats.length,
+        itemBuilder: (context, index) {
+          final chat = chats[index];
+          return _ChatListItem(chat: chat);
+        },
+      ),
     );
   }
 }
