@@ -37,7 +37,6 @@ class AuthorizationRepositoryImpl {
 
       return responseModel;
     } catch (e, stackTrace) {
-      debugPrint('Authorization error: $e');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }

@@ -38,15 +38,26 @@
                     android:pathPrefix="/reset_password_confirm"
                     android:scheme="tapmap" />
             </intent-filter>
-            <!-- User Profile Deep Link -->
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:host="user"
-                    android:pathPrefix="/@"
-                    android:scheme="tapmap" />
+                    android:scheme="https"
+                    android:host="api.tap-map.net"
+                    android:pathPrefix="/api/users/link/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tapmap" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="api.tap-map.net" />
             </intent-filter>
         </activity>
         <meta-data

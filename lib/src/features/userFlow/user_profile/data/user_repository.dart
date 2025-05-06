@@ -56,16 +56,23 @@ class UserRepository implements IUserRepository {
   Future<UserModel> getUserByUsername(String username) async {
     try {
       debugPrint('🔄 Making API request for username: $username');
-      final response = await apiService.getData('/api/users/link/@$username/');
+      final response = await apiService.getData('/users/@$username/');
       debugPrint('📥 API Response: $response');
 
       if (response['statusCode'] == 200) {
-        final userData = response['data'];
+        dynamic userData = response['data'];
+        // Если userData — строка, проверяем, что это не HTML
+        if (userData is String) {
+          if (userData.trim().startsWith('<!DOCTYPE html>')) {
+            throw Exception('Пользователь не найден или ссылка некорректна');
+          }
+          userData = json.decode(userData);
+        }
         debugPrint('✅ Parsing user data: $userData');
         return UserModel.fromJson(userData);
       } else {
         debugPrint('❌ API Error: ${response['data']}');
-        throw Exception(response['data'] ?? 'Failed to load user profile');
+        throw Exception('Пользователь не найден или сервер вернул ошибку');
       }
     } catch (e) {
       debugPrint('❌ Repository Error: $e');

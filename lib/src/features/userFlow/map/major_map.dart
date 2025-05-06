@@ -596,7 +596,6 @@ class _MajorMapState extends State<MajorMap> {
         'icon-opacity',
         buildIconOpacityExpression(),
       );
-      debugPrint('✅ Базовый opacity установлен');
     }
 
     for (final icon in icons) {
@@ -644,7 +643,6 @@ class _MajorMapState extends State<MajorMap> {
   Future<void> _loadSingleIcon(String iconName, String url, int styleId) async {
     if (mapboxMapController == null) return;
     if (url.isEmpty || !url.startsWith('http')) {
-      debugPrint('❌ Некорректный URL для иконки $iconName: $url');
       return;
     }
     final compositeKey = '$styleId-$iconName';

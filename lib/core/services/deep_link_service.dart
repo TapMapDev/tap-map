@@ -12,18 +12,27 @@ class DeepLinkService {
   DeepLinkService(this.router);
 
   Future<void> initialize() async {
+
+    // 1️⃣ стартовая ссылка
     final initialLink = await _appLinks.getInitialLink();
     if (initialLink != null) _handleUri(initialLink);
 
+    // 2️⃣ все последующие
     _appLinks.uriLinkStream.listen((uri) {
+      debugPrint('Got link: $uri');
       _handleUri(uri);
     });
   }
 
-  void _handleUri(Uri uri) {
-    // Проверяем схему и путь/хост
+  Future<void> _handleUri(Uri uri) async {
+
     if (uri.scheme == 'tapmap') {
-      if (uri.path == '/reset_password_confirm' ||
+      if (uri.host == 'user') {
+        // Извлекаем username из path, убирая @ если он есть
+        final username = uri.path.replaceAll('/', '').replaceAll('@', '');
+        final path = AppRoutes.publicProfile.replaceAll(':username', username);
+        router.go(path);
+      } else if (uri.path == '/reset_password_confirm' ||
           uri.path == 'reset_password_confirm' ||
           uri.host == 'reset_password_confirm') {
         // Извлекаем параметры из URL
@@ -38,11 +47,12 @@ class DeepLinkService {
           final path = '${AppRoutes.newPassword}?uid=$uid&token=$token';
           router.go(path);
         }
-      } else if (uri.host == 'user' && uri.path.startsWith('/@')) {
-        // Обработка ссылок на профиль пользователя
-        final username =
-            uri.path.substring(1); // Убираем только / из пути, сохраняя @
-        final path = '/user/$username';
+      }
+    } else if (uri.scheme == 'https' && uri.host == 'api.tap-map.net') {
+      if (uri.path.startsWith('/api/users/link/')) {
+        // Извлекаем username из path, убирая @ если он есть
+        final username = uri.pathSegments.last.replaceAll('@', '');
+        final path = AppRoutes.publicProfile.replaceAll(':username', username);
         router.go(path);
       }
     }

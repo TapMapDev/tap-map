@@ -87,8 +87,6 @@ Future<bool> _initializeTokens() async {
     }
     return false;
   } catch (e) {
-    debugPrint('Error initializing tokens: $e');
-    // В случае ошибки очищаем токены
     await prefs.clear();
     return false;
   }

@@ -43,7 +43,6 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint('Notification clicked: ${response.payload}');
       },
     );
 
@@ -126,7 +125,6 @@ class NotificationService {
       );
       debugPrint('Foreground notification shown');
     } catch (e) {
-      debugPrint('Error showing foreground notification: $e');
     }
   }
 

@@ -24,11 +24,7 @@ class _PublicUserProfileScreenState extends State<PublicUserProfileScreen> {
   void initState() {
     super.initState();
     userBloc = getIt<UserBloc>();
-    final cleanUsername = widget.username.startsWith('@')
-        ? widget.username.substring(1)
-        : widget.username;
-    debugPrint('🔄 Loading profile for username: $cleanUsername');
-    userBloc.add(LoadUserByUsername(cleanUsername));
+    userBloc.add(LoadUserByUsername(widget.username));
   }
 
   @override
@@ -41,10 +37,6 @@ class _PublicUserProfileScreenState extends State<PublicUserProfileScreen> {
           if (state is UserLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is UserError) {
-            debugPrint('❌ Error in PublicUserProfileScreen:');
-            debugPrint('Username from widget: ${widget.username}');
-            debugPrint('Error message: ${state.error}');
-            debugPrint('Error state: $state');
             return Center(child: Text('Ошибка: ${state.error}'));
           } else if (state is UserLoaded) {
             final user = state.user;
