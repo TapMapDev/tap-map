@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
@@ -31,18 +30,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(
         title: const Text('Профиль'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: 'Поделиться профилем',
-            onPressed: () {
-              if (userBloc.state is UserLoaded) {
-                final user = (userBloc.state as UserLoaded).user;
-                final profileUrl =
-                    'https://api.tap-map.net/api/users/link/@${user.username}/';
-                Share.share('Мой профиль: $profileUrl');
-              }
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.qr_code),
             tooltip: 'QR-код профиля',

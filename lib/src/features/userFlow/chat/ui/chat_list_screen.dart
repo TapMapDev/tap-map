@@ -30,7 +30,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
-          print('Current state: $state'); // Debug log
 
           if (state is ChatLoading) {
             return const Center(child: CircularProgressIndicator());

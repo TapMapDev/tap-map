@@ -87,7 +87,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToBottom();
     } catch (e) {
-      print('Error loading chat history: $e');
       setState(() {
         _isLoading = false;
       });
@@ -106,7 +105,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final token =
         await GetIt.instance<SharedPrefsRepository>().getAccessToken();
     if (token == null) {
-      print('❌ No access token available');
       return;
     }
 
@@ -176,28 +174,8 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.chatName),
-            Text(
-              _isConnected ? 'Подключено' : 'Отключено',
-              style: TextStyle(
-                fontSize: 12,
-                color: _isConnected ? Colors.green : Colors.red,
-              ),
-            ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isConnected ? Icons.wifi : Icons.wifi_off,
-              color: _isConnected ? Colors.green : Colors.red,
-            ),
-            onPressed: () {
-              if (!_isConnected) {
-                _initializeWebSocket();
-              }
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [

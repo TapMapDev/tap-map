@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 
 import '../models/chat_model.dart';
@@ -33,6 +34,29 @@ class ChatRepository {
       throw Exception('Failed to fetch chat: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to fetch chat: $e');
+    }
+  }
+
+  Future<int> createChat(
+      {required String type, required int participantId}) async {
+    try {
+      final formData = FormData.fromMap({
+        'type': type,
+        'participants_ids[]': participantId,
+      });
+
+      final response = await _dioClient.post(
+        '/chat/create/',
+        data: formData,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return response.data['chat_id'] as int;
+      } else {
+        throw Exception('Failed to create chat: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to create chat: $e');
     }
   }
 

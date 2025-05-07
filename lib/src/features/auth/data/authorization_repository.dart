@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
@@ -29,18 +30,44 @@ class AuthorizationRepositoryImpl {
         response['statusCode'],
       );
 
-      if (responseModel.accessToken != null &&
-          responseModel.refreshToken != null) {
-        await prefs.saveAccessToken(responseModel.accessToken!);
-        await prefs.saveRefreshToken(responseModel.refreshToken!);
-      }
-
-      return responseModel;
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      rethrow;
+    if (responseModel.accessToken != null &&
+        responseModel.refreshToken != null) {
+      await prefs.saveAccessToken(responseModel.accessToken!);
+      await prefs.saveRefreshToken(responseModel.refreshToken!);
     }
+
+    return responseModel;
+  } on DioException catch (e, stackTrace) {
+    debugPrintStack(stackTrace: stackTrace);
+
+    final int statusCode = e.response?.statusCode ?? -1;
+    String message = 'Произошла ошибка';
+
+    final data = e.response?.data;
+    if (data != null) {
+      if (data['detail'] is List) {
+        message = data['detail'].join(', ');
+      } else if (data['detail'] != null) {
+        message = data['detail'].toString();
+      }
+    }
+
+    return AuthorizationResponseModel(
+      accessToken: null,
+      refreshToken: null,
+      statusCode: statusCode,
+      message: message,
+    );
+  } catch (e, stackTrace) {
+    debugPrintStack(stackTrace: stackTrace);
+    return AuthorizationResponseModel(
+      accessToken: null,
+      refreshToken: null,
+      statusCode: -1,
+      message: 'Неизвестная ошибка: $e',
+    );
   }
+}
 
   Future<bool> isAuthorized() async {
     final accessToken = await prefs.getString('access_token');

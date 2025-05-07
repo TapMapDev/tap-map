@@ -9,6 +9,7 @@ class AppRoutes {
   static const String afisha = '/afisha';
   static const String editProfile = '/edit_profile';
   static const String shareProfile = '/share_profile';
-  static const String chat = '/chat';
+  static const String listChat = '/chat';
   static const String publicProfile = '/users/:username';
+  static const String chat = '/chat/:userId/:username';
 }

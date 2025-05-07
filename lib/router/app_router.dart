@@ -9,6 +9,7 @@ import 'package:tap_map/src/features/password_reset/ui/new_password_page.dart';
 import 'package:tap_map/src/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_list_screen.dart';
+import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
@@ -91,6 +92,33 @@ final GoRouter appRouter = GoRouter(
         return PublicUserProfileScreen(username: username);
       },
     ),
+    GoRoute(
+      path: AppRoutes.chat,
+      builder: (context, state) {
+        final chatId = state.uri.queryParameters['chatId'];
+        final userId = state.uri.queryParameters['userId'];
+        final username = state.uri.queryParameters['username'];
+
+        if (chatId != null) {
+          // Открываем чат по chatId (после создания чата)
+          return ChatScreen(
+            chatId: int.parse(chatId),
+            chatName: username ?? 'Чат',
+          );
+        } else if (userId != null && username != null) {
+          // Открываем чат по userId и username (старый вариант)
+          return ChatScreen(
+            chatId: int.parse(userId),
+            chatName: username,
+          );
+        } else {
+          // Нет нужных параметров — показываем ошибку
+          return const Scaffold(
+            body: Center(child: Text('Чат не найден')),
+          );
+        }
+      },
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return BottomNavbar(shell: navigationShell);
@@ -123,7 +151,7 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AppRoutes.chat,
+              path: AppRoutes.listChat,
               builder: (context, state) => const ChatListScreen(),
             ),
           ],

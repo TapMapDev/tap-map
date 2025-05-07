@@ -7,6 +7,7 @@ class ChatModel extends Equatable {
   final String? lastMessageSenderUsername;
   final DateTime? lastMessageCreatedAt;
   final int unreadCount;
+  
 
   const ChatModel({
     required this.chatId,
