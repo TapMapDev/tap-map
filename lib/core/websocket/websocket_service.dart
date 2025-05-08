@@ -5,6 +5,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebSocketService {
   late WebSocketChannel _channel;
+  late Stream _broadcastStream;
   final String _jwtToken;
 
   WebSocketService({
@@ -18,19 +19,7 @@ class WebSocketService {
         'Authorization': 'Bearer $_jwtToken',
       },
     );
-
-    _channel.stream.listen(
-      (message) {
-        print('Socket: Получено сообщение: $message');
-      },
-      onDone: () {
-        print('Socket: Соединение закрыто');
-      },
-      onError: (error) {
-        print('Socket: Ошибка соединения: $error');
-      },
-    );
-
+    _broadcastStream = _channel.stream.asBroadcastStream();
     print('Socket: Соединение установлено успешно');
   }
 
@@ -46,6 +35,10 @@ class WebSocketService {
     int? replyToId,
     int? forwardedFromId,
   }) {
+    if (_channel.closeCode != null) {
+      print('WebSocket уже закрыт, сообщение не отправлено');
+      return;
+    }
     final jsonMessage = jsonEncode({
       'type': 'create_message',
       'chat_id': chatId,
@@ -58,4 +51,22 @@ class WebSocketService {
     _channel.sink.add(jsonMessage);
     print('Socket: Отправлено сообщение: $jsonMessage');
   }
+
+  void sendTyping({required int chatId, required bool isTyping}) {
+    if (_channel.closeCode != null) {
+      print('WebSocket уже закрыт, событие typing не отправлено');
+      return;
+    }
+    final jsonMessage = jsonEncode({
+      'type': 'typing',
+      'chat_id': chatId,
+      'is_typing': isTyping,
+    });
+    _channel.sink.add(jsonMessage);
+    print('Socket: Отправлено событие typing: $jsonMessage');
+  }
+
+  Stream get stream => _broadcastStream;
+
+  WebSocketChannel get channel => _channel;
 }
