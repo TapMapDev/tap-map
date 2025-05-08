@@ -17,10 +17,12 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   late UserBloc userBloc;
+  UserModel? _user; // локальное состояние пользователя
+
   @override
   void initState() {
     userBloc = getIt<UserBloc>();
-    userBloc.add(LoadUserProfile());
+    userBloc.add(const LoadUserProfile());
     super.initState();
   }
 
@@ -52,7 +54,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   extra: user,
                 );
                 if (result == true) {
-                  userBloc.add(LoadUserProfile());
+                  userBloc.add(const LoadUserProfile());
                 }
               }
             },
@@ -71,13 +73,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         bloc: userBloc,
         builder: (context, state) {
           if (state is UserLoading) {
+            return const Center(child: CircularProgressIndicator());
           } else if (state is UserError) {
             return Center(
               child: Text('Ошибка: ${state.error}'),
             );
           } else if (state is UserLoaded) {
             final user = state.user;
-            return _buildProfileView(user);
+            // Сохраняем user в локальное состояние, если оно ещё не установлено или id изменился
+            if (_user == null || _user!.id != user.id) {
+              _user = user;
+            }
+            return _buildProfileView(_user!);
+          }
+          // Если есть локальный user, показываем его
+          if (_user != null) {
+            return _buildProfileView(_user!);
           }
           return const SizedBox.shrink();
         },
@@ -97,27 +108,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             editable: true,
             showAllAvatars: true,
             onAvatarUpdated: (String newAvatarUrl) {
-              final updatedUser = UserModel(
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                website: user.website,
-                avatarUrl: newAvatarUrl,
-                description: user.description,
-                dateOfBirth: user.dateOfBirth,
-                gender: user.gender,
-                phone: user.phone,
-                isOnline: user.isOnline,
-                lastActivity: user.lastActivity,
-                privacy: user.privacy,
-                security: user.security,
-                isEmailVerified: user.isEmailVerified,
-                selectedMapStyle: user.selectedMapStyle,
-              );
-
-              userBloc.add(UpdateUserProfile(updatedUser));
+              setState(() {
+                _user = user.copyWith(avatarUrl: newAvatarUrl);
+              });
+              // Можно также отправить событие в BLoC для обновления на сервере, если нужно
             },
           ),
           const SizedBox(height: 16),

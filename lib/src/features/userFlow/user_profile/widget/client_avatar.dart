@@ -37,7 +37,7 @@ class _ClientAvatarState extends State<ClientAvatar> {
 
     // Если нужно показать все аватары, загружаем их
     if (widget.showAllAvatars) {
-      _userBloc.add(LoadUserAvatars());
+      _userBloc.add(const LoadUserAvatars());
     }
   }
 
@@ -167,7 +167,7 @@ class _ClientAvatarState extends State<ClientAvatar> {
           );
           // После обновления аватара, обновляем список аватаров
           if (widget.showAllAvatars) {
-            _userBloc.add(LoadUserAvatars());
+            _userBloc.add(const LoadUserAvatars());
           }
         } else if (state is UserError) {
           ScaffoldMessenger.of(context).showSnackBar(
