@@ -5,8 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_api_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+
+enum MessageStatus {
+  sent,
+  delivered,
+  read,
+}
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -18,28 +26,27 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   late final WebSocketService _webSocketService;
-  late final ChatApiService _chatApiService;
+  late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
+  final List<MessageModel> _messages = [];
   StreamSubscription? _wsSubscription;
   String? _currentUsername;
-  ChatMessage? _replyTo;
-  ChatMessage? _forwardFrom;
+  int? _currentUserId;
+  MessageModel? _replyTo;
+  MessageModel? _forwardFrom;
   bool _isLoading = true;
   bool _isTyping = false;
   bool _otherUserIsTyping = false;
   String? _typingUsername;
-  bool _showScrollDownButton = false;
 
   @override
   void initState() {
     super.initState();
-    _chatApiService = GetIt.instance<ChatApiService>();
+    _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _initChat();
-    _scrollController.addListener(_handleScrollBtnVisibility);
   }
 
   Future<void> _initChat() async {
@@ -59,62 +66,70 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onSocketEvent(dynamic data) {
-    try {
-      final decoded = jsonDecode(data is String ? data : data.toString());
-      if (decoded is! Map<String, dynamic>) return;
-      switch (decoded['type']) {
-        case 'typing':
-          if (decoded['chat_id'] == widget.chatId) {
+    final decoded = jsonDecode(data is String ? data : data.toString());
+    if (decoded is! Map<String, dynamic>) return;
+
+    switch (decoded['type']) {
+      case 'typing':
+        if (decoded['chat_id'] == widget.chatId) {
+          setState(() {
+            _otherUserIsTyping = decoded['is_typing'] == true;
+            _typingUsername = decoded['username'] ?? 'Собеседник';
+          });
+        }
+        break;
+
+      case 'message':
+        if (decoded['chat_id'] == widget.chatId) {
+          setState(() {
+            _messages.insert(
+              0,
+              MessageModel(
+                id: decoded['message_id'] as int,
+                text: decoded['text'] as String,
+                chatId: widget.chatId,
+                senderUsername: decoded['sender_username'] as String,
+                createdAt: DateTime.parse(decoded['created_at'] as String),
+              ),
+            );
+          });
+        }
+        break;
+
+      case 'read_message':
+        if (decoded['chat_id'] == widget.chatId) {
+          final readerId = decoded['reader_id'] as int?;
+          if (readerId != null && readerId != _currentUserId) {
             setState(() {
-              _otherUserIsTyping = decoded['is_typing'] == true;
-              _typingUsername = decoded['username'] ?? 'Собеседник';
+              final messageId = decoded['message_id'] as int;
+              final messageIndex =
+                  _messages.indexWhere((m) => m.id == messageId);
+              if (messageIndex != -1) {
+                _messages[messageIndex] = _messages[messageIndex].copyWith();
+              }
             });
           }
-          break;
-        // TODO: handle other event types (new message, read, etc)
-      }
-    } catch (_) {}
+        }
+        break;
+    }
   }
 
   Future<void> _loadCurrentUser() async {
     try {
       final user = await _userRepository.getCurrentUser();
       _currentUsername = user.username;
+      _currentUserId = user.id;
     } catch (_) {}
   }
 
   Future<void> _loadChatHistory() async {
     setState(() => _isLoading = true);
     try {
-      final history = await _chatApiService.getChatHistory(widget.chatId);
+      final messages = await _chatRepository.getChatHistory(widget.chatId);
       _messages
         ..clear()
-        ..addAll(history.map((m) => ChatMessage(
-              id: m.id,
-              text: m.text,
-              isMe: m.senderUsername == _currentUsername,
-              replyTo: m.replyToId != null
-                  ? _messages.firstWhere(
-                      (msg) => msg.id == m.replyToId,
-                      orElse: () => ChatMessage(
-                        id: m.replyToId!,
-                        text: 'Сообщение не найдено',
-                        isMe: false,
-                      ),
-                    )
-                  : null,
-              forwardedFrom: m.forwardedFromId != null
-                  ? _messages.firstWhere(
-                      (msg) => msg.id == m.forwardedFromId,
-                      orElse: () => ChatMessage(
-                        id: m.forwardedFromId!,
-                        text: 'Сообщение не найдено',
-                        isMe: false,
-                      ),
-                    )
-                  : null,
-            )));
-    } catch (_) {
+        ..addAll(messages);
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -125,14 +140,6 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _handleScrollBtnVisibility() {
-    if (!_scrollController.hasClients) return;
-    final shouldShow = _scrollController.offset > 200;
-    if (_showScrollDownButton != shouldShow) {
-      setState(() => _showScrollDownButton = shouldShow);
     }
   }
 
@@ -158,13 +165,14 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages.insert(
         0,
-        ChatMessage(
+        MessageModel(
           id: DateTime.now().millisecondsSinceEpoch,
           text: text,
-          isMe: true,
-          replyTo: _replyTo,
-          forwardedFrom: _forwardFrom,
-          timestamp: DateTime.now(),
+          chatId: widget.chatId,
+          replyToId: _replyTo?.id,
+          forwardedFromId: _forwardFrom?.id,
+          createdAt: DateTime.now(),
+          senderUsername: _currentUsername!,
         ),
       );
       _messageController.clear();
@@ -179,7 +187,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _wsSubscription?.cancel();
     _webSocketService.disconnect();
     _messageController.dispose();
-    _scrollController.removeListener(_handleScrollBtnVisibility);
     _scrollController.dispose();
     super.dispose();
   }
@@ -222,11 +229,22 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemCount: _messages.length,
                         padding: const EdgeInsets.all(8.0),
                         reverse: true,
+                        shrinkWrap: true,
+                        physics: const AlwaysScrollableScrollPhysics(),
                         itemBuilder: (context, index) {
                           final message = _messages[index];
-                          return GestureDetector(
-                            onLongPress: () => _showMessageActions(message),
-                            child: _ChatBubble(message: message),
+                          return Container(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width,
+                            ),
+                            child: GestureDetector(
+                              onLongPress: () => _showMessageActions(message),
+                              child: _ChatBubble(
+                                message: message,
+                                isMe:
+                                    message.senderUsername == _currentUsername,
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -248,27 +266,16 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          if (_showScrollDownButton)
-            Positioned(
-              right: 16,
-              bottom: 80,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                onPressed: _scrollToBottom,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.arrow_downward, color: Colors.white),
-              ),
-            ),
+          ScrollToBottomButton(
+            scrollController: _scrollController,
+            onPressed: _scrollToBottom,
+          ),
         ],
       ),
     );
   }
 
-  void _showMessageActions(ChatMessage message) {
+  void _showMessageActions(MessageModel message) {
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
@@ -303,8 +310,8 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class _ReplyForwardPreview extends StatelessWidget {
-  final ChatMessage? replyTo;
-  final ChatMessage? forwardFrom;
+  final MessageModel? replyTo;
+  final MessageModel? forwardFrom;
   final VoidCallback onClose;
   const _ReplyForwardPreview(
       {this.replyTo, this.forwardFrom, required this.onClose});
@@ -338,46 +345,73 @@ class _ReplyForwardPreview extends StatelessWidget {
 }
 
 class _ChatBubble extends StatelessWidget {
-  final ChatMessage message;
-  const _ChatBubble({required this.message});
+  final MessageModel message;
+  final bool isMe;
+  const _ChatBubble({required this.message, required this.isMe});
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
         padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
-          color:
-              message.isMe ? Theme.of(context).primaryColor : Colors.grey[300],
+          color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
           borderRadius: BorderRadius.circular(12.0),
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (message.replyTo != null)
+            if (message.replyToId != null)
               _BubbleReference(
-                  text: message.replyTo!.text,
-                  label: 'Ответ на:',
-                  isMe: message.isMe),
-            if (message.forwardedFrom != null)
+                text: 'Ответ на сообщение',
+                label: 'Ответ на:',
+                isMe: isMe,
+              ),
+            if (message.forwardedFromId != null)
               _BubbleReference(
-                  text: message.forwardedFrom!.text,
-                  label: 'Переслано из:',
-                  isMe: message.isMe),
+                text: 'Пересланное сообщение',
+                label: 'Переслано из:',
+                isMe: isMe,
+              ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(message.text,
+                Flexible(
+                  child: Text(
+                    message.text,
                     style: TextStyle(
-                        color: message.isMe ? Colors.white : Colors.black)),
-                Text(
-                  '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: message.isMe
-                          ? Colors.white.withOpacity(0.7)
-                          : Colors.black.withOpacity(0.7)),
+                      color: isMe ? Colors.white : Colors.black,
+                    ),
+                    softWrap: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isMe
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.black.withOpacity(0.7),
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.done,
+                        size: 14,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -468,21 +502,4 @@ class _MessageInput extends StatelessWidget {
       ),
     );
   }
-}
-
-class ChatMessage {
-  final int id;
-  final String text;
-  final bool isMe;
-  final ChatMessage? replyTo;
-  final ChatMessage? forwardedFrom;
-  final DateTime timestamp;
-  ChatMessage({
-    required this.id,
-    required this.text,
-    required this.isMe,
-    this.replyTo,
-    this.forwardedFrom,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
 }

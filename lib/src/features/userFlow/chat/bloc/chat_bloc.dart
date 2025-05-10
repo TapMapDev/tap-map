@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../data/chat_repository.dart';
+import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import 'chat_event.dart' as events;
 import 'chat_state.dart' as states;
@@ -15,7 +16,8 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
   final ChatRepository _chatRepository;
   final SharedPrefsRepository _prefsRepository;
   final UserRepository _userRepository;
-  WebSocketChannel? _channel;
+  WebSocketService? _webSocketService;
+  StreamSubscription? _wsSubscription;
   int? _currentUserId;
   String? _currentUsername;
 
@@ -56,12 +58,58 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
   ) async {
     try {
       emit(states.ChatLoading());
-      final chat = await _chatRepository.fetchChatById(event.chatId);
-      await _initializeWebSocket(event.chatId);
-      emit(states.ChatLoaded(chat: chat, messages: const []));
+      final data = await _chatRepository.fetchChatWithMessages(event.chatId);
+      emit(states.ChatLoaded(
+        chat: data['chat'] as ChatModel,
+        messages: data['messages'] as List<MessageModel>,
+      ));
     } catch (e) {
       emit(states.ChatError(e.toString()));
     }
+  }
+
+  Future<void> _onConnectToChat(
+    events.ConnectToChat event,
+    Emitter<states.ChatState> emit,
+  ) async {
+    try {
+      final token = await _prefsRepository.getAccessToken();
+      if (token == null) {
+        emit(const states.ChatError('No access token available'));
+        return;
+      }
+
+      final user = await _userRepository.getCurrentUser();
+      _currentUserId = user.id;
+      _currentUsername = user.username;
+
+      _webSocketService = WebSocketService(jwtToken: token);
+      _webSocketService!.connect();
+
+      await _wsSubscription?.cancel();
+      _wsSubscription = _webSocketService!.stream.listen(
+        (data) {
+          add(events.NewMessageEvent(data));
+        },
+        onError: (error) {
+          add(events.ChatErrorEvent(error.toString()));
+        },
+      );
+
+      emit(states.ChatConnected());
+    } catch (e) {
+      emit(states.ChatError(e.toString()));
+    }
+  }
+
+  void _onDisconnectFromChat(
+    events.DisconnectFromChat event,
+    Emitter<states.ChatState> emit,
+  ) {
+    _wsSubscription?.cancel();
+    _webSocketService?.disconnect();
+    _webSocketService = null;
+    emit(states.ChatDisconnected());
   }
 
   Future<void> _onSendMessage(
@@ -69,21 +117,18 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
     Emitter<states.ChatState> emit,
   ) async {
     try {
-      if (_channel == null) {
+      if (_webSocketService == null) {
         emit(const states.ChatError('Not connected to chat'));
         return;
       }
 
-      final message = {
-        'type': 'create_message',
-        'chat_id': event.chatId,
-        'text': event.text,
-        'attachments': [],
-        'reply_to_id': event.replyToId,
-        'forwarded_from_id': event.forwardedFromId,
-      };
+      _webSocketService!.sendMessage(
+        chatId: event.chatId,
+        text: event.text,
+        replyToId: event.replyToId,
+        forwardedFromId: event.forwardedFromId,
+      );
 
-      _channel!.sink.add(message);
       emit(states.MessageSent(MessageModel(
         id: DateTime.now().millisecondsSinceEpoch,
         chatId: event.chatId,
@@ -100,20 +145,20 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
     }
   }
 
-  void _onSendTyping(events.SendTyping event, Emitter<states.ChatState> emit) {
+  void _onSendTyping(
+    events.SendTyping event,
+    Emitter<states.ChatState> emit,
+  ) {
     try {
-      if (_channel == null) {
+      if (_webSocketService == null) {
         emit(const states.ChatError('Not connected to chat'));
         return;
       }
 
-      final typingMessage = {
-        'type': 'typing',
-        'chat_id': event.chatId,
-        'is_typing': true,
-      };
-
-      _channel!.sink.add(typingMessage);
+      _webSocketService!.sendTyping(
+        chatId: event.chatId,
+        isTyping: event.isTyping,
+      );
     } catch (e) {
       emit(states.ChatError(e.toString()));
     }
@@ -168,54 +213,8 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
     emit(states.ChatError(event.message));
   }
 
-  Future<void> _onConnectToChat(
-      events.ConnectToChat event, Emitter<states.ChatState> emit) async {
-    try {
-      final token = await _prefsRepository.getAccessToken();
-      if (token == null) {
-        emit(const states.ChatError('No access token available'));
-        return;
-      }
-
-      // Get current user ID
-      final user = await _userRepository.getCurrentUser();
-      _currentUserId = user.id;
-      _currentUsername = user.username;
-
-      _channel = WebSocketChannel.connect(
-        Uri.parse(
-            'wss://api.tap-map.net/ws/chat/${event.chatId}/?token=$token'),
-      );
-
-      _channel!.stream.listen(
-        (message) {
-          add(events.NewMessageEvent(message));
-        },
-        onError: (error) {
-          add(events.ChatErrorEvent(error.toString()));
-        },
-        onDone: () {
-          emit(states.ChatDisconnected());
-        },
-      );
-
-      emit(states.ChatConnected());
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
-    }
-  }
-
-  void _onDisconnectFromChat(
-      events.DisconnectFromChat event, Emitter<states.ChatState> emit) {
-    _channel?.sink.close();
-    _channel = null;
-    emit(states.ChatDisconnected());
-  }
-
   Future<void> _initializeWebSocket(int chatId) async {
     try {
-      _channel?.sink.close();
-
       final accessToken = await _prefsRepository.getAccessToken();
       if (accessToken == null) {
         throw Exception('Access token not found');
@@ -224,9 +223,11 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
       final wsUrl = Uri.parse('wss://api.tap-map.net/ws/notifications/')
           .replace(queryParameters: {'token': accessToken});
 
-      _channel = WebSocketChannel.connect(wsUrl);
+      _webSocketService = WebSocketService(jwtToken: accessToken);
+      _webSocketService!.connect();
 
-      _channel!.stream.listen(
+      await _wsSubscription?.cancel();
+      _wsSubscription = _webSocketService!.stream.listen(
         (data) {
           if (data is Map<String, dynamic>) {
             if (data['type'] == 'message') {
@@ -264,7 +265,8 @@ class ChatBloc extends Bloc<events.ChatEvent, states.ChatState> {
 
   @override
   Future<void> close() {
-    _channel?.sink.close();
+    _wsSubscription?.cancel();
+    _webSocketService?.disconnect();
     return super.close();
   }
 }

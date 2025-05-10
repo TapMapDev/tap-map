@@ -11,7 +11,6 @@ import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_api_service.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
@@ -69,10 +68,5 @@ Future<void> setup() async {
   // WebSocket Service
   getIt.registerFactoryParam<WebSocketService, String, void>(
     (jwtToken, _) => WebSocketService(jwtToken: jwtToken),
-  );
-
-  // Chat API Service
-  getIt.registerLazySingleton<ChatApiService>(
-    () => ChatApiService(),
   );
 }

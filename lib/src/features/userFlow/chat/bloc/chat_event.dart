@@ -37,11 +37,15 @@ class SendMessage extends ChatEvent {
 
 class SendTyping extends ChatEvent {
   final int chatId;
+  final bool isTyping;
 
-  const SendTyping(this.chatId);
+  const SendTyping({
+    required this.chatId,
+    required this.isTyping,
+  });
 
   @override
-  List<Object?> get props => [chatId];
+  List<Object?> get props => [chatId, isTyping];
 }
 
 class MarkMessageAsRead extends ChatEvent {

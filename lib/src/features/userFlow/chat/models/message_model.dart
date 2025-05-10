@@ -100,6 +100,32 @@ class MessageModel extends Equatable {
     };
   }
 
+  MessageModel copyWith({
+    int? id,
+    int? chatId,
+    String? text,
+    String? senderUsername,
+    DateTime? createdAt,
+    int? replyToId,
+    int? forwardedFromId,
+    List<Map<String, String>>? attachments,
+    MessageStatus? status,
+    MessageType? type,
+  }) {
+    return MessageModel(
+      id: id ?? this.id,
+      chatId: chatId ?? this.chatId,
+      text: text ?? this.text,
+      senderUsername: senderUsername ?? this.senderUsername,
+      createdAt: createdAt ?? this.createdAt,
+      replyToId: replyToId ?? this.replyToId,
+      forwardedFromId: forwardedFromId ?? this.forwardedFromId,
+      attachments: attachments ?? this.attachments,
+      status: status ?? this.status,
+      type: type ?? this.type,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

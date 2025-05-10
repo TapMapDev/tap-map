@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 
 import '../models/chat_model.dart';
+import '../models/message_model.dart';
 
 class ChatRepository {
   final DioClient _dioClient;
@@ -23,17 +24,26 @@ class ChatRepository {
     }
   }
 
-  Future<ChatModel> fetchChatById(int chatId) async {
+  Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     try {
-      final response = await _dioClient.get('/chats/$chatId/');
+      final chatResponse = await _dioClient.get('/chats/$chatId/');
+      final messagesResponse = await _dioClient.get('/chats/$chatId/messages/');
 
-      if (response.statusCode == 200) {
-        final chat = ChatModel.fromJson(response.data);
-        return chat;
+      if (chatResponse.statusCode == 200 &&
+          messagesResponse.statusCode == 200) {
+        final chat = ChatModel.fromJson(chatResponse.data);
+        final List<dynamic> messagesData = messagesResponse.data;
+        final messages =
+            messagesData.map((json) => MessageModel.fromJson(json)).toList();
+
+        return {
+          'chat': chat,
+          'messages': messages,
+        };
       }
-      throw Exception('Failed to fetch chat: ${response.statusCode}');
+      throw Exception('Failed to fetch chat data: ${chatResponse.statusCode}');
     } catch (e) {
-      throw Exception('Failed to fetch chat: $e');
+      throw Exception('Failed to fetch chat data: $e');
     }
   }
 
@@ -71,6 +81,21 @@ class ChatRepository {
       }
     } catch (e) {
       throw Exception('Failed to mark chat as read: $e');
+    }
+  }
+
+  Future<List<MessageModel>> getChatHistory(int chatId) async {
+    try {
+      final response = await _dioClient.get('/chat/$chatId/messages/');
+      if (response.statusCode == 200) {
+        final List<dynamic> messagesData = response.data;
+        final messages =
+            messagesData.map((json) => MessageModel.fromJson(json)).toList();
+        return messages;
+      }
+      throw Exception('Failed to fetch chat history: ${response.statusCode}');
+    } catch (e) {
+      rethrow;
     }
   }
 }
