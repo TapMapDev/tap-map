@@ -98,4 +98,21 @@ class ChatRepository {
       rethrow;
     }
   }
+
+  Future<void> deleteMessage(int chatId, int messageId, String action) async {
+    try {
+      final response = await _dioClient.post(
+        '/chat/$chatId/messages/$messageId/delete/',
+        data: {
+          'action': action,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete message: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
+  }
 }

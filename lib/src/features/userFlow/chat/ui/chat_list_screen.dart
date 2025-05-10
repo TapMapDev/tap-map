@@ -19,7 +19,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void initState() {
     super.initState();
     // Загружаем список чатов при инициализации
-    context.read<ChatBloc>().add(FetchChats());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatBloc>().add(FetchChats());
+    });
   }
 
   @override
@@ -28,7 +30,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
       appBar: AppBar(
         title: const Text('Чаты'),
       ),
-      body: BlocBuilder<ChatBloc, ChatState>(
+      body: BlocConsumer<ChatBloc, ChatState>(
+        listener: (context, state) {
+          if (state is ChatDisconnected) {
+            context.read<ChatBloc>().add(FetchChats());
+          } else if (state is MessageDeleted) {
+            context.read<ChatBloc>().add(FetchChats());
+          }
+        },
         builder: (context, state) {
 
           if (state is ChatLoading) {

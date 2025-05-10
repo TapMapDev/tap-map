@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
@@ -28,6 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late final WebSocketService _webSocketService;
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
+  late final ChatBloc _chatBloc;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<MessageModel> _messages = [];
@@ -46,7 +51,9 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
+    _chatBloc = context.read<ChatBloc>();
     _initChat();
+    _chatBloc.add(ConnectToChat(widget.chatId));
   }
 
   Future<void> _initChat() async {
@@ -156,30 +163,15 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    _webSocketService.sendMessage(
-      chatId: widget.chatId,
-      text: text,
-      replyToId: _replyTo?.id,
-      forwardedFromId: _forwardFrom?.id,
+
+    _chatBloc.add(
+      SendMessage(
+        chatId: widget.chatId,
+        text: text,
+        replyToId: _replyTo?.id,
+        forwardedFromId: _forwardFrom?.id,
+      ),
     );
-    setState(() {
-      _messages.insert(
-        0,
-        MessageModel(
-          id: DateTime.now().millisecondsSinceEpoch,
-          text: text,
-          chatId: widget.chatId,
-          replyToId: _replyTo?.id,
-          forwardedFromId: _forwardFrom?.id,
-          createdAt: DateTime.now(),
-          senderUsername: _currentUsername!,
-        ),
-      );
-      _messageController.clear();
-      _replyTo = null;
-      _forwardFrom = null;
-      _isTyping = false;
-    });
   }
 
   @override
@@ -188,6 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _webSocketService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
+    _chatBloc.add(DisconnectFromChat());
     super.dispose();
   }
 
@@ -195,82 +188,99 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.chatName)),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              if (_otherUserIsTyping)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '${_typingUsername ?? "Собеседник"} печатает...',
-                      style: const TextStyle(
-                          color: Colors.grey, fontStyle: FontStyle.italic),
+      body: BlocListener<ChatBloc, ChatState>(
+        listener: (context, state) {
+          if (state is MessageSent) {
+            setState(() {
+              _messages.insert(0, state.message);
+              _messageController.clear();
+              _replyTo = null;
+              _forwardFrom = null;
+              _isTyping = false;
+            });
+          } else if (state is MessageDeleted) {
+            setState(() {
+              _messages.removeWhere((m) => m.id == state.messageId);
+            });
+          }
+        },
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                if (_otherUserIsTyping)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${_typingUsername ?? "Собеседник"} печатает...',
+                        style: const TextStyle(
+                            color: Colors.grey, fontStyle: FontStyle.italic),
+                      ),
                     ),
                   ),
-                ),
-              if (_replyTo != null || _forwardFrom != null)
-                _ReplyForwardPreview(
-                  replyTo: _replyTo,
-                  forwardFrom: _forwardFrom,
-                  onClose: () => setState(() {
-                    _replyTo = null;
-                    _forwardFrom = null;
-                  }),
-                ),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        controller: _scrollController,
-                        itemCount: _messages.length,
-                        padding: const EdgeInsets.all(8.0),
-                        reverse: true,
-                        shrinkWrap: true,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          return Container(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width,
-                            ),
-                            child: GestureDetector(
-                              onLongPress: () => _showMessageActions(message),
-                              child: _ChatBubble(
-                                message: message,
-                                isMe:
-                                    message.senderUsername == _currentUsername,
+                if (_replyTo != null || _forwardFrom != null)
+                  _ReplyForwardPreview(
+                    replyTo: _replyTo,
+                    forwardFrom: _forwardFrom,
+                    onClose: () => setState(() {
+                      _replyTo = null;
+                      _forwardFrom = null;
+                    }),
+                  ),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          controller: _scrollController,
+                          itemCount: _messages.length,
+                          padding: const EdgeInsets.all(8.0),
+                          reverse: true,
+                          shrinkWrap: true,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            final message = _messages[index];
+                            return Container(
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width,
                               ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-              _MessageInput(
-                controller: _messageController,
-                onChanged: (text) {
-                  if (!_isTyping && text.isNotEmpty) {
-                    _isTyping = true;
-                    _webSocketService.sendTyping(
-                        chatId: widget.chatId, isTyping: true);
-                  } else if (_isTyping && text.isEmpty) {
-                    _isTyping = false;
-                    _webSocketService.sendTyping(
-                        chatId: widget.chatId, isTyping: false);
-                  }
-                },
-                onSend: _sendMessage,
-              ),
-            ],
-          ),
-          ScrollToBottomButton(
-            scrollController: _scrollController,
-            onPressed: _scrollToBottom,
-          ),
-        ],
+                              child: GestureDetector(
+                                onLongPress: () => _showMessageActions(message),
+                                child: _ChatBubble(
+                                  message: message,
+                                  isMe: message.senderUsername ==
+                                      _currentUsername,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                _MessageInput(
+                  controller: _messageController,
+                  onChanged: (text) {
+                    if (!_isTyping && text.isNotEmpty) {
+                      _isTyping = true;
+                      _webSocketService.sendTyping(
+                          chatId: widget.chatId, isTyping: true);
+                    } else if (_isTyping && text.isEmpty) {
+                      _isTyping = false;
+                      _webSocketService.sendTyping(
+                          chatId: widget.chatId, isTyping: false);
+                    }
+                  },
+                  onSend: _sendMessage,
+                ),
+              ],
+            ),
+            ScrollToBottomButton(
+              scrollController: _scrollController,
+              onPressed: _scrollToBottom,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -303,6 +313,33 @@ class _ChatScreenState extends State<ChatScreen> {
               Navigator.pop(context);
             },
           ),
+          if (message.senderUsername == _currentUsername)
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Удалить только у себя'),
+              onTap: () {
+                _chatBloc.add(DeleteMessage(
+                  chatId: widget.chatId,
+                  messageId: message.id,
+                  action: 'for_me',
+                ));
+                Navigator.pop(context);
+              },
+            ),
+          if (message.senderUsername == _currentUsername)
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Удалить у всех',
+                  style: TextStyle(color: Colors.red)),
+              onTap: () {
+                _chatBloc.add(DeleteMessage(
+                  chatId: widget.chatId,
+                  messageId: message.id,
+                  action: 'for_all',
+                ));
+                Navigator.pop(context);
+              },
+            ),
         ],
       ),
     );

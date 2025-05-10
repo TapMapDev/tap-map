@@ -67,7 +67,7 @@ class TogglePinChat extends ChatEvent {
 }
 
 class NewMessageEvent extends ChatEvent {
-  final Map<String, dynamic> message;
+  final dynamic message;
 
   const NewMessageEvent(this.message);
 
@@ -151,3 +151,18 @@ class ConnectToChat extends ChatEvent {
 }
 
 class DisconnectFromChat extends ChatEvent {}
+
+class DeleteMessage extends ChatEvent {
+  final int chatId;
+  final int messageId;
+  final String action;
+
+  const DeleteMessage({
+    required this.chatId,
+    required this.messageId,
+    required this.action,
+  });
+
+  @override
+  List<Object?> get props => [chatId, messageId, action];
+}

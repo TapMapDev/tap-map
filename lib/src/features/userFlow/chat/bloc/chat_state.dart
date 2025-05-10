@@ -116,3 +116,12 @@ class MessageRead extends ChatState {
 class ChatConnected extends ChatState {}
 
 class ChatDisconnected extends ChatState {}
+
+class MessageDeleted extends ChatState {
+  final int messageId;
+
+  const MessageDeleted(this.messageId);
+
+  @override
+  List<Object?> get props => [messageId];
+}
