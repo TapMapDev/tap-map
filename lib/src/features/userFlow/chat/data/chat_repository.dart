@@ -26,8 +26,8 @@ class ChatRepository {
 
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     try {
-      final chatResponse = await _dioClient.get('/chats/$chatId/');
-      final messagesResponse = await _dioClient.get('/chats/$chatId/messages/');
+      final chatResponse = await _dioClient.get('/chat/$chatId/');
+      final messagesResponse = await _dioClient.get('/chat/$chatId/messages/');
 
       if (chatResponse.statusCode == 200 &&
           messagesResponse.statusCode == 200) {
@@ -113,6 +113,24 @@ class ChatRepository {
       }
     } catch (e) {
       throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  Future<void> editMessage(int chatId, int messageId, String text) async {
+    try {
+      final response = await _dioClient.patch(
+        '/chat/$chatId/messages/$messageId/edit/',
+        data: {
+          'text': text,
+          'edited_at': DateTime.now().toIso8601String(),
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to edit message: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to edit message: $e');
     }
   }
 }

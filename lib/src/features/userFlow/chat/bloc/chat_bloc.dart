@@ -43,6 +43,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<ConnectToChat>(_onConnectToChat);
     on<DisconnectFromChat>(_onDisconnectFromChat);
     on<DeleteMessage>(_onDeleteMessage);
+    on<EditMessage>(_onEditMessage);
   }
 
   Future<void> _onFetchChats(
@@ -50,10 +51,8 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     try {
       emit(states.ChatLoading());
       final chats = await _chatRepository.fetchChats();
-      print('ChatBloc: Fetched ${chats.length} chats');
       emit(states.ChatsLoaded(chats));
     } catch (e) {
-      print('ChatBloc: Error fetching chats: $e');
       emit(states.ChatError(e.toString()));
     }
   }
@@ -126,22 +125,31 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     SendMessage event,
     Emitter<states.ChatState> emit,
   ) async {
-    try {
-      if (_sendMessageUseCase == null) {
-        emit(const states.ChatError('Not connected to chat'));
-        return;
+    final currentState = state;
+    if (_sendMessageUseCase == null) {
+      emit(const states.ChatError('Not connected to chat'));
+      return;
+    }
+
+    if (currentState is states.ChatLoaded) {
+      try {
+        final message = _sendMessageUseCase!.execute(
+          chatId: event.chatId,
+          text: event.text,
+          replyToId: event.replyToId,
+          forwardedFromId: event.forwardedFromId,
+        );
+
+        final updatedMessages = List<MessageModel>.from(currentState.messages)
+          ..insert(0, message);
+
+        emit(states.ChatLoaded(
+          chat: currentState.chat,
+          messages: updatedMessages,
+        ));
+      } catch (e) {
+        emit(states.ChatError(e.toString()));
       }
-
-      final message = _sendMessageUseCase!.execute(
-        chatId: event.chatId,
-        text: event.text,
-        replyToId: event.replyToId,
-        forwardedFromId: event.forwardedFromId,
-      );
-
-      emit(states.MessageSent(message));
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
     }
   }
 
@@ -187,30 +195,31 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
   }
 
   void _onNewMessage(NewMessageEvent event, Emitter<states.ChatState> emit) {
-    try {
-      print('ChatBloc: Processing new message: ${event.message}');
-      dynamic messageData;
+    final currentState = state;
+    if (currentState is states.ChatLoaded) {
+      try {
+        dynamic messageData;
+        if (event.message is String) {
+          messageData = jsonDecode(event.message as String);
+        } else {
+          messageData = event.message;
+        }
 
-      if (event.message is String) {
-        messageData = jsonDecode(event.message as String);
-      } else {
-        messageData = event.message;
-      }
+        if (messageData is Map<String, dynamic> &&
+            messageData['type'] == 'message') {
+          final newMessage = MessageModel.fromJson(messageData);
 
-      if (messageData is Map<String, dynamic>) {
-        if (messageData['type'] == 'message') {
-          final message = MessageModel.fromJson(messageData);
-          emit(states.NewMessageReceived(message));
-        } else if (messageData['type'] == 'typing') {
-          emit(states.UserTyping(
-            userId: messageData['user_id'] as int,
-            isTyping: messageData['is_typing'] as bool,
+          final updatedMessages = List<MessageModel>.from(currentState.messages)
+            ..insert(0, newMessage);
+
+          emit(states.ChatLoaded(
+            chat: currentState.chat,
+            messages: updatedMessages,
           ));
         }
+      } catch (e) {
+        emit(states.ChatError(e.toString()));
       }
-    } catch (e) {
-      print('ChatBloc: Error processing new message: $e');
-      emit(states.ChatError(e.toString()));
     }
   }
 
@@ -233,15 +242,56 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     DeleteMessage event,
     Emitter<states.ChatState> emit,
   ) async {
-    try {
-      await _chatRepository.deleteMessage(
-        event.chatId,
-        event.messageId,
-        event.action,
-      );
-      emit(states.MessageDeleted(event.messageId));
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
+    final currentState = state;
+    if (currentState is states.ChatLoaded) {
+      try {
+        await _chatRepository.deleteMessage(
+          event.chatId,
+          event.messageId,
+          event.action,
+        );
+        final updatedMessages = currentState.messages
+            .where((msg) => msg.id != event.messageId)
+            .toList();
+
+        emit(states.ChatLoaded(
+          chat: currentState.chat,
+          messages: updatedMessages,
+        ));
+      } catch (e) {
+        emit(states.ChatError(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _onEditMessage(
+    EditMessage event,
+    Emitter<states.ChatState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is states.ChatLoaded) {
+      try {
+        await _chatRepository.editMessage(
+          event.chatId,
+          event.messageId,
+          event.text,
+        );
+        final updatedMessage = currentState.messages.map((message) {
+          if (message.id == event.messageId) {
+            return message.copyWith(
+              text: event.text,
+              isEdited: true,
+            );
+          }
+          return message;
+        }).toList();
+        emit(states.ChatLoaded(
+          chat: currentState.chat,
+          messages: updatedMessage,
+        ));
+      } catch (e) {
+        emit(states.ChatError(e.toString()));
+      }
     }
   }
 

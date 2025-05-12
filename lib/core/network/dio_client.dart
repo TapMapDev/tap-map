@@ -151,6 +151,24 @@ class DioClient {
     );
   }
 
+  Future<Response> patch(
+    String path, {
+    Map<String, dynamic>? data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+      );
+      return response;
+    } on DioException catch (e) {
+      // Обработка ошибок (по желанию)
+      rethrow;
+    }
+  }
+
   Future<void> registerFcmToken(String fcmToken) async {
     try {
       final prefs = getIt<SharedPrefsRepository>();

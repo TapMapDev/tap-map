@@ -39,7 +39,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
         },
         builder: (context, state) {
-
           if (state is ChatLoading) {
             return const Center(child: CircularProgressIndicator());
           }

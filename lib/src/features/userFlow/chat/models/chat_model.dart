@@ -7,7 +7,6 @@ class ChatModel extends Equatable {
   final String? lastMessageSenderUsername;
   final DateTime? lastMessageCreatedAt;
   final int unreadCount;
-  
 
   const ChatModel({
     required this.chatId,
@@ -20,8 +19,8 @@ class ChatModel extends Equatable {
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
-      chatId: json['chat_id'] as int,
-      chatName: json['chat_name'] as String,
+      chatId: json['chat_id'] as int? ?? 0,
+      chatName: json['chat_name'] as String? ?? 'Unknown Chat',
       lastMessageText: json['last_message_text'] as String?,
       lastMessageSenderUsername:
           json['last_message_sender_username'] as String?,

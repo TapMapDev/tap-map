@@ -21,6 +21,7 @@ class MessageModel extends Equatable {
   final DateTime createdAt;
   final int? replyToId;
   final int? forwardedFromId;
+  final bool isEdited;
   final List<Map<String, String>> attachments;
   final MessageStatus status;
   final MessageType type;
@@ -33,6 +34,7 @@ class MessageModel extends Equatable {
     required this.createdAt,
     this.replyToId,
     this.forwardedFromId,
+    this.isEdited = false,
     this.attachments = const [],
     this.status = MessageStatus.sent,
     this.type = MessageType.text,
@@ -49,6 +51,7 @@ class MessageModel extends Equatable {
           : DateTime.now(),
       replyToId: json['reply_to_id'] as int?,
       forwardedFromId: json['forwarded_from_id'] as int?,
+      isEdited: json['is_edited'] as bool? ?? false,
       attachments: (json['attachments'] as List<dynamic>?)
               ?.map((e) => {
                     'url': e['url'] as String? ?? '',
@@ -94,6 +97,7 @@ class MessageModel extends Equatable {
       'created_at': createdAt.toIso8601String(),
       'reply_to_id': replyToId,
       'forwarded_from_id': forwardedFromId,
+      'is_edited': isEdited,
       'attachments': attachments,
       'status': status.toString().split('.').last,
       'type': type.toString().split('.').last,
@@ -108,6 +112,7 @@ class MessageModel extends Equatable {
     DateTime? createdAt,
     int? replyToId,
     int? forwardedFromId,
+    bool? isEdited,
     List<Map<String, String>>? attachments,
     MessageStatus? status,
     MessageType? type,
@@ -120,6 +125,7 @@ class MessageModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       replyToId: replyToId ?? this.replyToId,
       forwardedFromId: forwardedFromId ?? this.forwardedFromId,
+      isEdited: isEdited ?? this.isEdited,
       attachments: attachments ?? this.attachments,
       status: status ?? this.status,
       type: type ?? this.type,
@@ -135,6 +141,7 @@ class MessageModel extends Equatable {
         createdAt,
         replyToId,
         forwardedFromId,
+        isEdited,
         attachments,
         status,
         type,

@@ -8,9 +8,13 @@ import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart'
+    as states;
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
@@ -41,10 +45,11 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _currentUserId;
   MessageModel? _replyTo;
   MessageModel? _forwardFrom;
-  bool _isLoading = true;
+  final bool _isLoading = true;
   bool _isTyping = false;
   bool _otherUserIsTyping = false;
   String? _typingUsername;
+  MessageModel? _editingMessage;
 
   @override
   void initState() {
@@ -54,11 +59,11 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatBloc = context.read<ChatBloc>();
     _initChat();
     _chatBloc.add(ConnectToChat(widget.chatId));
+    _chatBloc.add(FetchChatById(widget.chatId));
   }
 
   Future<void> _initChat() async {
     await _loadCurrentUser();
-    await _loadChatHistory();
     await _initWebSocket();
   }
 
@@ -129,27 +134,6 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadChatHistory() async {
-    setState(() => _isLoading = true);
-    try {
-      final messages = await _chatRepository.getChatHistory(widget.chatId);
-      _messages
-        ..clear()
-        ..addAll(messages);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Не удалось загрузить историю сообщений'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -164,14 +148,26 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    _chatBloc.add(
-      SendMessage(
+    if (_editingMessage != null) {
+      _chatBloc.add(EditMessage(
         chatId: widget.chatId,
+        messageId: _editingMessage!.id,
         text: text,
-        replyToId: _replyTo?.id,
-        forwardedFromId: _forwardFrom?.id,
-      ),
-    );
+      ));
+      setState(() {
+        _editingMessage = null;
+      });
+    } else {
+      _chatBloc.add(
+        SendMessage(
+          chatId: widget.chatId,
+          text: text,
+        ),
+      );
+    }
+
+    _messageController.clear();
+    _scrollToBottom();
   }
 
   @override
@@ -190,75 +186,50 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(title: Text(widget.chatName)),
       body: BlocListener<ChatBloc, ChatState>(
         listener: (context, state) {
-          if (state is MessageSent) {
-            setState(() {
-              _messages.insert(0, state.message);
-              _messageController.clear();
-              _replyTo = null;
-              _forwardFrom = null;
-              _isTyping = false;
-            });
-          } else if (state is MessageDeleted) {
-            setState(() {
-              _messages.removeWhere((m) => m.id == state.messageId);
-            });
+          if (state is states.NewMessageReceived) {
+            _scrollToBottom();
           }
         },
         child: Stack(
           children: [
             Column(
               children: [
-                if (_otherUserIsTyping)
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${_typingUsername ?? "Собеседник"} печатает...',
-                        style: const TextStyle(
-                            color: Colors.grey, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  ),
-                if (_replyTo != null || _forwardFrom != null)
-                  _ReplyForwardPreview(
-                    replyTo: _replyTo,
-                    forwardFrom: _forwardFrom,
-                    onClose: () => setState(() {
-                      _replyTo = null;
-                      _forwardFrom = null;
-                    }),
-                  ),
                 Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
+                  child: BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
+                      if (state is states.ChatLoaded) {
+                        final messages = state.messages;
+                        return ListView.builder(
                           controller: _scrollController,
-                          itemCount: _messages.length,
+                          itemCount: messages.length,
                           padding: const EdgeInsets.all(8.0),
                           reverse: true,
                           shrinkWrap: true,
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemBuilder: (context, index) {
-                            final message = _messages[index];
+                            final message = messages[index];
                             return Container(
                               constraints: BoxConstraints(
                                 maxWidth: MediaQuery.of(context).size.width,
                               ),
-                              child: GestureDetector(
+                              child: ChatBubble(
+                                message: message,
+                                isMe:
+                                    message.senderUsername == _currentUsername,
                                 onLongPress: () => _showMessageActions(message),
-                                child: _ChatBubble(
-                                  message: message,
-                                  isMe: message.senderUsername ==
-                                      _currentUsername,
-                                ),
                               ),
                             );
                           },
-                        ),
+                        );
+                      } else if (state is states.ChatLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else {
+                        return const SizedBox();
+                      }
+                    },
+                  ),
                 ),
-                _MessageInput(
+                MessageInput(
                   controller: _messageController,
                   onChanged: (text) {
                     if (!_isTyping && text.isNotEmpty) {
@@ -272,6 +243,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
                   },
                   onSend: _sendMessage,
+                  editingMessage: _editingMessage,
+                  onCancelEdit: () {
+                    setState(() {
+                      _editingMessage = null;
+                      _messageController.clear();
+                    });
+                  },
                 ),
               ],
             ),
@@ -295,10 +273,6 @@ class _ChatScreenState extends State<ChatScreen> {
             leading: const Icon(Icons.reply),
             title: const Text('Ответить'),
             onTap: () {
-              setState(() {
-                _replyTo = message;
-                _forwardFrom = null;
-              });
               Navigator.pop(context);
             },
           ),
@@ -306,235 +280,46 @@ class _ChatScreenState extends State<ChatScreen> {
             leading: const Icon(Icons.forward),
             title: const Text('Переслать'),
             onTap: () {
-              setState(() {
-                _forwardFrom = message;
-                _replyTo = null;
-              });
               Navigator.pop(context);
             },
           ),
-          if (message.senderUsername == _currentUsername)
+          if (message.senderUsername == _currentUsername) ...[
             ListTile(
-              leading: const Icon(Icons.delete_outline),
+              leading: const Icon(Icons.edit),
+              title: const Text('Редактировать'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _editingMessage = message;
+                  _messageController.text = message.text;
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
               title: const Text('Удалить только у себя'),
               onTap: () {
+                Navigator.pop(context);
                 _chatBloc.add(DeleteMessage(
                   chatId: widget.chatId,
                   messageId: message.id,
                   action: 'for_me',
                 ));
-                Navigator.pop(context);
               },
             ),
-          if (message.senderUsername == _currentUsername)
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Удалить у всех',
-                  style: TextStyle(color: Colors.red)),
+              title: const Text('Удалить', style: TextStyle(color: Colors.red)),
               onTap: () {
+                Navigator.pop(context);
                 _chatBloc.add(DeleteMessage(
                   chatId: widget.chatId,
                   messageId: message.id,
                   action: 'for_all',
                 ));
-                Navigator.pop(context);
               },
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReplyForwardPreview extends StatelessWidget {
-  final MessageModel? replyTo;
-  final MessageModel? forwardFrom;
-  final VoidCallback onClose;
-  const _ReplyForwardPreview(
-      {this.replyTo, this.forwardFrom, required this.onClose});
-  @override
-  Widget build(BuildContext context) {
-    final message = replyTo ?? forwardFrom;
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      color: Colors.grey[200],
-      child: Row(
-        children: [
-          Icon(replyTo != null ? Icons.reply : Icons.forward,
-              color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(replyTo != null ? 'Ответ на:' : 'Переслано из:',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                Text(message?.text ?? '',
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChatBubble extends StatelessWidget {
-  final MessageModel message;
-  final bool isMe;
-  const _ChatBubble({required this.message, required this.isMe});
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-        padding: const EdgeInsets.all(12.0),
-        decoration: BoxDecoration(
-          color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (message.replyToId != null)
-              _BubbleReference(
-                text: 'Ответ на сообщение',
-                label: 'Ответ на:',
-                isMe: isMe,
-              ),
-            if (message.forwardedFromId != null)
-              _BubbleReference(
-                text: 'Пересланное сообщение',
-                label: 'Переслано из:',
-                isMe: isMe,
-              ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: Text(
-                    message.text,
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black,
-                    ),
-                    softWrap: true,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isMe
-                            ? Colors.white.withOpacity(0.7)
-                            : Colors.black.withOpacity(0.7),
-                      ),
-                    ),
-                    if (isMe) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.done,
-                        size: 14,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BubbleReference extends StatelessWidget {
-  final String text;
-  final String label;
-  final bool isMe;
-  const _BubbleReference(
-      {required this.text, required this.label, required this.isMe});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      margin: const EdgeInsets.only(bottom: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: isMe
-                      ? Colors.white.withOpacity(0.7)
-                      : Colors.black.withOpacity(0.7))),
-          Text(text,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: isMe
-                      ? Colors.white.withOpacity(0.7)
-                      : Colors.black.withOpacity(0.7))),
-        ],
-      ),
-    );
-  }
-}
-
-class _MessageInput extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onSend;
-  const _MessageInput(
-      {required this.controller,
-      required this.onChanged,
-      required this.onSend});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Введите сообщение...',
-                border: InputBorder.none,
-              ),
-              onChanged: onChanged,
-              onSubmitted: (_) => onSend(),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: onSend,
-          ),
         ],
       ),
     );

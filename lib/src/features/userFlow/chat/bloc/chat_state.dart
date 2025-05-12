@@ -125,3 +125,16 @@ class MessageDeleted extends ChatState {
   @override
   List<Object?> get props => [messageId];
 }
+
+class MessageEdited extends ChatState {
+  final int messageId;
+  final String newText;
+
+  const MessageEdited({
+    required this.messageId,
+    required this.newText,
+  });
+
+  @override
+  List<Object?> get props => [messageId, newText];
+}
