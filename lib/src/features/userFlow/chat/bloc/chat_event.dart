@@ -193,3 +193,17 @@ class EditMessage extends ChatEvent {
   @override
   List<Object?> get props => [chatId, messageId, text];
 }
+
+class SetForwardFrom extends ChatEvent {
+  final MessageModel message;
+
+  const SetForwardFrom(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class ClearForwardFrom extends ChatEvent {
+  @override
+  List<Object> get props => [];
+}

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart'
@@ -12,6 +13,7 @@ import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 enum MessageStatus {
@@ -119,118 +121,155 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.chatName)),
-      body: Column(
-        children: [
-          BlocBuilder<ChatBloc, ChatState>(
-            builder: (context, state) {
-              if (state is states.ChatLoaded && state.replyTo != null) {
-                return Container(
-                  padding: const EdgeInsets.all(8.0),
-                  color: Theme.of(context).cardColor,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.reply,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ответ на сообщение',
-                              style: TextStyle(
-                                color: Theme.of(context).primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              state.replyTo!.text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          context.read<ChatBloc>().add(ClearReplyTo());
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-          Expanded(
-            child: BlocBuilder<ChatBloc, ChatState>(
-              builder: (context, state) {
-                if (state is states.ChatLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (state is states.ChatLoaded) {
-                  if (state.messages.isEmpty) {
-                    return const Center(
-                      child: Text('Нет сообщений'),
-                    );
-                  }
-
-                  return ListView.builder(
-                    controller: _scrollController,
-                    reverse: true,
-                    itemCount: state.messages.length,
-                    itemBuilder: (context, index) {
-                      final message = state.messages[index];
-                      final isMe = message.senderUsername == _currentUsername;
-
-                      return ChatBubble(
-                        message: message,
-                        isMe: isMe,
-                        onLongPress: () => _showMessageActions(message),
-                        messages: state.messages,
-                      );
-                    },
-                  );
-                }
-
-                return const SizedBox();
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity! > 0) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: WillPopScope(
+        onWillPop: () async {
+          Navigator.of(context).pop();
+          return false;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: GestureDetector(
+              onTap: () {
+                context.push('/users/${widget.chatName}');
               },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(widget.chatName),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.kayaking, size: 20),
+                ],
+              ),
             ),
           ),
-          MessageInput(
-            controller: _messageController,
-            onChanged: (text) {
-              if (!_isTyping && text.isNotEmpty) {
-                _isTyping = true;
-                _chatBloc.add(SendTyping(
-                  chatId: widget.chatId,
-                  isTyping: true,
-                ));
-              } else if (_isTyping && text.isEmpty) {
-                _isTyping = false;
-                _chatBloc.add(SendTyping(
-                  chatId: widget.chatId,
-                  isTyping: false,
-                ));
-              }
-            },
-            onSend: _sendMessage,
-            editingMessage: _editingMessage,
-            onCancelEdit: () {
-              setState(() {
-                _editingMessage = null;
-                _messageController.clear();
-              });
-            },
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
+                      if (state is states.ChatLoaded && state.replyTo != null) {
+                        return Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: Theme.of(context).cardColor,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.reply,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ответ на сообщение',
+                                      style: TextStyle(
+                                        color: Theme.of(context).primaryColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      state.replyTo!.text,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  context.read<ChatBloc>().add(ClearReplyTo());
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  Expanded(
+                    child: BlocBuilder<ChatBloc, ChatState>(
+                      builder: (context, state) {
+                        if (state is states.ChatLoading) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        if (state is states.ChatLoaded) {
+                          if (state.messages.isEmpty) {
+                            return const Center(
+                              child: Text('Нет сообщений'),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            itemCount: state.messages.length,
+                            itemBuilder: (context, index) {
+                              final message = state.messages[index];
+                              final isMe =
+                                  message.senderUsername == _currentUsername;
+
+                              return ChatBubble(
+                                message: message,
+                                isMe: isMe,
+                                onLongPress: () => _showMessageActions(message),
+                                messages: state.messages,
+                              );
+                            },
+                          );
+                        }
+
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                  MessageInput(
+                    controller: _messageController,
+                    onChanged: (text) {
+                      if (!_isTyping && text.isNotEmpty) {
+                        _isTyping = true;
+                        _chatBloc.add(SendTyping(
+                          chatId: widget.chatId,
+                          isTyping: true,
+                        ));
+                      } else if (_isTyping && text.isEmpty) {
+                        _isTyping = false;
+                        _chatBloc.add(SendTyping(
+                          chatId: widget.chatId,
+                          isTyping: false,
+                        ));
+                      }
+                    },
+                    onSend: _sendMessage,
+                    editingMessage: _editingMessage,
+                    onCancelEdit: () {
+                      setState(() {
+                        _editingMessage = null;
+                        _messageController.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+              ScrollToBottomButton(
+                scrollController: _scrollController,
+                onPressed: _scrollToBottom,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -297,6 +336,57 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ReplyOrForwardBanner extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String text;
+  final VoidCallback onClose;
+
+  const _ReplyOrForwardBanner({
+    required this.title,
+    required this.icon,
+    required this.text,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      color: Theme.of(context).cardColor,
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).primaryColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: onClose,
+          ),
         ],
       ),
     );

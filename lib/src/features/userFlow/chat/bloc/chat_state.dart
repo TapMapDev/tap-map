@@ -32,31 +32,35 @@ class ChatsLoaded extends ChatState {
   List<Object?> get props => [chats];
 }
 
-class ChatLoaded extends ChatState {
+class ChatLoaded extends ChatState with EquatableMixin {
   final ChatModel chat;
   final List<MessageModel> messages;
   final MessageModel? replyTo;
+  final MessageModel? forwardFrom;
 
-  const ChatLoaded({
+  ChatLoaded({
     required this.chat,
     required this.messages,
     this.replyTo,
+    this.forwardFrom,
   });
+
+  @override
+  List<Object?> get props => [chat, messages, replyTo, forwardFrom];
 
   ChatLoaded copyWith({
     ChatModel? chat,
     List<MessageModel>? messages,
     MessageModel? replyTo,
+    MessageModel? forwardFrom,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      replyTo: replyTo ?? this.replyTo,
+      replyTo: replyTo,
+      forwardFrom: forwardFrom ?? this.forwardFrom,
     );
   }
-
-  @override
-  List<Object?> get props => [chat, messages, replyTo];
 }
 
 class MessageSent extends ChatState {
