@@ -25,6 +25,7 @@ class MessageModel extends Equatable {
   final List<Map<String, String>> attachments;
   final MessageStatus status;
   final MessageType type;
+  final bool isPinned;
 
   const MessageModel({
     required this.id,
@@ -38,6 +39,7 @@ class MessageModel extends Equatable {
     this.attachments = const [],
     this.status = MessageStatus.sent,
     this.type = MessageType.text,
+    this.isPinned = false,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,7 @@ class MessageModel extends Equatable {
           [],
       status: _parseMessageStatus(json['status'] as String?),
       type: _parseMessageType(json['type'] as String?),
+      isPinned: json['is_pinned'] as bool? ?? false,
     );
   }
 
@@ -102,6 +105,7 @@ class MessageModel extends Equatable {
       'attachments': attachments,
       'status': status.toString().split('.').last,
       'type': type.toString().split('.').last,
+      'is_pinned': isPinned,
     };
   }
 
@@ -117,6 +121,7 @@ class MessageModel extends Equatable {
     List<Map<String, String>>? attachments,
     MessageStatus? status,
     MessageType? type,
+    bool? isPinned,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -130,6 +135,7 @@ class MessageModel extends Equatable {
       attachments: attachments ?? this.attachments,
       status: status ?? this.status,
       type: type ?? this.type,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 
@@ -146,5 +152,17 @@ class MessageModel extends Equatable {
         attachments,
         status,
         type,
+        isPinned,
       ];
+
+  static MessageModel empty() {
+    return MessageModel(
+      id: 0,
+      chatId: 0,
+      text: '',
+      senderUsername: '',
+      createdAt: DateTime.now(),
+      isPinned: false,
+    );
+  }
 }

@@ -37,28 +37,32 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final List<MessageModel> messages;
   final MessageModel? replyTo;
   final MessageModel? forwardFrom;
+  final MessageModel? pinnedMessage;
 
   ChatLoaded({
     required this.chat,
     required this.messages,
     this.replyTo,
     this.forwardFrom,
+    this.pinnedMessage,
   });
 
   @override
-  List<Object?> get props => [chat, messages, replyTo, forwardFrom];
+  List<Object?> get props => [chat, messages, replyTo, forwardFrom, pinnedMessage];
 
   ChatLoaded copyWith({
     ChatModel? chat,
     List<MessageModel>? messages,
     MessageModel? replyTo,
     MessageModel? forwardFrom,
+    MessageModel? pinnedMessage,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
       replyTo: replyTo,
       forwardFrom: forwardFrom ?? this.forwardFrom,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
     );
   }
 }

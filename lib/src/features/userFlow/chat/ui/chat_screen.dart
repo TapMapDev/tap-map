@@ -154,6 +154,44 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   BlocBuilder<ChatBloc, ChatState>(
                     builder: (context, state) {
+                      if (state is ChatLoaded &&
+                          state.pinnedMessage != null &&
+                          state.messages
+                              .any((m) => m.id == state.pinnedMessage!.id)) {
+                        return Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: Colors.amber.withOpacity(0.2),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.push_pin, color: Colors.amber),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  state.pinnedMessage!.text,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  context.read<ChatBloc>().add(UnpinMessage(
+                                        chatId: widget.chatId,
+                                        messageId: state.pinnedMessage!.id,
+                                      ));
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
                       if (state is states.ChatLoaded && state.replyTo != null) {
                         return Container(
                           padding: const EdgeInsets.all(8.0),
@@ -293,10 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
             title: const Text('Переслать'),
             onTap: () {
               Navigator.pop(context);
-              setState(() {
-                _forwardFrom = message;
-                _messageController.text = '';
-              });
+              _showChatSelectionDialog(message);
             },
           ),
           if (message.senderUsername == _currentUsername) ...[
@@ -335,60 +370,75 @@ class _ChatScreenState extends State<ChatScreen> {
                 ));
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.push_pin),
+              title: const Text('Закрепить сообщение'),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.read<ChatBloc>().add(PinMessage(
+                      chatId: widget.chatId,
+                      messageId: message.id,
+                    ));
+              },
+            ),
           ],
         ],
       ),
     );
   }
-}
 
-class _ReplyOrForwardBanner extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final String text;
-  final VoidCallback onClose;
+  Future<void> _showChatSelectionDialog(MessageModel message) async {
+    try {
+      final chats = await _chatRepository.fetchChats();
+      final availableChats =
+          chats.where((chat) => chat.chatId != widget.chatId).toList();
 
-  const _ReplyOrForwardBanner({
-    required this.title,
-    required this.icon,
-    required this.text,
-    required this.onClose,
-  });
+      if (!mounted) return;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      color: Theme.of(context).cardColor,
-      child: Row(
-        children: [
-          Icon(icon, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+      if (availableChats.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Нет доступных чатов для пересылки')),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Выберите чат для пересылки'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableChats.length,
+              itemBuilder: (context, index) {
+                final chat = availableChats[index];
+                return ListTile(
+                  title: Text(chat.chatName),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _forwardMessageToChat(message, chat.chatId);
+                  },
+                );
+              },
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: onClose,
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при загрузке чатов: $e')),
+      );
+    }
+  }
+
+  void _forwardMessageToChat(MessageModel message, int targetChatId) {
+    _chatBloc.add(SendMessage(
+      chatId: targetChatId,
+      text: message.text,
+      forwardedFromId: message.id,
+    ));
+    _chatBloc.add(ClearForwardFrom());
   }
 }

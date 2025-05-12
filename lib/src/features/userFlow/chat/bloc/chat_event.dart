@@ -207,3 +207,17 @@ class ClearForwardFrom extends ChatEvent {
   @override
   List<Object> get props => [];
 }
+
+class PinMessage extends ChatEvent {
+  final int chatId;
+  final int messageId;
+
+  const PinMessage({required this.chatId, required this.messageId});
+}
+
+class UnpinMessage extends ChatEvent {
+  final int chatId;
+  final int messageId;
+
+  const UnpinMessage({required this.chatId, required this.messageId});
+}

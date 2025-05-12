@@ -7,6 +7,7 @@ class ChatModel extends Equatable {
   final String? lastMessageSenderUsername;
   final DateTime? lastMessageCreatedAt;
   final int unreadCount;
+  final int? pinnedMessageId;
 
   const ChatModel({
     required this.chatId,
@@ -15,11 +16,12 @@ class ChatModel extends Equatable {
     this.lastMessageSenderUsername,
     this.lastMessageCreatedAt,
     this.unreadCount = 0,
+    this.pinnedMessageId,
   });
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
-      chatId: json['chat_id'] as int? ?? 0,
+      chatId: json['id'] as int? ?? json['chat_id'] as int? ?? 0,
       chatName: json['chat_name'] as String? ?? 'Unknown Chat',
       lastMessageText: json['last_message_text'] as String?,
       lastMessageSenderUsername:
@@ -28,6 +30,7 @@ class ChatModel extends Equatable {
           ? DateTime.parse(json['last_message_created_at'] as String)
           : null,
       unreadCount: json['unread_count'] as int? ?? 0,
+      pinnedMessageId: json['pinned_message_id'] as int?,
     );
   }
 
@@ -38,6 +41,7 @@ class ChatModel extends Equatable {
     String? lastMessageSenderUsername,
     DateTime? lastMessageCreatedAt,
     int? unreadCount,
+    int? pinnedMessageId,
   }) {
     return ChatModel(
       chatId: chatId ?? this.chatId,
@@ -47,6 +51,7 @@ class ChatModel extends Equatable {
           lastMessageSenderUsername ?? this.lastMessageSenderUsername,
       lastMessageCreatedAt: lastMessageCreatedAt ?? this.lastMessageCreatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
+      pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
     );
   }
 
@@ -58,5 +63,6 @@ class ChatModel extends Equatable {
         lastMessageSenderUsername,
         lastMessageCreatedAt,
         unreadCount,
+        pinnedMessageId,
       ];
 }

@@ -62,7 +62,10 @@ Future<void> setup() async {
 
   // Register ChatRepository
   getIt.registerLazySingleton<ChatRepository>(
-    () => ChatRepository(dioClient: getIt<DioClient>()),
+    () => ChatRepository(
+      dioClient: getIt<DioClient>(),
+      prefs: getIt<SharedPreferences>(),
+    ),
   );
 
   // WebSocket Service

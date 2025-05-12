@@ -38,7 +38,6 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<ClearReplyTo>(_onClearReplyTo);
     on<SendTyping>(_onSendTyping);
     on<MarkMessageAsRead>(_onMarkMessageAsRead);
-    on<TogglePinChat>(_onTogglePinChat);
     on<NewMessageEvent>(_onNewMessage);
     on<UserTypingEvent>(_onUserTyping);
     on<ChatErrorEvent>(_onChatError);
@@ -46,6 +45,8 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<DisconnectFromChat>(_onDisconnectFromChat);
     on<DeleteMessage>(_onDeleteMessage);
     on<EditMessage>(_onEditMessage);
+    on<PinMessage>(_onPinMessage);
+    on<UnpinMessage>(_onUnpinMessage);
   }
 
   Future<void> _onFetchChats(
@@ -66,11 +67,43 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     try {
       emit(states.ChatLoading());
       final data = await _chatRepository.fetchChatWithMessages(event.chatId);
+      final chat = data['chat'] as ChatModel;
+      final messages = data['messages'] as List<MessageModel>;
+
+      print(
+          '📱 Loading chat: ${chat.chatId}, pinnedMessageId: ${chat.pinnedMessageId}');
+      print('📱 Total messages: ${messages.length}');
+
+      // Получаем ID закрепленного сообщения из локального хранилища
+      final pinnedMessageId =
+          await _chatRepository.getPinnedMessageId(event.chatId);
+      print('📌 Local pinned message ID: $pinnedMessageId');
+
+      // Если есть закрепленное сообщение, находим его в списке
+      MessageModel? pinnedMessage;
+      if (pinnedMessageId != null) {
+        print('🔍 Looking for pinned message with ID: $pinnedMessageId');
+        try {
+          pinnedMessage = messages.firstWhere(
+            (m) => m.id == pinnedMessageId,
+            orElse: () {
+              print('⚠️ Pinned message not found in messages list');
+              return MessageModel.empty();
+            },
+          );
+          print('✅ Found pinned message: ${pinnedMessage.text}');
+        } catch (e) {
+          print('❌ Error finding pinned message: $e');
+        }
+      }
+
       emit(states.ChatLoaded(
-        chat: data['chat'] as ChatModel,
-        messages: data['messages'] as List<MessageModel>,
+        chat: chat,
+        messages: messages,
+        pinnedMessage: pinnedMessage,
       ));
     } catch (e) {
+      print('❌ Error loading chat: $e');
       emit(states.ChatError(e.toString()));
     }
   }
@@ -149,6 +182,19 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
 
     if (currentState is states.ChatLoaded) {
       try {
+        // Если это пересылка сообщения, проверяем, что оно не отправляется в тот же чат
+        if (event.forwardedFromId != null) {
+          final originalMessage = currentState.messages.firstWhere(
+            (m) => m.id == event.forwardedFromId,
+            orElse: () => MessageModel.empty(),
+          );
+
+          // Если сообщение уже есть в текущем чате, не отправляем его повторно
+          if (originalMessage.id != 0) {
+            return;
+          }
+        }
+
         final message = _sendMessageUseCase!.execute(
           chatId: event.chatId,
           text: event.text,
@@ -163,6 +209,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           chat: currentState.chat,
           messages: updatedMessages,
           replyTo: null, // Clear reply after sending
+          forwardFrom: null, // Clear forward after sending
         ));
       } catch (e) {
         emit(states.ChatError(e.toString()));
@@ -195,17 +242,6 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
   ) async {
     try {
       await _chatRepository.markChatAsRead(event.chatId);
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
-    }
-  }
-
-  Future<void> _onTogglePinChat(
-    TogglePinChat event,
-    Emitter<states.ChatState> emit,
-  ) async {
-    try {
-      // TODO: Implement pin/unpin functionality
     } catch (e) {
       emit(states.ChatError(e.toString()));
     }
@@ -323,5 +359,82 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     _wsSubscription?.cancel();
     _webSocketService?.disconnect();
     return super.close();
+  }
+
+  Future<void> _onPinMessage(
+    PinMessage event,
+    Emitter<states.ChatState> emit,
+  ) async {
+    print(
+        '🔵 PinMessage event received: chatId=${event.chatId}, messageId=${event.messageId}');
+    try {
+      await _chatRepository.pinMessage(
+        chatId: event.chatId,
+        messageId: event.messageId,
+      );
+      print('✅ PinMessage API call successful');
+
+      final currentState = state;
+      if (currentState is states.ChatLoaded) {
+        final pinnedMessage =
+            currentState.messages.firstWhere((m) => m.id == event.messageId);
+        print('📌 Found message to pin: ${pinnedMessage.text}');
+
+        final updatedMessages = currentState.messages
+            .map((message) => message.id == event.messageId
+                ? message.copyWith(isPinned: true)
+                : message)
+            .toList();
+
+        // Обновляем чат с новым pinnedMessageId
+        final updatedChat = currentState.chat.copyWith(
+          pinnedMessageId: event.messageId,
+        );
+        print(
+            '📝 Updated chat pinnedMessageId: ${updatedChat.pinnedMessageId}');
+
+        emit(currentState.copyWith(
+          chat: updatedChat,
+          messages: updatedMessages,
+          pinnedMessage: pinnedMessage,
+        ));
+        print('🔄 State updated with pinned message');
+      }
+    } catch (e) {
+      print('❌ Error in _onPinMessage: $e');
+      emit(states.ChatError('Ошибка при закреплении: $e'));
+    }
+  }
+
+  Future<void> _onUnpinMessage(
+      UnpinMessage event, Emitter<states.ChatState> emit) async {
+    try {
+      await _chatRepository.unpinMessage(
+        chatId: event.chatId,
+        messageId: event.messageId,
+      );
+
+      final currentState = state;
+      if (currentState is states.ChatLoaded) {
+        final updatedMessages = currentState.messages
+            .map((message) => message.id == event.messageId
+                ? message.copyWith(isPinned: false)
+                : message)
+            .toList();
+
+        // Обновляем чат, очищая pinnedMessageId
+        final updatedChat = currentState.chat.copyWith(
+          pinnedMessageId: null,
+        );
+
+        emit(currentState.copyWith(
+          chat: updatedChat,
+          messages: updatedMessages,
+          pinnedMessage: null,
+        ));
+      }
+    } catch (e) {
+      emit(states.ChatError('Ошибка при откреплении сообщения: $e'));
+    }
   }
 }
