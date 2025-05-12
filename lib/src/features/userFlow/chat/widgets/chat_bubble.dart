@@ -4,30 +4,38 @@ import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 class ChatBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
+  final VoidCallback? onLongPress;
   final Color? bubbleColor;
   final Color? textColor;
-  final Color? secondaryTextColor;
   final double maxWidth;
-  final VoidCallback? onLongPress;
+  final List<MessageModel>? messages;
 
   const ChatBubble({
     super.key,
     required this.message,
     required this.isMe,
+    this.onLongPress,
     this.bubbleColor,
     this.textColor,
-    this.secondaryTextColor,
-    this.maxWidth = 0.75,
-    this.onLongPress,
+    this.maxWidth = 0.7,
+    this.messages,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final defaultBubbleColor = isMe ? theme.primaryColor : Colors.grey[300];
-    final defaultTextColor = isMe ? Colors.white : Colors.black;
-    final defaultSecondaryColor =
-        isMe ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.7);
+    final defaultBubbleColor = isMe ? theme.primaryColor : theme.cardColor;
+    final defaultTextColor =
+        isMe ? Colors.white : theme.textTheme.bodyLarge?.color;
+    final defaultSecondaryColor = isMe ? Colors.white70 : Colors.grey;
+
+    MessageModel? repliedMessage;
+    if (message.replyToId != null && messages != null) {
+      repliedMessage = messages!.firstWhere(
+        (m) => m.id == message.replyToId,
+        orElse: () => message,
+      );
+    }
 
     return GestureDetector(
       onLongPress: onLongPress,
@@ -48,7 +56,7 @@ class ChatBubble extends StatelessWidget {
             children: [
               if (message.replyToId != null)
                 BubbleReference(
-                  text: 'Ответ на сообщение',
+                  text: repliedMessage?.text ?? 'Сообщение не найдено',
                   label: 'Ответ на:',
                   isMe: isMe,
                   textColor: defaultSecondaryColor,
@@ -60,50 +68,34 @@ class ChatBubble extends StatelessWidget {
                   isMe: isMe,
                   textColor: defaultSecondaryColor,
                 ),
+              Text(
+                message.text,
+                style: TextStyle(
+                  color: textColor ?? defaultTextColor,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Flexible(
-                    child: Text(
-                      message.text,
-                      style: TextStyle(
-                        color: textColor ?? defaultTextColor,
-                      ),
-                      softWrap: true,
+                  Text(
+                    _formatTime(message.createdAt),
+                    style: TextStyle(
+                      color: defaultSecondaryColor,
+                      fontSize: 12,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (message.isEdited) ...[
-                        Text(
-                          '(ред.)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: secondaryTextColor ?? defaultSecondaryColor,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: secondaryTextColor ?? defaultSecondaryColor,
-                        ),
+                  if (message.editedAt != null) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '(ред.)',
+                      style: TextStyle(
+                        color: defaultSecondaryColor,
+                        fontSize: 12,
                       ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.done,
-                          size: 14,
-                          color: secondaryTextColor ?? defaultSecondaryColor,
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -111,6 +103,12 @@ class ChatBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
 

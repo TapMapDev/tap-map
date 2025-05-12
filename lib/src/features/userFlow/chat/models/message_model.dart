@@ -19,9 +19,9 @@ class MessageModel extends Equatable {
   final String text;
   final String senderUsername;
   final DateTime createdAt;
+  final DateTime? editedAt;
   final int? replyToId;
   final int? forwardedFromId;
-  final bool isEdited;
   final List<Map<String, String>> attachments;
   final MessageStatus status;
   final MessageType type;
@@ -32,15 +32,16 @@ class MessageModel extends Equatable {
     required this.text,
     required this.senderUsername,
     required this.createdAt,
+    this.editedAt,
     this.replyToId,
     this.forwardedFromId,
-    this.isEdited = false,
     this.attachments = const [],
     this.status = MessageStatus.sent,
     this.type = MessageType.text,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
+    final editedAt = json['edited_at'] as String?;
     return MessageModel(
       id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
       chatId: json['chat_id'] as int? ?? 0,
@@ -49,9 +50,9 @@ class MessageModel extends Equatable {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+      editedAt: editedAt != null ? DateTime.parse(editedAt) : null,
       replyToId: json['reply_to_id'] as int?,
       forwardedFromId: json['forwarded_from_id'] as int?,
-      isEdited: json['is_edited'] as bool? ?? false,
       attachments: (json['attachments'] as List<dynamic>?)
               ?.map((e) => {
                     'url': e['url'] as String? ?? '',
@@ -95,9 +96,9 @@ class MessageModel extends Equatable {
       'text': text,
       'sender_username': senderUsername,
       'created_at': createdAt.toIso8601String(),
+      'edited_at': editedAt?.toIso8601String(),
       'reply_to_id': replyToId,
       'forwarded_from_id': forwardedFromId,
-      'is_edited': isEdited,
       'attachments': attachments,
       'status': status.toString().split('.').last,
       'type': type.toString().split('.').last,
@@ -110,9 +111,9 @@ class MessageModel extends Equatable {
     String? text,
     String? senderUsername,
     DateTime? createdAt,
+    DateTime? editedAt,
     int? replyToId,
     int? forwardedFromId,
-    bool? isEdited,
     List<Map<String, String>>? attachments,
     MessageStatus? status,
     MessageType? type,
@@ -123,9 +124,9 @@ class MessageModel extends Equatable {
       text: text ?? this.text,
       senderUsername: senderUsername ?? this.senderUsername,
       createdAt: createdAt ?? this.createdAt,
+      editedAt: editedAt ?? this.editedAt,
       replyToId: replyToId ?? this.replyToId,
       forwardedFromId: forwardedFromId ?? this.forwardedFromId,
-      isEdited: isEdited ?? this.isEdited,
       attachments: attachments ?? this.attachments,
       status: status ?? this.status,
       type: type ?? this.type,
@@ -139,9 +140,9 @@ class MessageModel extends Equatable {
         text,
         senderUsername,
         createdAt,
+        editedAt,
         replyToId,
         forwardedFromId,
-        isEdited,
         attachments,
         status,
         type,

@@ -52,6 +52,27 @@ class WebSocketService {
     print('Socket: Отправлено сообщение: $jsonMessage');
   }
 
+  void editMessage({
+    required int chatId,
+    required int messageId,
+    required String text,
+  }) {
+    if (_channel.closeCode != null) {
+      print('WebSocket уже закрыт, сообщение не отредактировано');
+      return;
+    }
+    final jsonMessage = jsonEncode({
+      'type': 'edit_message',
+      'chat_id': chatId,
+      'message_id': messageId,
+      'text': text,
+      'edited_at': DateTime.now().toIso8601String(),
+    });
+
+    _channel.sink.add(jsonMessage);
+    print('Socket: Отправлено редактирование сообщения: $jsonMessage');
+  }
+
   void sendReadMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
       print('WebSocket уже закрыт, событие read_message не отправлено');

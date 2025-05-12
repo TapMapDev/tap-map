@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart'
@@ -15,7 +12,6 @@ import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
-import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 enum MessageStatus {
@@ -33,21 +29,19 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late final WebSocketService _webSocketService;
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatBloc _chatBloc;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<MessageModel> _messages = [];
-  StreamSubscription? _wsSubscription;
   String? _currentUsername;
   int? _currentUserId;
   MessageModel? _replyTo;
   MessageModel? _forwardFrom;
   final bool _isLoading = true;
   bool _isTyping = false;
-  bool _otherUserIsTyping = false;
+  final bool _otherUserIsTyping = false;
   String? _typingUsername;
   MessageModel? _editingMessage;
 
@@ -64,66 +58,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initChat() async {
     await _loadCurrentUser();
-    await _initWebSocket();
-  }
-
-  Future<void> _initWebSocket() async {
-    final token =
-        await GetIt.instance<SharedPrefsRepository>().getAccessToken();
-    if (token == null) return;
-    _webSocketService = WebSocketService(jwtToken: token);
-    _webSocketService.connect();
-    await _wsSubscription?.cancel();
-    _wsSubscription = _webSocketService.stream.listen(_onSocketEvent);
-  }
-
-  void _onSocketEvent(dynamic data) {
-    final decoded = jsonDecode(data is String ? data : data.toString());
-    if (decoded is! Map<String, dynamic>) return;
-
-    switch (decoded['type']) {
-      case 'typing':
-        if (decoded['chat_id'] == widget.chatId) {
-          setState(() {
-            _otherUserIsTyping = decoded['is_typing'] == true;
-            _typingUsername = decoded['username'] ?? 'Собеседник';
-          });
-        }
-        break;
-
-      case 'message':
-        if (decoded['chat_id'] == widget.chatId) {
-          setState(() {
-            _messages.insert(
-              0,
-              MessageModel(
-                id: decoded['message_id'] as int,
-                text: decoded['text'] as String,
-                chatId: widget.chatId,
-                senderUsername: decoded['sender_username'] as String,
-                createdAt: DateTime.parse(decoded['created_at'] as String),
-              ),
-            );
-          });
-        }
-        break;
-
-      case 'read_message':
-        if (decoded['chat_id'] == widget.chatId) {
-          final readerId = decoded['reader_id'] as int?;
-          if (readerId != null && readerId != _currentUserId) {
-            setState(() {
-              final messageId = decoded['message_id'] as int;
-              final messageIndex =
-                  _messages.indexWhere((m) => m.id == messageId);
-              if (messageIndex != -1) {
-                _messages[messageIndex] = _messages[messageIndex].copyWith();
-              }
-            });
-          }
-        }
-        break;
-    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -158,10 +92,15 @@ class _ChatScreenState extends State<ChatScreen> {
         _editingMessage = null;
       });
     } else {
+      final currentState = context.read<ChatBloc>().state;
+      final replyToId =
+          currentState is states.ChatLoaded ? currentState.replyTo?.id : null;
+
       _chatBloc.add(
         SendMessage(
           chatId: widget.chatId,
           text: text,
+          replyToId: replyToId,
         ),
       );
     }
@@ -172,8 +111,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    _wsSubscription?.cancel();
-    _webSocketService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
     _chatBloc.add(DisconnectFromChat());
@@ -184,81 +121,116 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.chatName)),
-      body: BlocListener<ChatBloc, ChatState>(
-        listener: (context, state) {
-          if (state is states.NewMessageReceived) {
-            _scrollToBottom();
-          }
-        },
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: BlocBuilder<ChatBloc, ChatState>(
-                    builder: (context, state) {
-                      if (state is states.ChatLoaded) {
-                        final messages = state.messages;
-                        return ListView.builder(
-                          controller: _scrollController,
-                          itemCount: messages.length,
-                          padding: const EdgeInsets.all(8.0),
-                          reverse: true,
-                          shrinkWrap: true,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            final message = messages[index];
-                            return Container(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width,
+      body: Column(
+        children: [
+          BlocBuilder<ChatBloc, ChatState>(
+            builder: (context, state) {
+              if (state is states.ChatLoaded && state.replyTo != null) {
+                return Container(
+                  padding: const EdgeInsets.all(8.0),
+                  color: Theme.of(context).cardColor,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.reply,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ответ на сообщение',
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: ChatBubble(
-                                message: message,
-                                isMe:
-                                    message.senderUsername == _currentUsername,
-                                onLongPress: () => _showMessageActions(message),
-                              ),
-                            );
-                          },
-                        );
-                      } else if (state is states.ChatLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else {
-                        return const SizedBox();
-                      }
-                    },
+                            ),
+                            Text(
+                              state.replyTo!.text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          context.read<ChatBloc>().add(ClearReplyTo());
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                MessageInput(
-                  controller: _messageController,
-                  onChanged: (text) {
-                    if (!_isTyping && text.isNotEmpty) {
-                      _isTyping = true;
-                      _webSocketService.sendTyping(
-                          chatId: widget.chatId, isTyping: true);
-                    } else if (_isTyping && text.isEmpty) {
-                      _isTyping = false;
-                      _webSocketService.sendTyping(
-                          chatId: widget.chatId, isTyping: false);
-                    }
-                  },
-                  onSend: _sendMessage,
-                  editingMessage: _editingMessage,
-                  onCancelEdit: () {
-                    setState(() {
-                      _editingMessage = null;
-                      _messageController.clear();
-                    });
-                  },
-                ),
-              ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          Expanded(
+            child: BlocBuilder<ChatBloc, ChatState>(
+              builder: (context, state) {
+                if (state is states.ChatLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is states.ChatLoaded) {
+                  if (state.messages.isEmpty) {
+                    return const Center(
+                      child: Text('Нет сообщений'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    reverse: true,
+                    itemCount: state.messages.length,
+                    itemBuilder: (context, index) {
+                      final message = state.messages[index];
+                      final isMe = message.senderUsername == _currentUsername;
+
+                      return ChatBubble(
+                        message: message,
+                        isMe: isMe,
+                        onLongPress: () => _showMessageActions(message),
+                        messages: state.messages,
+                      );
+                    },
+                  );
+                }
+
+                return const SizedBox();
+              },
             ),
-            ScrollToBottomButton(
-              scrollController: _scrollController,
-              onPressed: _scrollToBottom,
-            ),
-          ],
-        ),
+          ),
+          MessageInput(
+            controller: _messageController,
+            onChanged: (text) {
+              if (!_isTyping && text.isNotEmpty) {
+                _isTyping = true;
+                _chatBloc.add(SendTyping(
+                  chatId: widget.chatId,
+                  isTyping: true,
+                ));
+              } else if (_isTyping && text.isEmpty) {
+                _isTyping = false;
+                _chatBloc.add(SendTyping(
+                  chatId: widget.chatId,
+                  isTyping: false,
+                ));
+              }
+            },
+            onSend: _sendMessage,
+            editingMessage: _editingMessage,
+            onCancelEdit: () {
+              setState(() {
+                _editingMessage = null;
+                _messageController.clear();
+              });
+            },
+          ),
+        ],
       ),
     );
   }
@@ -274,6 +246,7 @@ class _ChatScreenState extends State<ChatScreen> {
             title: const Text('Ответить'),
             onTap: () {
               Navigator.pop(context);
+              context.read<ChatBloc>().add(SetReplyTo(message));
             },
           ),
           ListTile(
@@ -281,6 +254,10 @@ class _ChatScreenState extends State<ChatScreen> {
             title: const Text('Переслать'),
             onTap: () {
               Navigator.pop(context);
+              setState(() {
+                _forwardFrom = message;
+                _messageController.text = '';
+              });
             },
           ),
           if (message.senderUsername == _currentUsername) ...[

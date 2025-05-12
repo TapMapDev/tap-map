@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
 abstract class ChatEvent extends Equatable {
   const ChatEvent();
@@ -34,6 +35,17 @@ class SendMessage extends ChatEvent {
   @override
   List<Object?> get props => [chatId, text, replyToId, forwardedFromId];
 }
+
+class SetReplyTo extends ChatEvent {
+  final MessageModel? message;
+
+  const SetReplyTo(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class ClearReplyTo extends ChatEvent {}
 
 class SendTyping extends ChatEvent {
   final int chatId;

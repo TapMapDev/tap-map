@@ -35,14 +35,28 @@ class ChatsLoaded extends ChatState {
 class ChatLoaded extends ChatState {
   final ChatModel chat;
   final List<MessageModel> messages;
+  final MessageModel? replyTo;
 
   const ChatLoaded({
     required this.chat,
     required this.messages,
+    this.replyTo,
   });
 
+  ChatLoaded copyWith({
+    ChatModel? chat,
+    List<MessageModel>? messages,
+    MessageModel? replyTo,
+  }) {
+    return ChatLoaded(
+      chat: chat ?? this.chat,
+      messages: messages ?? this.messages,
+      replyTo: replyTo ?? this.replyTo,
+    );
+  }
+
   @override
-  List<Object?> get props => [chat, messages];
+  List<Object?> get props => [chat, messages, replyTo];
 }
 
 class MessageSent extends ChatState {

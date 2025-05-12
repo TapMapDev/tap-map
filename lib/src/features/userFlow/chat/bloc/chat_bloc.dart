@@ -34,6 +34,8 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<FetchChats>(_onFetchChats);
     on<FetchChatById>(_onFetchChatById);
     on<SendMessage>(_onSendMessage);
+    on<SetReplyTo>(_onSetReplyTo);
+    on<ClearReplyTo>(_onClearReplyTo);
     on<SendTyping>(_onSendTyping);
     on<MarkMessageAsRead>(_onMarkMessageAsRead);
     on<TogglePinChat>(_onTogglePinChat);
@@ -121,6 +123,20 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     emit(states.ChatDisconnected());
   }
 
+  void _onSetReplyTo(SetReplyTo event, Emitter<states.ChatState> emit) {
+    final currentState = state;
+    if (currentState is states.ChatLoaded) {
+      emit(currentState.copyWith(replyTo: event.message));
+    }
+  }
+
+  void _onClearReplyTo(ClearReplyTo event, Emitter<states.ChatState> emit) {
+    final currentState = state;
+    if (currentState is states.ChatLoaded) {
+      emit(currentState.copyWith(replyTo: null));
+    }
+  }
+
   Future<void> _onSendMessage(
     SendMessage event,
     Emitter<states.ChatState> emit,
@@ -146,6 +162,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         emit(states.ChatLoaded(
           chat: currentState.chat,
           messages: updatedMessages,
+          replyTo: null, // Clear reply after sending
         ));
       } catch (e) {
         emit(states.ChatError(e.toString()));
@@ -271,16 +288,22 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     final currentState = state;
     if (currentState is states.ChatLoaded) {
       try {
-        await _chatRepository.editMessage(
-          event.chatId,
-          event.messageId,
-          event.text,
+        if (_webSocketService == null) {
+          emit(const states.ChatError('Not connected to chat'));
+          return;
+        }
+
+        _webSocketService!.editMessage(
+          chatId: event.chatId,
+          messageId: event.messageId,
+          text: event.text,
         );
+
         final updatedMessage = currentState.messages.map((message) {
           if (message.id == event.messageId) {
             return message.copyWith(
               text: event.text,
-              isEdited: true,
+              editedAt: DateTime.now(),
             );
           }
           return message;
