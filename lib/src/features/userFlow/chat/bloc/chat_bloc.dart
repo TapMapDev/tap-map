@@ -174,8 +174,15 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     SendMessage event,
     Emitter<states.ChatState> emit,
   ) async {
+    print('📨 SendMessage event received');
+    print('📝 Message text: ${event.text}');
+    print('🎯 Target chat ID: ${event.chatId}');
+    print('🔄 Forwarded from ID: ${event.forwardedFromId}');
+    print('📝 Reply to ID: ${event.replyToId}');
+
     final currentState = state;
     if (_sendMessageUseCase == null) {
+      print('❌ Not connected to chat');
       emit(const states.ChatError('Not connected to chat'));
       return;
     }
@@ -184,26 +191,39 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       try {
         // Если это пересылка сообщения, проверяем, что оно не отправляется в тот же чат
         if (event.forwardedFromId != null) {
-          final originalMessage = currentState.messages.firstWhere(
-            (m) => m.id == event.forwardedFromId,
-            orElse: () => MessageModel.empty(),
-          );
-
-          // Если сообщение уже есть в текущем чате, не отправляем его повторно
-          if (originalMessage.id != 0) {
+          print('🔄 Checking forwarded message');
+          // Проверяем, что сообщение не пересылается в тот же чат
+          if (event.chatId == currentState.chat.chatId) {
+            print('⚠️ Cannot forward message to the same chat');
             return;
           }
+          print('✅ Forwarding to different chat, proceeding');
+
+          // Отправляем сообщение, но не обновляем состояние текущего чата
+          print('📤 Sending message via WebSocket');
+          _sendMessageUseCase!.execute(
+            chatId: event.chatId,
+            text: event.text,
+            replyToId: event.replyToId,
+            forwardedFromId: event.forwardedFromId,
+          );
+          print('✅ Message forwarded successfully');
+          return;
         }
 
+        // Если это обычное сообщение (не пересылка), отправляем и обновляем состояние
+        print('📤 Sending message via WebSocket');
         final message = _sendMessageUseCase!.execute(
           chatId: event.chatId,
           text: event.text,
           replyToId: event.replyToId,
           forwardedFromId: event.forwardedFromId,
         );
+        print('✅ Message sent successfully');
 
         final updatedMessages = List<MessageModel>.from(currentState.messages)
           ..insert(0, message);
+        print('📝 Updated messages count: ${updatedMessages.length}');
 
         emit(states.ChatLoaded(
           chat: currentState.chat,
@@ -211,7 +231,9 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           replyTo: null, // Clear reply after sending
           forwardFrom: null, // Clear forward after sending
         ));
+        print('✅ State updated with new message');
       } catch (e) {
+        print('❌ Error sending message: $e');
         emit(states.ChatError(e.toString()));
       }
     }

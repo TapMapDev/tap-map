@@ -17,15 +17,18 @@ class SendMessageUseCase {
     int? replyToId,
     int? forwardedFromId,
   }) {
+
     if (text.trim().isEmpty) {
       throw Exception('Message text cannot be empty');
     }
+
     _webSocketService.sendMessage(
       chatId: chatId,
       text: text,
       replyToId: replyToId,
       forwardedFromId: forwardedFromId,
     );
+    print('✅ WebSocket message sent');
 
     final message = MessageModel(
       id: DateTime.now().millisecondsSinceEpoch,
@@ -38,6 +41,7 @@ class SendMessageUseCase {
       status: MessageStatus.sent,
       type: MessageType.text,
     );
+    print('✅ Message model created with ID: ${message.id}');
     return message;
   }
 }
