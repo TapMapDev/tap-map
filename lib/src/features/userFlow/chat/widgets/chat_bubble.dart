@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/bubble_reference.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/message_content.dart';
 
 class ChatBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
-  final VoidCallback? onLongPress;
-  final Color? bubbleColor;
-  final Color? textColor;
-  final double maxWidth;
-  final List<MessageModel>? messages;
+  final VoidCallback onLongPress;
+  final List<MessageModel> messages;
 
   const ChatBubble({
     super.key,
     required this.message,
     required this.isMe,
-    this.onLongPress,
-    this.bubbleColor,
-    this.textColor,
-    this.maxWidth = 0.7,
-    this.messages,
+    required this.onLongPress,
+    required this.messages,
   });
 
   @override
@@ -30,9 +26,17 @@ class ChatBubble extends StatelessWidget {
     final defaultSecondaryColor = isMe ? Colors.white70 : Colors.grey;
 
     MessageModel? repliedMessage;
-    if (message.replyToId != null && messages != null) {
-      repliedMessage = messages!.firstWhere(
+    if (message.replyToId != null) {
+      repliedMessage = messages.firstWhere(
         (m) => m.id == message.replyToId,
+        orElse: () => message,
+      );
+    }
+
+    MessageModel? forwardedMessage;
+    if (message.forwardedFromId != null) {
+      forwardedMessage = messages.firstWhere(
+        (m) => m.id == message.forwardedFromId,
         orElse: () => message,
       );
     }
@@ -45,11 +49,11 @@ class ChatBubble extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
           padding: const EdgeInsets.all(12.0),
           decoration: BoxDecoration(
-            color: bubbleColor ?? defaultBubbleColor,
+            color: defaultBubbleColor,
             borderRadius: BorderRadius.circular(12.0),
           ),
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * maxWidth,
+            maxWidth: MediaQuery.of(context).size.width * 0.7,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,18 +67,13 @@ class ChatBubble extends StatelessWidget {
                 ),
               if (message.forwardedFromId != null)
                 BubbleReference(
-                  text: 'Пересланное сообщение',
-                  label: 'Переслано из:',
+                  text: forwardedMessage?.text ?? 'Сообщение не найдено',
+                  label:
+                      'Переслано от ${forwardedMessage?.senderUsername ?? "неизвестного пользователя"}:',
                   isMe: isMe,
                   textColor: defaultSecondaryColor,
                 ),
-              Text(
-                message.text,
-                style: TextStyle(
-                  color: textColor ?? defaultTextColor,
-                  fontSize: 16,
-                ),
-              ),
+              MessageContent(message: message),
               const SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -106,61 +105,6 @@ class ChatBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-}
-
-class BubbleReference extends StatelessWidget {
-  final String text;
-  final String label;
-  final bool isMe;
-  final Color? textColor;
-  final Color? backgroundColor;
-
-  const BubbleReference({
-    super.key,
-    required this.text,
-    required this.label,
-    required this.isMe,
-    this.textColor,
-    this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final defaultTextColor = textColor ??
-        (isMe ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.7));
-    final defaultBackgroundColor =
-        backgroundColor ?? Colors.white.withOpacity(0.2);
-
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      margin: const EdgeInsets.only(bottom: 8.0),
-      decoration: BoxDecoration(
-        color: defaultBackgroundColor,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: defaultTextColor,
-            ),
-          ),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: defaultTextColor,
-            ),
-          ),
-        ],
-      ),
-    );
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

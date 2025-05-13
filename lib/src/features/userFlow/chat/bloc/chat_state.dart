@@ -161,3 +161,9 @@ class MessageEdited extends ChatState {
   @override
   List<Object?> get props => [messageId, newText];
 }
+
+  class FileUploaded extends ChatState {
+    final String filePath;
+
+    const FileUploaded(this.filePath);
+  }

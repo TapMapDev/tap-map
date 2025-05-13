@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
@@ -220,4 +222,10 @@ class UnpinMessage extends ChatEvent {
   final int messageId;
 
   const UnpinMessage({required this.chatId, required this.messageId});
+}
+
+class UploadFile extends ChatEvent {
+  final File file;
+
+  const UploadFile({required this.file});
 }

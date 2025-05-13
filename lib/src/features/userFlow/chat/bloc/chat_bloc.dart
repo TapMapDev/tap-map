@@ -47,6 +47,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<EditMessage>(_onEditMessage);
     on<PinMessage>(_onPinMessage);
     on<UnpinMessage>(_onUnpinMessage);
+    on<UploadFile>(_onUploadFile);
   }
 
   Future<void> _onFetchChats(
@@ -174,68 +175,40 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     SendMessage event,
     Emitter<states.ChatState> emit,
   ) async {
-    print('📨 SendMessage event received');
-    print('📝 Message text: ${event.text}');
-    print('🎯 Target chat ID: ${event.chatId}');
-    print('🔄 Forwarded from ID: ${event.forwardedFromId}');
-    print('📝 Reply to ID: ${event.replyToId}');
+    try {
+      if (_webSocketService == null) {
+        emit(const states.ChatError('Not connected to chat'));
+        return;
+      }
 
-    final currentState = state;
-    if (_sendMessageUseCase == null) {
-      print('❌ Not connected to chat');
-      emit(const states.ChatError('Not connected to chat'));
-      return;
-    }
-
-    if (currentState is states.ChatLoaded) {
-      try {
-        // Если это пересылка сообщения, проверяем, что оно не отправляется в тот же чат
-        if (event.forwardedFromId != null) {
-          print('🔄 Checking forwarded message');
-          // Проверяем, что сообщение не пересылается в тот же чат
-          if (event.chatId == currentState.chat.chatId) {
-            print('⚠️ Cannot forward message to the same chat');
-            return;
-          }
-          print('✅ Forwarding to different chat, proceeding');
-
-          // Отправляем сообщение, но не обновляем состояние текущего чата
-          print('📤 Sending message via WebSocket');
-          _sendMessageUseCase!.execute(
-            chatId: event.chatId,
-            text: event.text,
-            replyToId: event.replyToId,
-            forwardedFromId: event.forwardedFromId,
-          );
-          print('✅ Message forwarded successfully');
-          return;
-        }
-
-        // Если это обычное сообщение (не пересылка), отправляем и обновляем состояние
-        print('📤 Sending message via WebSocket');
-        final message = _sendMessageUseCase!.execute(
+      final currentState = state;
+      if (currentState is states.ChatLoaded) {
+        _webSocketService!.sendMessage(
           chatId: event.chatId,
           text: event.text,
           replyToId: event.replyToId,
           forwardedFromId: event.forwardedFromId,
         );
-        print('✅ Message sent successfully');
 
-        final updatedMessages = List<MessageModel>.from(currentState.messages)
-          ..insert(0, message);
-        print('📝 Updated messages count: ${updatedMessages.length}');
+        // Создаем новое сообщение
+        final newMessage = MessageModel(
+          id: DateTime.now().millisecondsSinceEpoch,
+          chatId: event.chatId,
+          text: event.text,
+          senderUsername: _currentUsername ?? 'Unknown',
+          createdAt: DateTime.now(),
+          replyToId: event.replyToId,
+          forwardedFromId: event.forwardedFromId,
+        );
 
-        emit(states.ChatLoaded(
-          chat: currentState.chat,
-          messages: updatedMessages,
-          replyTo: null, // Clear reply after sending
-          forwardFrom: null, // Clear forward after sending
+        // Обновляем состояние, сохраняя закрепленное сообщение
+        emit(currentState.copyWith(
+          messages: [newMessage, ...currentState.messages],
+          pinnedMessage: currentState.pinnedMessage,
         ));
-        print('✅ State updated with new message');
-      } catch (e) {
-        print('❌ Error sending message: $e');
-        emit(states.ChatError(e.toString()));
       }
+    } catch (e) {
+      emit(states.ChatError(e.toString()));
     }
   }
 
@@ -329,9 +302,18 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
             .where((msg) => msg.id != event.messageId)
             .toList();
 
-        emit(states.ChatLoaded(
+        // Проверяем, не было ли удалено закрепленное сообщение
+        MessageModel? pinnedMessage = currentState.pinnedMessage;
+        if (pinnedMessage?.id == event.messageId) {
+          pinnedMessage = null;
+        }
+
+        emit(currentState.copyWith(
           chat: currentState.chat,
           messages: updatedMessages,
+          pinnedMessage: pinnedMessage,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
         ));
       } catch (e) {
         emit(states.ChatError(e.toString()));
@@ -357,7 +339,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           text: event.text,
         );
 
-        final updatedMessage = currentState.messages.map((message) {
+        final updatedMessages = currentState.messages.map((message) {
           if (message.id == event.messageId) {
             return message.copyWith(
               text: event.text,
@@ -366,9 +348,22 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           }
           return message;
         }).toList();
-        emit(states.ChatLoaded(
+
+        // Обновляем закрепленное сообщение, если оно было отредактировано
+        MessageModel? pinnedMessage = currentState.pinnedMessage;
+        if (pinnedMessage != null && pinnedMessage.id == event.messageId) {
+          pinnedMessage = pinnedMessage.copyWith(
+            text: event.text,
+            editedAt: DateTime.now(),
+          );
+        }
+
+        emit(currentState.copyWith(
           chat: currentState.chat,
-          messages: updatedMessage,
+          messages: updatedMessages,
+          pinnedMessage: pinnedMessage,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
         ));
       } catch (e) {
         emit(states.ChatError(e.toString()));
@@ -412,8 +407,6 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         final updatedChat = currentState.chat.copyWith(
           pinnedMessageId: event.messageId,
         );
-        print(
-            '📝 Updated chat pinnedMessageId: ${updatedChat.pinnedMessageId}');
 
         emit(currentState.copyWith(
           chat: updatedChat,
@@ -457,6 +450,54 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       }
     } catch (e) {
       emit(states.ChatError('Ошибка при откреплении сообщения: $e'));
+    }
+  }
+
+  void _onUploadFile(UploadFile event, Emitter<states.ChatState> emit) async {
+    try {
+      print('📤 Starting file upload in ChatBloc');
+      print('📤 File path: ${event.file.path}');
+
+      final currentState = state;
+      if (currentState is! states.ChatLoaded) {
+        throw Exception('Chat is not loaded');
+      }
+
+      final fileUrl = await _chatRepository.uploadFile(event.file.path);
+      print('📤 File uploaded successfully. URL: $fileUrl');
+
+      // Отправляем сообщение с файлом
+      if (_sendMessageUseCase != null) {
+        print('📤 Sending message with file URL');
+        _sendMessageUseCase!.execute(
+          chatId: currentState.chat.chatId,
+          text: fileUrl,
+        );
+
+        // Создаем новое сообщение
+        final newMessage = MessageModel(
+          id: DateTime.now().millisecondsSinceEpoch,
+          chatId: currentState.chat.chatId,
+          text: fileUrl,
+          senderUsername: _currentUsername ?? 'Unknown',
+          createdAt: DateTime.now(),
+        );
+
+        // Обновляем состояние, сохраняя все важные данные
+        emit(currentState.copyWith(
+          messages: [newMessage, ...currentState.messages],
+          pinnedMessage: currentState.pinnedMessage,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
+        ));
+        print('✅ Message with file sent successfully');
+      } else {
+        print('❌ SendMessageUseCase is null');
+        throw Exception('Not connected to chat');
+      }
+    } catch (e) {
+      print('❌ Error in _onUploadFile: $e');
+      emit(states.ChatError('Ошибка при отправке файла: $e'));
     }
   }
 }

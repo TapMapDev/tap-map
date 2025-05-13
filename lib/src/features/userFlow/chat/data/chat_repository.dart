@@ -207,4 +207,56 @@ class ChatRepository {
   Future<int?> getPinnedMessageId(int chatId) async {
     return _prefs.getInt('$_pinnedMessageKey$chatId');
   }
+
+  Future<String> uploadFile(String filePath) async {
+    try {
+      print('📤 Starting file upload process');
+      print('📤 File path: $filePath');
+
+      final file = await MultipartFile.fromFile(filePath);
+      print('📤 File size: ${file.length} bytes');
+
+      final formData = FormData.fromMap({'file': file});
+      print('📤 FormData created');
+
+      print('📤 Sending request to server...');
+      final response = await _dioClient.client.post(
+        '/chat/upload_file/',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
+      );
+
+      print('📤 Upload file response status: ${response.statusCode}');
+      print('📤 Upload file response data: ${response.data}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('❌ Upload failed with status: ${response.statusCode}');
+        throw Exception('Ошибка при загрузке файла: ${response.statusCode}');
+      }
+
+      // Извлекаем URL из ответа сервера
+      final attachments = response.data['attachments'] as List;
+      if (attachments.isEmpty) {
+        throw Exception('No file URL in response');
+      }
+
+      final fileUrl = attachments[0]['url'] as String;
+      print('✅ File uploaded successfully. URL: $fileUrl');
+      return fileUrl;
+    } catch (e) {
+      print('❌ Error uploading file: $e');
+      if (e is DioException) {
+        print('📤 Request URL: ${e.requestOptions.uri}');
+        print('📤 Request method: ${e.requestOptions.method}');
+        print('📤 Request headers: ${e.requestOptions.headers}');
+        print('📤 Response status: ${e.response?.statusCode}');
+        print('📤 Response data: ${e.response?.data}');
+      }
+      throw Exception('Ошибка при загрузке файла: $e');
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -275,6 +276,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   MessageInput(
                     controller: _messageController,
+                    onSend: _sendMessage,
                     onChanged: (text) {
                       if (!_isTyping && text.isNotEmpty) {
                         _isTyping = true;
@@ -290,7 +292,23 @@ class _ChatScreenState extends State<ChatScreen> {
                         ));
                       }
                     },
-                    onSend: _sendMessage,
+                    onFileSelected: (file) {
+                      print('📤 File selected in ChatScreen: ${file.path}');
+                      final fileToUpload = File(file.path!);
+                      print(
+                          '📤 Converting to File object: ${fileToUpload.path}');
+                      _chatBloc.add(UploadFile(file: fileToUpload));
+                      print('📤 UploadFile event added to ChatBloc');
+                    },
+                    onImageSelected: (file) {
+                      print(
+                          '📤 Image/Video selected in ChatScreen: ${file.path}');
+                      final fileToUpload = File(file.path);
+                      print(
+                          '📤 Converting to File object: ${fileToUpload.path}');
+                      _chatBloc.add(UploadFile(file: fileToUpload));
+                      print('📤 UploadFile event added to ChatBloc');
+                    },
                     editingMessage: _editingMessage,
                     onCancelEdit: () {
                       setState(() {
