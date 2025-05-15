@@ -1,7 +1,4 @@
-import 'package:equatable/equatable.dart';
-
-import '../models/chat_model.dart';
-import '../models/message_model.dart';
+part of 'chat_bloc.dart';
 
 abstract class ChatState extends Equatable {
   const ChatState();
@@ -38,6 +35,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final MessageModel? replyTo;
   final MessageModel? forwardFrom;
   final MessageModel? pinnedMessage;
+  final bool isRead;
 
   ChatLoaded({
     required this.chat,
@@ -45,11 +43,12 @@ class ChatLoaded extends ChatState with EquatableMixin {
     this.replyTo,
     this.forwardFrom,
     this.pinnedMessage,
+    this.isRead = false,
   });
 
   @override
   List<Object?> get props =>
-      [chat, messages, replyTo, forwardFrom, pinnedMessage];
+      [chat, messages, replyTo, forwardFrom, pinnedMessage, isRead];
 
   ChatLoaded copyWith({
     ChatModel? chat,
@@ -57,6 +56,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
     MessageModel? replyTo,
     MessageModel? forwardFrom,
     MessageModel? pinnedMessage,
+    bool? isRead,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
@@ -64,6 +64,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
       replyTo: replyTo ?? this.replyTo,
       forwardFrom: forwardFrom ?? this.forwardFrom,
       pinnedMessage: pinnedMessage ?? this.pinnedMessage,
+      isRead: isRead ?? this.isRead,
     );
   }
 }
@@ -77,14 +78,14 @@ class MessageSent extends ChatState {
   List<Object?> get props => [message];
 }
 
-class NewMessageReceived extends ChatState {
-  final MessageModel message;
+// class NewMessageReceived extends ChatState {
+//   final MessageModel message;
 
-  const NewMessageReceived(this.message);
+//   const NewMessageReceived(this.message);
 
-  @override
-  List<Object?> get props => [message];
-}
+//   @override
+//   List<Object?> get props => [message];
+// }
 
 class UserTyping extends ChatState {
   final int userId;

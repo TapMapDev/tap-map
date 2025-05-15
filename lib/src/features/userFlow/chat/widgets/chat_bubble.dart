@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/bubble_reference.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_content.dart';
@@ -21,14 +23,19 @@ class ChatBubble extends StatelessWidget {
 
   Widget _buildReadStatus(MessageModel message) {
     final isOwnMessage = message.senderUsername == currentUsername;
+    if (!isOwnMessage) return const SizedBox.shrink();
 
-    if (!isOwnMessage)
-      return const SizedBox(); // не отображать статус у входящих сообщений
+    print('📱 Building read status for message ${message.id}:');
+    print('   isRead = ${message.isRead}');
+    print('   sender = ${message.senderUsername}');
+    print('   current user = $currentUsername');
 
-    return Icon(
-      message.isRead ? Icons.done_all : Icons.check,
-      size: 16,
-      color: message.isRead ? Colors.blue : Colors.grey,
+    final icon = message.isRead ? Icons.done_all : Icons.check;
+    final color = message.isRead ? Colors.blue : Colors.grey;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Icon(icon, size: 16, color: color),
     );
   }
 
@@ -111,7 +118,24 @@ class ChatBubble extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(width: 4),
-                  _buildReadStatus(message),
+                  BlocSelector<ChatBloc, ChatState, MessageModel?>(
+                    selector: (state) {
+                      if (state is ChatLoaded) {
+                        final updatedMessage = state.messages.firstWhere(
+                          (m) => m.id == message.id,
+                          orElse: () => message,
+                        );
+                        print('🔄 UI update for message ${message.id}:');
+                        print('   Old isRead = ${message.isRead}');
+                        print('   New isRead = ${updatedMessage.isRead}');
+                        return updatedMessage;
+                      }
+                      return message;
+                    },
+                    builder: (context, updatedMessage) {
+                      return _buildReadStatus(updatedMessage ?? message);
+                    },
+                  ),
                 ],
               ),
             ],

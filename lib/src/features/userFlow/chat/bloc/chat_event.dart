@@ -1,7 +1,6 @@
-import 'dart:io';
 
-import 'package:equatable/equatable.dart';
-import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+
+part of 'chat_bloc.dart';
 
 abstract class ChatEvent extends Equatable {
   const ChatEvent();
@@ -120,14 +119,14 @@ class SendReadReceipt extends ChatEvent {
   List<Object?> get props => [messageId];
 }
 
-class NewMessageReceived extends ChatEvent {
-  final dynamic message;
+// class NewMessageReceived extends ChatEvent {
+//   final dynamic message;
 
-  const NewMessageReceived({required this.message});
+//   const NewMessageReceived({required this.message});
 
-  @override
-  List<Object?> get props => [message];
-}
+//   @override
+//   List<Object?> get props => [message];
+// }
 
 class TypingReceived extends ChatEvent {
   final int chatId;

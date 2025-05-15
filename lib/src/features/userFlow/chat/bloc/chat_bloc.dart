@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/core/websocket/websocket_event.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
@@ -10,10 +14,11 @@ import '../data/chat_repository.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../services/send_message_use_case.dart';
-import 'chat_event.dart';
-import 'chat_state.dart' as states;
 
-class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
+part 'chat_event.dart';
+part 'chat_state.dart';
+
+class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _chatRepository;
   final SharedPrefsRepository _prefsRepository;
   final UserRepository _userRepository;
@@ -29,7 +34,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
   })  : _chatRepository = chatRepository,
         _prefsRepository = prefsRepository,
         _userRepository = GetIt.instance<UserRepository>(),
-        super(states.ChatInitial()) {
+        super(ChatInitial()) {
     on<FetchChats>(_onFetchChats);
     on<FetchChatById>(_onFetchChatById);
     on<SendMessage>(_onSendMessage);
@@ -46,23 +51,22 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<UploadFile>(_onUploadFile);
   }
 
-  Future<void> _onFetchChats(
-      FetchChats event, Emitter<states.ChatState> emit) async {
+  Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
     try {
-      emit(states.ChatLoading());
+      emit(ChatLoading());
       final chats = await _chatRepository.fetchChats();
-      emit(states.ChatsLoaded(chats));
+      emit(ChatsLoaded(chats));
     } catch (e) {
-      emit(states.ChatError(e.toString()));
+      emit(ChatError(e.toString()));
     }
   }
 
   Future<void> _onFetchChatById(
     FetchChatById event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     try {
-      emit(states.ChatLoading());
+      emit(ChatLoading());
       final data = await _chatRepository.fetchChatWithMessages(event.chatId);
       final chat = data['chat'] as ChatModel;
       final messages = data['messages'] as List<MessageModel>;
@@ -82,48 +86,62 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         );
       }
 
-      // Отправляем статус прочтения для непрочитанных сообщений
-      _markMessagesAsRead(messages);
+      // Обновляем статус прочтения для непрочитанных сообщений
+      final updatedMessages = messages.map((message) {
+        if (!message.isRead && message.senderUsername != _currentUsername) {
+          print('📖 Marking message ${message.id} as read');
+          print('   Before: isRead = ${message.isRead}');
+          final updated = message.copyWith(isRead: true);
+          print('   After: isRead = ${updated.isRead}');
 
-      emit(states.ChatLoaded(
-        chat: chat,
-        messages: messages,
-        pinnedMessage: pinnedMessage,
-      ));
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
-    }
-  }
+          // Отправляем статус прочтения через WebSocket
+          _webSocketService?.readMessage(
+            chatId: message.chatId,
+            messageId: message.id,
+          );
 
-  void _markMessagesAsRead(List<MessageModel> messages) {
-    if (_webSocketService == null || _currentUsername == null) return;
+          return updated;
+        }
+        return message;
+      }).toList();
 
-    for (final message in messages) {
-      if (!message.isRead && message.senderUsername != _currentUsername) {
-        print('🔵 Marking message as read: ${message.id}');
-        _webSocketService!.readMessage(
-          chatId: message.chatId,
-          messageId: message.id,
-        );
-        print(
-            '✅ readMessage(chatId: ${message.chatId}, messageId: ${message.id})');
+      print('✅ Emitting new state with updated messages');
+      final currentState = state;
+      if (currentState is ChatLoaded) {
+        emit(currentState.copyWith(
+          chat: chat,
+          messages: updatedMessages,
+          pinnedMessage: pinnedMessage,
+          isRead: true,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
+        ));
+      } else {
+        emit(ChatLoaded(
+          chat: chat,
+          messages: updatedMessages,
+          pinnedMessage: pinnedMessage,
+          isRead: true,
+        ));
       }
+    } catch (e) {
+      print('❌ Error fetching chat: $e');
+      emit(ChatError(e.toString()));
     }
   }
 
   Future<void> _onConnectToChat(
     ConnectToChat event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     try {
       final token = await _prefsRepository.getAccessToken();
       if (token == null) {
-        emit(const states.ChatError('No access token available'));
+        emit(const ChatError('No access token available'));
         return;
       }
 
       final user = await _userRepository.getCurrentUser();
-      // _currentUserId = user.id;
       _currentUsername = user.username;
 
       _webSocketService = WebSocketService(jwtToken: token);
@@ -134,8 +152,10 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         currentUsername: _currentUsername!,
       );
 
+      final webSocketEvent = WebSocketEvent(_webSocketService!);
       _wsSubscription = _webSocketService!.stream.listen(
         (data) {
+          webSocketEvent.handleEvent(data);
           add(NewMessageEvent(data));
         },
         onError: (error) {
@@ -143,25 +163,25 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         },
       );
 
-      emit(states.ChatConnected());
+      emit(ChatConnected());
     } catch (e) {
-      emit(states.ChatError(e.toString()));
+      emit(ChatError(e.toString()));
     }
   }
 
   void _onDisconnectFromChat(
     DisconnectFromChat event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) {
     _wsSubscription?.cancel();
     _webSocketService?.disconnect();
     _webSocketService = null;
-    emit(states.ChatDisconnected());
+    emit(ChatDisconnected());
   }
 
-  void _onSetReplyTo(SetReplyTo event, Emitter<states.ChatState> emit) {
+  void _onSetReplyTo(SetReplyTo event, Emitter<ChatState> emit) {
     final currentState = state;
-    if (currentState is states.ChatLoaded) {
+    if (currentState is ChatLoaded) {
       emit(currentState.copyWith(
         replyTo: event.message,
         pinnedMessage: currentState.pinnedMessage,
@@ -169,9 +189,9 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     }
   }
 
-  void _onClearReplyTo(ClearReplyTo event, Emitter<states.ChatState> emit) {
+  void _onClearReplyTo(ClearReplyTo event, Emitter<ChatState> emit) {
     final currentState = state;
-    if (currentState is states.ChatLoaded) {
+    if (currentState is ChatLoaded) {
       emit(currentState.copyWith(
         replyTo: null,
         pinnedMessage: currentState.pinnedMessage,
@@ -181,16 +201,16 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
 
   Future<void> _onSendMessage(
     SendMessage event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     try {
       if (_webSocketService == null) {
-        emit(const states.ChatError('Not connected to chat'));
+        emit(const ChatError('Not connected to chat'));
         return;
       }
 
       final currentState = state;
-      if (currentState is states.ChatLoaded) {
+      if (currentState is ChatLoaded) {
         _webSocketService!.sendMessage(
           chatId: event.chatId,
           text: event.text,
@@ -216,45 +236,83 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         ));
       }
     } catch (e) {
-      emit(states.ChatError(e.toString()));
+      emit(ChatError(e.toString()));
     }
   }
 
-  void _onNewMessage(
-      NewMessageEvent event, Emitter<states.ChatState> emit) async {
+  void _onNewMessage(NewMessageEvent event, Emitter<ChatState> emit) async {
     try {
       final currentState = state;
-      if (currentState is! states.ChatLoaded) return;
+      if (currentState is! ChatLoaded) return;
 
-      final messageData = event.message;
+      dynamic rawData = event.message;
 
-      if (messageData['type'] == 'message_read') {
-        final messageId = messageData['message_id'];
+      // Надёжно декодим строку JSON, если нужно
+      if (rawData is String) {
+        try {
+          rawData = jsonDecode(rawData);
+        } catch (e) {
+          print('❌ Failed to decode WebSocket string message: $e');
+          return;
+        }
+      }
+
+      // Проверяем, что это Map и содержит поле type
+      if (rawData is! Map<String, dynamic> || !rawData.containsKey('type')) {
+        print('⚠️ Ignored non-map or invalid message: $rawData');
+        return;
+      }
+
+      final messageData = rawData;
+      final type = messageData['type'];
+      print('📨 Received message of type: $type');
+
+      if (type == 'read_message') {
         final chatId = messageData['chat_id'];
+        final messageId = messageData['message_id'];
+        final readerId = messageData['reader_id'];
+        print(
+            '📖 Read message event: messageId=$messageId, chatId=$chatId, readerId=$readerId');
+        print('👤 Current username: $_currentUsername');
 
+        // Обновляем только сообщения, которые мы отправили
         final updatedMessages = currentState.messages.map((msg) {
-          if (msg.id == messageId && msg.chatId == chatId) {
-            return msg.copyWith(isRead: true);
+          if (msg.id == messageId && msg.senderUsername == _currentUsername) {
+            print('✅ Marking our message as read: ${msg.id}');
+            print('   Before: isRead = ${msg.isRead}');
+            final updated = msg.copyWith(isRead: true);
+            print('   After: isRead = ${updated.isRead}');
+            return updated;
           }
           return msg;
         }).toList();
 
-        emit(states.ChatLoaded(
-          chat: currentState.chat,
+        print('📊 Messages count: ${updatedMessages.length}');
+        print('📊 Updated messages with read status:');
+        for (var msg in updatedMessages) {
+          print('   Message ${msg.id}: isRead = ${msg.isRead}');
+        }
+
+        final newState = currentState.copyWith(
           messages: updatedMessages,
+          isRead: true,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
           pinnedMessage: currentState.pinnedMessage,
-        ));
+        );
+
+        print('🔄 Emitting new state with updated messages');
+        emit(newState);
         return;
       }
 
-      if (messageData is Map<String, dynamic> &&
-          messageData['type'] == 'message') {
+      if (type == 'message') {
         final newMessage = MessageModel.fromJson(messageData);
+        print('📝 New message received: ${newMessage.text}');
 
         // Если это новое сообщение от другого пользователя, отправляем статус прочтения
         if (newMessage.senderUsername != _currentUsername) {
+          print('🔵 Sending read status for message: ${newMessage.id}');
           _webSocketService?.readMessage(
             chatId: newMessage.chatId,
             messageId: newMessage.id,
@@ -264,26 +322,34 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         final updatedMessages = List<MessageModel>.from(currentState.messages)
           ..insert(0, newMessage);
 
-        emit(states.ChatLoaded(
-          chat: currentState.chat,
+        emit(currentState.copyWith(
           messages: updatedMessages,
+          isRead: true,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
+          pinnedMessage: currentState.pinnedMessage,
         ));
+        return;
       }
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
+
+      // Обработка других типов сообщений (не обязательно, но полезно для отладки)
+      print('ℹ️ Unhandled message type: $type → $messageData');
+    } catch (e, stack) {
+      print('❌ Error in _onNewMessage: $e\n$stack');
+      emit(ChatError(e.toString()));
     }
   }
 
-  void _onChatError(ChatErrorEvent event, Emitter<states.ChatState> emit) {
-    emit(states.ChatError(event.message));
+  void _onChatError(ChatErrorEvent event, Emitter<ChatState> emit) {
+    emit(ChatError(event.message));
   }
 
   Future<void> _onDeleteMessage(
     DeleteMessage event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     final currentState = state;
-    if (currentState is states.ChatLoaded) {
+    if (currentState is ChatLoaded) {
       try {
         await _chatRepository.deleteMessage(
           event.chatId,
@@ -306,22 +372,23 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           pinnedMessage: pinnedMessage,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
+          isRead: true,
         ));
       } catch (e) {
-        emit(states.ChatError(e.toString()));
+        emit(ChatError(e.toString()));
       }
     }
   }
 
   Future<void> _onEditMessage(
     EditMessage event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     final currentState = state;
-    if (currentState is states.ChatLoaded) {
+    if (currentState is ChatLoaded) {
       try {
         if (_webSocketService == null) {
-          emit(const states.ChatError('Not connected to chat'));
+          emit(const ChatError('Not connected to chat'));
           return;
         }
 
@@ -356,9 +423,10 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           pinnedMessage: pinnedMessage,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
+          isRead: true,
         ));
       } catch (e) {
-        emit(states.ChatError(e.toString()));
+        emit(ChatError(e.toString()));
       }
     }
   }
@@ -372,7 +440,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
 
   Future<void> _onPinMessage(
     PinMessage event,
-    Emitter<states.ChatState> emit,
+    Emitter<ChatState> emit,
   ) async {
     print(
         '🔵 PinMessage event received: chatId=${event.chatId}, messageId=${event.messageId}');
@@ -384,7 +452,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       print('✅ PinMessage API call successful');
 
       final currentState = state;
-      if (currentState is states.ChatLoaded) {
+      if (currentState is ChatLoaded) {
         final pinnedMessage =
             currentState.messages.firstWhere((m) => m.id == event.messageId);
         print('📌 Found message to pin: ${pinnedMessage.text}');
@@ -409,12 +477,12 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       }
     } catch (e) {
       print('❌ Error in _onPinMessage: $e');
-      emit(states.ChatError('Ошибка при закреплении: $e'));
+      emit(ChatError('Ошибка при закреплении: $e'));
     }
   }
 
   Future<void> _onUnpinMessage(
-      UnpinMessage event, Emitter<states.ChatState> emit) async {
+      UnpinMessage event, Emitter<ChatState> emit) async {
     try {
       await _chatRepository.unpinMessage(
         chatId: event.chatId,
@@ -422,7 +490,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       );
 
       final currentState = state;
-      if (currentState is states.ChatLoaded) {
+      if (currentState is ChatLoaded) {
         final updatedMessages = currentState.messages
             .map((message) => message.id == event.messageId
                 ? message.copyWith(isPinned: false)
@@ -440,27 +508,20 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           pinnedMessage: null,
         ));
       }
-    } catch (e) {
-      emit(states.ChatError('Ошибка при откреплении сообщения: $e'));
-    }
+    } catch (e) {}
   }
 
-  void _onUploadFile(UploadFile event, Emitter<states.ChatState> emit) async {
+  void _onUploadFile(UploadFile event, Emitter<ChatState> emit) async {
     try {
-      print('📤 Starting file upload in ChatBloc');
-      print('📤 File path: ${event.file.path}');
-
       final currentState = state;
-      if (currentState is! states.ChatLoaded) {
+      if (currentState is! ChatLoaded) {
         throw Exception('Chat is not loaded');
       }
 
       final fileUrl = await _chatRepository.uploadFile(event.file.path);
-      print('📤 File uploaded successfully. URL: $fileUrl');
 
       // Отправляем сообщение с файлом
       if (_sendMessageUseCase != null) {
-        print('📤 Sending message with file URL');
         _sendMessageUseCase!.execute(
           chatId: currentState.chat.chatId,
           text: fileUrl,
@@ -482,14 +543,9 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
         ));
-        print('✅ Message with file sent successfully');
       } else {
-        print('❌ SendMessageUseCase is null');
         throw Exception('Not connected to chat');
       }
-    } catch (e) {
-      print('❌ Error in _onUploadFile: $e');
-      emit(states.ChatError('Ошибка при отправке файла: $e'));
-    }
+    } catch (e) {}
   }
 }

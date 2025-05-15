@@ -6,10 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_event.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart'
-    as states;
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
@@ -91,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       final currentState = context.read<ChatBloc>().state;
       final replyToId =
-          currentState is states.ChatLoaded ? currentState.replyTo?.id : null;
+          currentState is ChatLoaded ? currentState.replyTo?.id : null;
 
       _chatBloc.add(
         SendMessage(
@@ -188,12 +184,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
-                        if (state is states.ChatLoading) {
+                        if (state is ChatLoading) {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
 
-                        if (state is states.ChatLoaded) {
+                        if (state is ChatLoaded) {
                           if (state.messages.isEmpty) {
                             return const Center(
                               child: Text('Нет сообщений'),
@@ -226,7 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   BlocBuilder<ChatBloc, ChatState>(
                     builder: (context, state) {
-                      if (state is states.ChatLoaded && state.replyTo != null) {
+                      if (state is ChatLoaded && state.replyTo != null) {
                         return Container(
                           padding: const EdgeInsets.all(8.0),
                           color: Theme.of(context).cardColor,

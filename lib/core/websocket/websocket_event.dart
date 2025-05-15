@@ -1,7 +1,13 @@
 import 'dart:convert';
 
+import 'websocket_service.dart';
+
 class WebSocketEvent {
-  static void handleEvent(dynamic rawData) {
+  final WebSocketService _webSocketService;
+
+  WebSocketEvent(this._webSocketService);
+
+  void handleEvent(dynamic rawData) {
     try {
       print('Received WebSocket event: $rawData');
 
@@ -40,7 +46,7 @@ class WebSocketEvent {
     }
   }
 
-  static void _handleMessage(Map<String, dynamic> data) {
+  void _handleMessage(Map<String, dynamic> data) {
     final message = data['message'] as String?;
     final chatId = data['chat_id'] as String?;
     final senderId = data['sender_id'] as int?;
@@ -54,7 +60,7 @@ class WebSocketEvent {
     // TODO: Add message handling logic
   }
 
-  static void _handleTyping(Map<String, dynamic> data) {
+  void _handleTyping(Map<String, dynamic> data) {
     final chatId = data['chat_id'] as String?;
     final userId = data['user_id'] as int?;
 
@@ -67,16 +73,23 @@ class WebSocketEvent {
     // TODO: Add typing status handling logic
   }
 
-  static void _handleReadMessage(Map<String, dynamic> data) {
-    final messageId = data['message_id'] as String?;
-    final userId = data['user_id'] as int?;
+  void _handleReadMessage(Map<String, dynamic> data) {
+    final messageId = data['message_id'];
+    final chatId = data['chat_id'];
+    final readerId = data['reader_id'];
 
-    if (messageId == null || userId == null) {
-      print('Invalid read receipt data: missing required fields');
+    if (messageId == null || chatId == null || readerId == null) {
+      print('⚠️ Invalid read receipt data: missing required fields');
+      print('📝 Data received: $data');
       return;
     }
 
-    print('Message $messageId was read by user $userId');
-    // TODO: Add read receipt handling logic
+    print('📖 Message $messageId in chat $chatId was read by user $readerId');
+
+    // Используем существующий метод readMessage
+    _webSocketService.readMessage(
+      chatId: chatId,
+      messageId: messageId,
+    );
   }
 }
