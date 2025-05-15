@@ -1,10 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum MessageStatus {
-  sent,
-  delivered,
-  read,
-}
+
 
 enum MessageType {
   text,
@@ -23,9 +19,9 @@ class MessageModel extends Equatable {
   final int? replyToId;
   final int? forwardedFromId;
   final List<Map<String, String>> attachments;
-  final MessageStatus status;
   final MessageType type;
   final bool isPinned;
+  final bool isRead;
 
   const MessageModel({
     required this.id,
@@ -37,9 +33,9 @@ class MessageModel extends Equatable {
     this.replyToId,
     this.forwardedFromId,
     this.attachments = const [],
-    this.status = MessageStatus.sent,
     this.type = MessageType.text,
     this.isPinned = false,
+    this.isRead = false,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -62,22 +58,10 @@ class MessageModel extends Equatable {
                   })
               .toList() ??
           [],
-      status: _parseMessageStatus(json['status'] as String?),
       type: _parseMessageType(json['type'] as String?),
       isPinned: json['is_pinned'] as bool? ?? false,
+      isRead: json['is_read'] as bool? ?? false,
     );
-  }
-
-  static MessageStatus _parseMessageStatus(String? status) {
-    if (status == null) return MessageStatus.sent;
-    try {
-      return MessageStatus.values.firstWhere(
-        (s) => s.toString().split('.').last == status.toLowerCase(),
-        orElse: () => MessageStatus.sent,
-      );
-    } catch (e) {
-      return MessageStatus.sent;
-    }
   }
 
   static MessageType _parseMessageType(String? type) {
@@ -103,9 +87,9 @@ class MessageModel extends Equatable {
       'reply_to_id': replyToId,
       'forwarded_from_id': forwardedFromId,
       'attachments': attachments,
-      'status': status.toString().split('.').last,
       'type': type.toString().split('.').last,
       'is_pinned': isPinned,
+      'is_read': isRead,
     };
   }
 
@@ -119,9 +103,9 @@ class MessageModel extends Equatable {
     int? replyToId,
     int? forwardedFromId,
     List<Map<String, String>>? attachments,
-    MessageStatus? status,
     MessageType? type,
     bool? isPinned,
+    bool? isRead,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -133,9 +117,9 @@ class MessageModel extends Equatable {
       replyToId: replyToId ?? this.replyToId,
       forwardedFromId: forwardedFromId ?? this.forwardedFromId,
       attachments: attachments ?? this.attachments,
-      status: status ?? this.status,
       type: type ?? this.type,
       isPinned: isPinned ?? this.isPinned,
+      isRead: isRead ?? this.isRead,
     );
   }
 
@@ -150,9 +134,9 @@ class MessageModel extends Equatable {
         replyToId,
         forwardedFromId,
         attachments,
-        status,
         type,
         isPinned,
+        isRead,
       ];
 
   static MessageModel empty() {
@@ -163,6 +147,7 @@ class MessageModel extends Equatable {
       senderUsername: '',
       createdAt: DateTime.now(),
       isPinned: false,
+      isRead: false,
     );
   }
 }

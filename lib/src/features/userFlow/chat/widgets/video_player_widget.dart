@@ -1,6 +1,6 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -55,17 +55,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             backgroundColor: Colors.black,
             iconTheme: const IconThemeData(color: Colors.white),
           ),
-          body: Center(
-            child: Chewie(controller: _chewieController!),
+          body: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              // Закрываем только при свайпе вниз
+              if (details.primaryDelta != null && details.primaryDelta! > 12) {
+                Navigator.of(context).pop();
+              }
+            },
+            child: Hero(
+              tag: 'video_${widget.videoUrl}',
+              child: Center(
+                child: Chewie(controller: _chewieController!),
+              ),
+            ),
           ),
         ),
+        // Добавляем анимацию при закрытии
+        fullscreenDialog: true,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_chewieController == null || !_videoPlayerController.value.isInitialized) {
+    if (_chewieController == null ||
+        !_videoPlayerController.value.isInitialized) {
       return Container(
         height: 200,
         color: Colors.grey[300],

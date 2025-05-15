@@ -17,12 +17,6 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
-enum MessageStatus {
-  sent,
-  delivered,
-  read,
-}
-
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final String chatName;
@@ -191,6 +185,44 @@ class _ChatScreenState extends State<ChatScreen> {
                       return const SizedBox.shrink();
                     },
                   ),
+                  Expanded(
+                    child: BlocBuilder<ChatBloc, ChatState>(
+                      builder: (context, state) {
+                        if (state is states.ChatLoading) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        if (state is states.ChatLoaded) {
+                          if (state.messages.isEmpty) {
+                            return const Center(
+                              child: Text('Нет сообщений'),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            itemCount: state.messages.length,
+                            itemBuilder: (context, index) {
+                              final message = state.messages[index];
+                              final isMe =
+                                  message.senderUsername == _currentUsername;
+
+                              return ChatBubble(
+                                message: message,
+                                isMe: isMe,
+                                onLongPress: () => _showMessageActions(message),
+                                messages: state.messages,
+                              );
+                            },
+                          );
+                        }
+
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
                   BlocBuilder<ChatBloc, ChatState>(
                     builder: (context, state) {
                       if (state is states.ChatLoaded && state.replyTo != null) {
@@ -235,44 +267,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
                       return const SizedBox.shrink();
                     },
-                  ),
-                  Expanded(
-                    child: BlocBuilder<ChatBloc, ChatState>(
-                      builder: (context, state) {
-                        if (state is states.ChatLoading) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-
-                        if (state is states.ChatLoaded) {
-                          if (state.messages.isEmpty) {
-                            return const Center(
-                              child: Text('Нет сообщений'),
-                            );
-                          }
-
-                          return ListView.builder(
-                            controller: _scrollController,
-                            reverse: true,
-                            itemCount: state.messages.length,
-                            itemBuilder: (context, index) {
-                              final message = state.messages[index];
-                              final isMe =
-                                  message.senderUsername == _currentUsername;
-
-                              return ChatBubble(
-                                message: message,
-                                isMe: isMe,
-                                onLongPress: () => _showMessageActions(message),
-                                messages: state.messages,
-                              );
-                            },
-                          );
-                        }
-
-                        return const SizedBox();
-                      },
-                    ),
                   ),
                   MessageInput(
                     controller: _messageController,

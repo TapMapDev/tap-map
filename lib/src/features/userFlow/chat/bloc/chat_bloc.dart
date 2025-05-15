@@ -36,10 +36,7 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     on<SendMessage>(_onSendMessage);
     on<SetReplyTo>(_onSetReplyTo);
     on<ClearReplyTo>(_onClearReplyTo);
-    on<SendTyping>(_onSendTyping);
-    on<MarkMessageAsRead>(_onMarkMessageAsRead);
     on<NewMessageEvent>(_onNewMessage);
-    on<UserTypingEvent>(_onUserTyping);
     on<ChatErrorEvent>(_onChatError);
     on<ConnectToChat>(_onConnectToChat);
     on<DisconnectFromChat>(_onDisconnectFromChat);
@@ -160,14 +157,20 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
   void _onSetReplyTo(SetReplyTo event, Emitter<states.ChatState> emit) {
     final currentState = state;
     if (currentState is states.ChatLoaded) {
-      emit(currentState.copyWith(replyTo: event.message));
+      emit(currentState.copyWith(
+        replyTo: event.message,
+        pinnedMessage: currentState.pinnedMessage,
+      ));
     }
   }
 
   void _onClearReplyTo(ClearReplyTo event, Emitter<states.ChatState> emit) {
     final currentState = state;
     if (currentState is states.ChatLoaded) {
-      emit(currentState.copyWith(replyTo: null));
+      emit(currentState.copyWith(
+        replyTo: null,
+        pinnedMessage: currentState.pinnedMessage,
+      ));
     }
   }
 
@@ -212,36 +215,6 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     }
   }
 
-  void _onSendTyping(
-    SendTyping event,
-    Emitter<states.ChatState> emit,
-  ) {
-    try {
-      if (_webSocketService == null) {
-        emit(const states.ChatError('Not connected to chat'));
-        return;
-      }
-
-      _webSocketService!.sendTyping(
-        chatId: event.chatId,
-        isTyping: event.isTyping,
-      );
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
-    }
-  }
-
-  Future<void> _onMarkMessageAsRead(
-    MarkMessageAsRead event,
-    Emitter<states.ChatState> emit,
-  ) async {
-    try {
-      await _chatRepository.markChatAsRead(event.chatId);
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
-    }
-  }
-
   void _onNewMessage(NewMessageEvent event, Emitter<states.ChatState> emit) {
     final currentState = state;
     if (currentState is states.ChatLoaded) {
@@ -268,17 +241,6 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       } catch (e) {
         emit(states.ChatError(e.toString()));
       }
-    }
-  }
-
-  void _onUserTyping(UserTypingEvent event, Emitter<states.ChatState> emit) {
-    try {
-      emit(states.UserTyping(
-        userId: event.userId,
-        isTyping: event.isTyping,
-      ));
-    } catch (e) {
-      emit(states.ChatError(e.toString()));
     }
   }
 

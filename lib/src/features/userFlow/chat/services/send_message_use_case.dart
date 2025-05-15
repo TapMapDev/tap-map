@@ -38,7 +38,7 @@ class SendMessageUseCase {
       forwardedFromId: forwardedFromId,
       createdAt: DateTime.now(),
       senderUsername: _currentUsername,
-      status: MessageStatus.sent,
+      isRead: false,
       type: MessageType.text,
     );
     print('✅ Message model created with ID: ${message.id}');

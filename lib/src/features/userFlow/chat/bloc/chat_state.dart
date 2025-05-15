@@ -61,9 +61,9 @@ class ChatLoaded extends ChatState with EquatableMixin {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      replyTo: replyTo,
-      forwardFrom: forwardFrom,
-      pinnedMessage: pinnedMessage,
+      replyTo: replyTo ?? this.replyTo,
+      forwardFrom: forwardFrom ?? this.forwardFrom,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
     );
   }
 }

@@ -73,7 +73,7 @@ class WebSocketService {
     print('Socket: Отправлено редактирование сообщения: $jsonMessage');
   }
 
-  void sendReadMessage({required int chatId, required int messageId}) {
+  void readMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
       print('WebSocket уже закрыт, событие read_message не отправлено');
       return;
