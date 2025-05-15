@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -68,32 +67,23 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
       final chat = data['chat'] as ChatModel;
       final messages = data['messages'] as List<MessageModel>;
 
-      print(
-          '📱 Loading chat: ${chat.chatId}, pinnedMessageId: ${chat.pinnedMessageId}');
-      print('📱 Total messages: ${messages.length}');
-
       // Получаем ID закрепленного сообщения из локального хранилища
       final pinnedMessageId =
           await _chatRepository.getPinnedMessageId(event.chatId);
-      print('📌 Local pinned message ID: $pinnedMessageId');
 
       // Если есть закрепленное сообщение, находим его в списке
       MessageModel? pinnedMessage;
       if (pinnedMessageId != null) {
-        print('🔍 Looking for pinned message with ID: $pinnedMessageId');
-        try {
-          pinnedMessage = messages.firstWhere(
-            (m) => m.id == pinnedMessageId,
-            orElse: () {
-              print('⚠️ Pinned message not found in messages list');
-              return MessageModel.empty();
-            },
-          );
-          print('✅ Found pinned message: ${pinnedMessage.text}');
-        } catch (e) {
-          print('❌ Error finding pinned message: $e');
-        }
+        pinnedMessage = messages.firstWhere(
+          (m) => m.id == pinnedMessageId,
+          orElse: () {
+            return MessageModel.empty();
+          },
+        );
       }
+
+      // Отправляем статус прочтения для непрочитанных сообщений
+      _markMessagesAsRead(messages);
 
       emit(states.ChatLoaded(
         chat: chat,
@@ -101,8 +91,23 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
         pinnedMessage: pinnedMessage,
       ));
     } catch (e) {
-      print('❌ Error loading chat: $e');
       emit(states.ChatError(e.toString()));
+    }
+  }
+
+  void _markMessagesAsRead(List<MessageModel> messages) {
+    if (_webSocketService == null || _currentUsername == null) return;
+
+    for (final message in messages) {
+      if (!message.isRead && message.senderUsername != _currentUsername) {
+        print('🔵 Marking message as read: ${message.id}');
+        _webSocketService!.readMessage(
+          chatId: message.chatId,
+          messageId: message.id,
+        );
+        print(
+            '✅ readMessage(chatId: ${message.chatId}, messageId: ${message.id})');
+      }
     }
   }
 
@@ -215,32 +220,57 @@ class ChatBloc extends Bloc<ChatEvent, states.ChatState> {
     }
   }
 
-  void _onNewMessage(NewMessageEvent event, Emitter<states.ChatState> emit) {
-    final currentState = state;
-    if (currentState is states.ChatLoaded) {
-      try {
-        dynamic messageData;
-        if (event.message is String) {
-          messageData = jsonDecode(event.message as String);
-        } else {
-          messageData = event.message;
-        }
+  void _onNewMessage(
+      NewMessageEvent event, Emitter<states.ChatState> emit) async {
+    try {
+      final currentState = state;
+      if (currentState is! states.ChatLoaded) return;
 
-        if (messageData is Map<String, dynamic> &&
-            messageData['type'] == 'message') {
-          final newMessage = MessageModel.fromJson(messageData);
+      final messageData = event.message;
 
-          final updatedMessages = List<MessageModel>.from(currentState.messages)
-            ..insert(0, newMessage);
+      if (messageData['type'] == 'message_read') {
+        final messageId = messageData['message_id'];
+        final chatId = messageData['chat_id'];
 
-          emit(states.ChatLoaded(
-            chat: currentState.chat,
-            messages: updatedMessages,
-          ));
-        }
-      } catch (e) {
-        emit(states.ChatError(e.toString()));
+        final updatedMessages = currentState.messages.map((msg) {
+          if (msg.id == messageId && msg.chatId == chatId) {
+            return msg.copyWith(isRead: true);
+          }
+          return msg;
+        }).toList();
+
+        emit(states.ChatLoaded(
+          chat: currentState.chat,
+          messages: updatedMessages,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
+          pinnedMessage: currentState.pinnedMessage,
+        ));
+        return;
       }
+
+      if (messageData is Map<String, dynamic> &&
+          messageData['type'] == 'message') {
+        final newMessage = MessageModel.fromJson(messageData);
+
+        // Если это новое сообщение от другого пользователя, отправляем статус прочтения
+        if (newMessage.senderUsername != _currentUsername) {
+          _webSocketService?.readMessage(
+            chatId: newMessage.chatId,
+            messageId: newMessage.id,
+          );
+        }
+
+        final updatedMessages = List<MessageModel>.from(currentState.messages)
+          ..insert(0, newMessage);
+
+        emit(states.ChatLoaded(
+          chat: currentState.chat,
+          messages: updatedMessages,
+        ));
+      }
+    } catch (e) {
+      emit(states.ChatError(e.toString()));
     }
   }
 

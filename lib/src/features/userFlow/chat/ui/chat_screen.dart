@@ -214,6 +214,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 isMe: isMe,
                                 onLongPress: () => _showMessageActions(message),
                                 messages: state.messages,
+                                currentUsername: _currentUsername ?? '',
                               );
                             },
                           );
@@ -287,21 +288,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
                     },
                     onFileSelected: (file) {
-                      print('📤 File selected in ChatScreen: ${file.path}');
                       final fileToUpload = File(file.path!);
-                      print(
-                          '📤 Converting to File object: ${fileToUpload.path}');
                       _chatBloc.add(UploadFile(file: fileToUpload));
-                      print('📤 UploadFile event added to ChatBloc');
                     },
                     onImageSelected: (file) {
-                      print(
-                          '📤 Image/Video selected in ChatScreen: ${file.path}');
                       final fileToUpload = File(file.path);
-                      print(
-                          '📤 Converting to File object: ${fileToUpload.path}');
                       _chatBloc.add(UploadFile(file: fileToUpload));
-                      print('📤 UploadFile event added to ChatBloc');
+                      _chatBloc.add(UploadFile(file: fileToUpload));
                     },
                     editingMessage: _editingMessage,
                     onCancelEdit: () {
@@ -400,34 +393,23 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _forwardMessageToChat(MessageModel message, int targetChatId) {
-    print('🔄 Starting message forward process');
-    print('📨 Original message: ${message.text}');
-    print('🎯 Target chat ID: $targetChatId');
-    print('📝 Original message ID: ${message.id}');
-
     _chatBloc.add(SendMessage(
       chatId: targetChatId,
       text: message.text,
       forwardedFromId: message.id,
     ));
-    print('✅ Forward event added to ChatBloc');
   }
 
   Future<void> _showChatSelectionDialog(MessageModel message) async {
-    print('🔍 Opening chat selection dialog');
-    print('📨 Message to forward: ${message.text}');
     try {
       final chats = await _chatRepository.fetchChats();
-      print('📱 Fetched ${chats.length} chats');
 
       final availableChats =
           chats.where((chat) => chat.chatId != widget.chatId).toList();
-      print('🎯 Available chats for forwarding: ${availableChats.length}');
 
       if (!mounted) return;
 
       if (availableChats.isEmpty) {
-        print('⚠️ No available chats for forwarding');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Нет доступных чатов для пересылки')),
         );
@@ -460,7 +442,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       );
     } catch (e) {
-      print('❌ Error in chat selection: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке чатов: $e')),

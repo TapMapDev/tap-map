@@ -36,7 +36,6 @@ class WebSocketService {
     int? forwardedFromId,
   }) {
     if (_channel.closeCode != null) {
-      print('WebSocket уже закрыт, сообщение не отправлено');
       return;
     }
     final jsonMessage = jsonEncode({
@@ -49,7 +48,6 @@ class WebSocketService {
     });
 
     _channel.sink.add(jsonMessage);
-    print('Socket: Отправлено сообщение: $jsonMessage');
   }
 
   void editMessage({
@@ -58,7 +56,6 @@ class WebSocketService {
     required String text,
   }) {
     if (_channel.closeCode != null) {
-      print('WebSocket уже закрыт, сообщение не отредактировано');
       return;
     }
     final jsonMessage = jsonEncode({
@@ -70,12 +67,10 @@ class WebSocketService {
     });
 
     _channel.sink.add(jsonMessage);
-    print('Socket: Отправлено редактирование сообщения: $jsonMessage');
   }
 
   void readMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
-      print('WebSocket уже закрыт, событие read_message не отправлено');
       return;
     }
     final jsonMessage = jsonEncode({
@@ -84,7 +79,6 @@ class WebSocketService {
       'message_id': messageId,
     });
     _channel.sink.add(jsonMessage);
-    print('Socket: Отправлено событие read_message: $jsonMessage');
   }
 
   void sendTyping({required int chatId, required bool isTyping}) {

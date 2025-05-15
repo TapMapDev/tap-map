@@ -8,6 +8,7 @@ class ChatBubble extends StatelessWidget {
   final bool isMe;
   final VoidCallback onLongPress;
   final List<MessageModel> messages;
+  final String currentUsername;
 
   const ChatBubble({
     super.key,
@@ -15,7 +16,21 @@ class ChatBubble extends StatelessWidget {
     required this.isMe,
     required this.onLongPress,
     required this.messages,
+    required this.currentUsername,
   });
+
+  Widget _buildReadStatus(MessageModel message) {
+    final isOwnMessage = message.senderUsername == currentUsername;
+
+    if (!isOwnMessage)
+      return const SizedBox(); // не отображать статус у входящих сообщений
+
+    return Icon(
+      message.isRead ? Icons.done_all : Icons.check,
+      size: 16,
+      color: message.isRead ? Colors.blue : Colors.grey,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +110,8 @@ class ChatBubble extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(width: 4),
+                  _buildReadStatus(message),
                 ],
               ),
             ],

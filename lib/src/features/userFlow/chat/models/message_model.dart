@@ -42,7 +42,7 @@ class MessageModel extends Equatable {
     final editedAt = json['edited_at'] as String?;
     return MessageModel(
       id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-      chatId: json['chat_id'] as int? ?? 0,
+      chatId: json['chat'] as int? ?? 0,
       text: json['text'] as String? ?? '',
       senderUsername: json['sender_username'] as String? ?? 'Unknown',
       createdAt: json['created_at'] != null
@@ -89,7 +89,6 @@ class MessageModel extends Equatable {
       'attachments': attachments,
       'type': type.toString().split('.').last,
       'is_pinned': isPinned,
-      'is_read': isRead,
     };
   }
 
