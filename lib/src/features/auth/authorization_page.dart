@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/router/routes.dart';
@@ -28,10 +27,38 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
       ),
       body: BlocConsumer<AuthorizationBloc, AuthorizationState>(
         listener: (context, state) {
+          debugPrint('=== State Change ===');
+          debugPrint('State: $state');
+          debugPrint('State type: ${state.runtimeType}');
+
           if (state is AuthorizationFailed) {
-            Get.snackbar('Error', state.errorMessage ?? 'Something went wrong');
+            debugPrint('=== Authorization Failed ===');
+            debugPrint('Error message: ${state.errorMessage}');
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content:
+                      Text(state.errorMessage ?? 'Неверный логин или пароль'),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).size.height - 100,
+                    left: 20,
+                    right: 20,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+              debugPrint('Snackbar should be visible now');
+            });
           }
+
           if (state is AuthorizationSuccess) {
+            debugPrint('=== Authorization Success ===');
             context.go(AppRoutes.map);
           }
         },

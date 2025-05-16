@@ -87,6 +87,7 @@ class MessageModel extends Equatable {
       'attachments': attachments,
       'type': type.toString().split('.').last,
       'is_pinned': isPinned,
+      'is_read': isRead,
     };
   }
 

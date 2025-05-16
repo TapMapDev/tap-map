@@ -13,19 +13,21 @@ class AuthorizationResponseModel {
 
   factory AuthorizationResponseModel.fromJson(
       Map<String, dynamic> json, int statusCode) {
-    final accessToken = json['access'];
-    final refreshToken = json['refresh'];
+    String? message;
 
-    if (accessToken == null || refreshToken == null) {
-      throw Exception(
-          'Access Token или Refresh Token отсутствует в ответе API.');
+    if (json['detail'] is List) {
+      message = (json['detail'] as List).join(', ');
+    } else if (json['detail'] != null) {
+      message = json['detail'].toString();
+    } else if (json['message'] != null) {
+      message = json['message'].toString();
     }
 
     return AuthorizationResponseModel(
-      message: json['detail'] ?? json['message'],
+      message: message,
       statusCode: statusCode,
-      accessToken: accessToken,
-      refreshToken: refreshToken,
+      accessToken: json['access'],
+      refreshToken: json['refresh'],
     );
   }
 }

@@ -13,3 +13,5 @@ class AuthorizationSignInWithEmailPressedEvent extends AuthorizationEvent {
 class CheckAuthorizationEvent extends AuthorizationEvent {}
 
 class LogoutEvent extends AuthorizationEvent {}
+
+class RefreshTokensEvent extends AuthorizationEvent {}

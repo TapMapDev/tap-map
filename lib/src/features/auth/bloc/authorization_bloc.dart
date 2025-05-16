@@ -15,33 +15,37 @@ class AuthorizationBloc extends Bloc<AuthorizationEvent, AuthorizationState> {
       : super(AuthorizationInitial()) {
     on<AuthorizationSignInWithEmailPressedEvent>((event, emit) async {
       emit(AuthorizationInProcess());
-      final response = await authorizationRepositoryImpl.authorize(
-          login: event.login, password: event.password);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        emit(AuthorizationSuccess());
-      } else {
-        emit(AuthorizationFailed(errorMessage: response.message));
-      }
-    });
-    on<CheckAuthorizationEvent>((event, emit) async {
       try {
-        final isAuthorized = await authorizationRepositoryImpl.isAuthorized();
-        if (isAuthorized) {
-          emit(AuthorizedState()); // Авторизован
+        final response = await authorizationRepositoryImpl.authorize(
+          login: event.login,
+          password: event.password,
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.accessToken != null && response.refreshToken != null) {
+            emit(AuthorizationSuccess());
+          } else {
+            emit(AuthorizationFailed(
+              errorMessage: response.message ?? 'Ошибка авторизации',
+            ));
+          }
         } else {
-          emit(UnAuthorizedState()); // Не авторизован
+          emit(AuthorizationFailed(
+            errorMessage: response.message ?? 'Ошибка авторизации',
+          ));
         }
       } catch (e) {
-        emit(UnAuthorizedState()); // Ошибка или не авторизован
+        emit(AuthorizationFailed(errorMessage: 'Произошла ошибка: $e'));
       }
     });
-    on<LogoutEvent>((event, emit) async {
+    on<RefreshTokensEvent>((event, emit) async {
+      emit(AuthorizationInProcess());
       try {
-        await authorizationRepositoryImpl.logout();
-        await _prefs.clear(); // Очищаем все данные
-        emit(UnAuthorizedState());
+        await authorizationRepositoryImpl.initialize();
+        emit(AuthorizationSuccess());
       } catch (e) {
-        emit(AuthorizationFailed(errorMessage: 'Ошибка при выходе: $e'));
+        emit(AuthorizationFailed(
+            errorMessage: 'Ошибка при обновлении токенов: $e'));
       }
     });
   }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
@@ -25,58 +26,111 @@ class AuthorizationRepositoryImpl {
         useAuth: false,
       );
 
-      final responseModel = AuthorizationResponseModel.fromJson(
-        response['data'],
-        response['statusCode'],
+      final statusCode = response['statusCode'] as int;
+      final data = response['data'];
+
+      if (statusCode == 200 || statusCode == 201) {
+        final responseModel = AuthorizationResponseModel.fromJson(
+          data,
+          statusCode,
+        );
+
+        if (responseModel.accessToken != null &&
+            responseModel.refreshToken != null) {
+          await prefs.saveAccessToken(responseModel.accessToken!);
+          await prefs.saveRefreshToken(responseModel.refreshToken!);
+        }
+
+        return responseModel;
+      } else {
+        String message = 'Ошибка авторизации';
+        if (data != null) {
+          if (data['detail'] is List) {
+            message = (data['detail'] as List).join(', ');
+          } else if (data['detail'] != null) {
+            message = data['detail'].toString();
+          } else if (data['message'] != null) {
+            message = data['message'].toString();
+          }
+        }
+
+        return AuthorizationResponseModel(
+          statusCode: statusCode,
+          accessToken: null,
+          refreshToken: null,
+          message: message,
+        );
+      }
+    } on DioException catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+
+      final int statusCode = e.response?.statusCode ?? -1;
+      String message = 'Произошла ошибка';
+
+      final data = e.response?.data;
+      if (data != null) {
+        if (data['detail'] is List) {
+          message = (data['detail'] as List).join(', ');
+        } else if (data['detail'] != null) {
+          message = data['detail'].toString();
+        } else if (data['message'] != null) {
+          message = data['message'].toString();
+        }
+      }
+
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: statusCode,
+        message: message,
+      );
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: -1,
+        message: 'Неизвестная ошибка: $e',
+      );
+    }
+  }
+
+  Future<void> initialize() async {
+    final refreshToken = await prefs.getRefreshToken();
+    if (refreshToken == null) throw Exception('No refresh token');
+
+    try {
+      // Попробуй обновить токены
+      final response = await apiService.postData(
+        '/auth/token/refresh/',
+        {'refresh_token': refreshToken},
+        useAuth: false,
       );
 
-    if (responseModel.accessToken != null &&
-        responseModel.refreshToken != null) {
-      await prefs.saveAccessToken(responseModel.accessToken!);
-      await prefs.saveRefreshToken(responseModel.refreshToken!);
-    }
+      final newAccessToken = response['data']['access'];
+      final newRefreshToken = response['data']['refresh'];
 
-    return responseModel;
-  } on DioException catch (e, stackTrace) {
-    debugPrintStack(stackTrace: stackTrace);
+      if (newAccessToken != null && newRefreshToken != null) {
+        await prefs.saveAccessToken(newAccessToken);
+        await prefs.saveRefreshToken(newRefreshToken);
 
-    final int statusCode = e.response?.statusCode ?? -1;
-    String message = 'Произошла ошибка';
-
-    final data = e.response?.data;
-    if (data != null) {
-      if (data['detail'] is List) {
-        message = data['detail'].join(', ');
-      } else if (data['detail'] != null) {
-        message = data['detail'].toString();
+        // Зарегистрировать FCM токен
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          // Отправить fcmToken на сервер
+        }
+      } else {
+        throw Exception('Invalid token response');
       }
+    } catch (e) {
+      await logout();
+      rethrow;
     }
-
-    return AuthorizationResponseModel(
-      accessToken: null,
-      refreshToken: null,
-      statusCode: statusCode,
-      message: message,
-    );
-  } catch (e, stackTrace) {
-    debugPrintStack(stackTrace: stackTrace);
-    return AuthorizationResponseModel(
-      accessToken: null,
-      refreshToken: null,
-      statusCode: -1,
-      message: 'Неизвестная ошибка: $e',
-    );
-  }
-}
-
-  Future<bool> isAuthorized() async {
-    final accessToken = await prefs.getString('access_token');
-    final refreshToken = await prefs.getString('refresh_token');
-    return accessToken != null && refreshToken != null;
   }
 
   Future<void> logout() async {
     try {
+      await FirebaseMessaging.instance.deleteToken();
       final accessToken = await prefs.getString('access_token');
       final refreshToken = await prefs.getString('refresh_token');
 

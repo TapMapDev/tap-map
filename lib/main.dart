@@ -3,13 +3,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
 import 'package:tap_map/core/common/styles.dart';
 import 'package:tap_map/core/di/di.dart';
-import 'package:tap_map/core/network/api_service.dart';
-import 'package:tap_map/core/services/deep_link_service.dart';
-import 'package:tap_map/core/services/notification_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/firebase_options.dart';
 import 'package:tap_map/router/app_router.dart';
@@ -25,7 +20,6 @@ import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
@@ -35,67 +29,22 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   await dotenv.load(fileName: '.env');
-  await setup(); // Инициализируем зависимости
-  MapboxOptions.setAccessToken(MapConfig.accessToken);
-
-  final notificationService = NotificationService();
-  await notificationService.initialize();
-
-  final isAuthorized = await _initializeTokens();
-
-  final router = appRouter;
-  getIt.registerSingleton<GoRouter>(router);
-
-  // Создаем DeepLinkService с роутером
-  final deepLinkService = DeepLinkService(router);
-  getIt.registerSingleton<DeepLinkService>(deepLinkService);
-  await deepLinkService.initialize();
+  await setup();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(MyApp(isAuthorized: isAuthorized));
+  runApp(const MyApp());
 }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage msg) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
-// Функция для инициализации токенов при запуске
-Future<bool> _initializeTokens() async {
-  final prefs = getIt.get<SharedPrefsRepository>();
-  final apiService = getIt.get<ApiService>();
-
-  try {
-    // Проверяем наличие токенов
-    final refreshToken = await prefs.getRefreshToken();
-    final accessToken = await prefs.getAccessToken();
-
-    // Если есть refresh_token, пробуем обновить токены
-    if (refreshToken != null) {
-      final success = await apiService.refreshTokens();
-      if (!success) {
-        // Если обновление не удалось, очищаем токены
-        await prefs.clear();
-        return false;
-      }
-      return true;
-    }
-    return false;
-  } catch (e) {
-    await prefs.clear();
-    return false;
-  }
-}
-
 class MyApp extends StatelessWidget {
-  final bool isAuthorized;
-
-  const MyApp({super.key, required this.isAuthorized});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
