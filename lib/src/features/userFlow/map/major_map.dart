@@ -19,6 +19,7 @@ import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart'
 import 'package:tap_map/src/features/userFlow/map/widgets/icon_opacity.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
+import 'package:tap_map/src/features/userFlow/map/widgets/point_details_bottom_sheet.dart';
 // import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
 
 class MajorMap extends StatefulWidget {
@@ -55,6 +56,12 @@ class _MajorMapState extends State<MajorMap> {
 
   bool _isDisposed = false; // Добавляем флаг для отслеживания состояния виджета
   bool _wasInactive = false; // Флаг для отслеживания неактивного состояния
+
+  // Добавляем переменную для хранения информации о текущей выбранной точке
+  Map<dynamic, dynamic>? _selectedPointProperties;
+
+  // Переменная для хранения контекста BottomSheet
+  BuildContext? _bottomSheetContext;
 
   @override
   void initState() {
@@ -374,6 +381,9 @@ class _MajorMapState extends State<MajorMap> {
 
     // Применяем настройки асинхронно
     _applyLayerSettings(threshold);
+
+    // Устанавливаем обработчик нажатий на маркеры
+    _setupTapHandler();
 
     // Запрашиваем иконки, если есть ID стиля
     if (_isDisposed) return;
@@ -772,6 +782,94 @@ class _MajorMapState extends State<MajorMap> {
 
   List<Object> buildIconOpacityExpression() {
     return OpenStatusManager.buildIconOpacityExpression();
+  }
+
+  void _setupTapHandler() {
+    if (mapboxMapController == null) return;
+
+    mapboxMapController!.onFeatureTapped
+        .add(mp.OnFeatureTappedListener((featureId, point, coordinates) {
+      if (_isDisposed) return;
+
+      // Центрируем карту на маркере
+      _centerMapOnPoint(coordinates);
+
+      mapboxMapController!
+          .queryFeature(featureId, placesLayerId)
+          .then((feature) {
+        if (feature != null && feature.properties != null) {
+          // Если BottomSheet уже открыт, просто обновляем его содержимое
+          if (_bottomSheetContext != null) {
+            try {
+              PointDetailsBottomSheet.updateProperties(_bottomSheetContext!, feature.properties);
+              // Обновляем информацию о выбранной точке
+              setState(() {
+                _selectedPointProperties = feature.properties;
+              });
+            } catch (e) {
+              // Если произошла ошибка (например, контекст устарел), показываем новый BottomSheet
+              _showPointDetails(feature.properties);
+            }
+          } else {
+            // Если BottomSheet не открыт, показываем новый
+            _showPointDetails(feature.properties);
+          }
+        }
+      });
+    }));
+  }
+
+  Future<void> _centerMapOnPoint(mp.Position coordinates) async {
+    if (mapboxMapController == null) return;
+
+    // Получаем текущий zoom
+    final cameraState = await mapboxMapController!.getCameraState();
+    final zoom = cameraState.zoom;
+
+    // Настраиваем анимацию камеры
+    mapboxMapController!.flyTo(
+      mp.CameraOptions(
+        center: mp.Point(coordinates: coordinates),
+        zoom: zoom > 13 ? zoom : 13, // Устанавливаем минимальный zoom для деталей
+        padding: mp.MbxEdgeInsets(bottom: 250), // Смещаем камеру вверх, чтобы маркер был виден над BottomSheet
+      ),
+      mp.MapAnimationOptions(
+        duration: 500,
+        startDelay: 0,
+      ),
+    );
+  }
+
+  void _showPointDetails(Map<dynamic, dynamic> properties) {
+    // Сохраняем информацию о выбранной точке
+    setState(() {
+      _selectedPointProperties = properties;
+    });
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        _bottomSheetContext = context;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.25,
+          maxChildSize: 0.9,
+          builder: (_, scrollController) => PointDetailsBottomSheet(
+            properties: properties,
+            scrollController: scrollController,
+          ),
+        );
+      },
+      // При закрытии BottomSheet очищаем информацию о выбранной точке
+      onDismissed: () {
+        setState(() {
+          _selectedPointProperties = null;
+          _bottomSheetContext = null;
+        });
+      },
+    );
   }
 
   @override
