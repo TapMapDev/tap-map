@@ -795,7 +795,7 @@ class _MajorMapState extends State<MajorMap> {
           if (_isDisposed) return;
           
           // Получаем координаты нажатия
-          final coordinates = context.coordinates;
+          final coordinates = context.point.coordinates;
           
           // Центрируем карту на маркере
           _centerMapOnPoint(coordinates);
