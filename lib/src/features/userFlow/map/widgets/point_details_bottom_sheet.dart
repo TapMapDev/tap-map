@@ -125,6 +125,14 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x00000000),
+              blurRadius: 20,
+              offset: Offset(0, 4),
+              spreadRadius: 0,
+            )
+          ],
         ),
         child: Stack(
           children: [
@@ -147,7 +155,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               bottom: 0,
               child: Container(
                 decoration: ShapeDecoration(
-                  color: const Color(0x194A69FF).withOpacity(0.05),
+                  color: const Color(0x194A69FF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(10),
@@ -157,8 +165,8 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                   shadows: [
                     BoxShadow(
                       color: Color(0x21000000),
-                      blurRadius: 4,
-                      offset: Offset(0, -1),
+                      blurRadius: 6,
+                      offset: Offset(0, 0),
                       spreadRadius: 0,
                     )
                   ],
@@ -169,8 +177,16 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                   children: [
                     // Индикатор перетаскивания
                     Container(
-                      height: 30,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      height: 18,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: ShapeDecoration(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(10),
+                            topRight: Radius.circular(10),
+                          ),
+                        ),
+                      ),
                       child: Center(
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 200),
@@ -223,7 +239,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     
                     // Блок "Были друзья"
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
                       child: FriendsVisitedWidget(
                         avatars: friendsAvatars,
                         friendsCount: friendsCount,
@@ -275,7 +291,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                         child: _buildInfoRow('Рейтинг', _properties['rating'].toString()),
                       ),
                     
-                    // Отображение всех фотографий в ленте, если они есть
+                    // Отображение изображений в ленте, если их более одного
                     if (images.length > 1)
                       Padding(
                         padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 24.0, bottom: 16.0),
