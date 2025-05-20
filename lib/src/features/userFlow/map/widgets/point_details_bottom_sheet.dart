@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'working_hours_widget.dart';
 
 class PointDetailsBottomSheet extends StatefulWidget {
   final Map<dynamic, dynamic> properties;
@@ -138,13 +140,22 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               
             // Дополнительная информация
             if (_properties['working_hours'] != null)
-              _buildInfoRow('Часы работы', _properties['working_hours'].toString()),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: WorkingHoursWidget(workingHoursJson: _properties['working_hours'].toString()),
+              ),
               
             if (_properties['phone'] != null)
-              _buildInfoRow('Телефон', _properties['phone'].toString()),
+              GestureDetector(
+                onTap: () => _launchUrl('tel:${_properties['phone']}'),
+                child: _buildInfoRow('Телефон', _properties['phone'].toString(), isClickable: true),
+              ),
               
             if (_properties['website'] != null)
-              _buildInfoRow('Сайт', _properties['website'].toString()),
+              GestureDetector(
+                onTap: () => _launchUrl(_properties['website'].toString()),
+                child: _buildInfoRow('Сайт', _properties['website'].toString(), isClickable: true),
+              ),
               
             if (_properties['openStatus'] != null || _properties['open_status'] != null)
               _buildInfoRow('Статус', (_properties['openStatus'] ?? _properties['open_status']).toString()),
@@ -155,6 +166,9 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
             if (_properties['rating'] != null)
               _buildInfoRow('Рейтинг', _properties['rating'].toString()),
               
+            if (_properties['images'] != null && _properties['images'] is List && (_properties['images'] as List).isNotEmpty)
+              _buildImageGallery((_properties['images'] as List)),
+              
             SizedBox(height: 24),
           ],
         ),
@@ -162,8 +176,16 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
     );
   }
   
+  // Метод для запуска URL
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+  
   // Вспомогательный метод для отображения строки информации
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {bool isClickable = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Column(
@@ -178,12 +200,88 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
             ),
           ),
           SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(fontSize: 16),
-          ),
+          isClickable
+              ? Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                )
+              : Text(
+                  value,
+                  style: TextStyle(fontSize: 16),
+                ),
         ],
       ),
+    );
+  }
+  
+  // Вспомогательный метод для отображения галереи изображений
+  Widget _buildImageGallery(List images) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+          child: Text(
+            'Фотографии',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 150,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              final imageUrl = images[index]['url'] ?? images[index]['image'];
+              return Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: 200,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 200,
+                        height: 150,
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / 
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 200,
+                        height: 150,
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: Icon(Icons.error, color: Colors.grey[600]),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
