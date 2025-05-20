@@ -786,37 +786,43 @@ class _MajorMapState extends State<MajorMap> {
 
   void _setupTapHandler() {
     if (mapboxMapController == null) return;
-
-    mapboxMapController!.onFeatureTapped
-        .add(mp.OnFeatureTappedListener((featureId, point, coordinates) {
-      if (_isDisposed) return;
-
-      // Центрируем карту на маркере
-      _centerMapOnPoint(coordinates);
-
-      mapboxMapController!
-          .queryFeature(featureId, placesLayerId)
-          .then((feature) {
-        if (feature != null && feature.properties != null) {
-          // Если BottomSheet уже открыт, просто обновляем его содержимое
-          if (_bottomSheetContext != null) {
-            try {
-              PointDetailsBottomSheet.updateProperties(_bottomSheetContext!, feature.properties);
-              // Обновляем информацию о выбранной точке
-              setState(() {
-                _selectedPointProperties = feature.properties;
-              });
-            } catch (e) {
-              // Если произошла ошибка (например, контекст устарел), показываем новый BottomSheet
-              _showPointDetails(feature.properties);
+    
+    // Добавляем обработчик нажатий на слой с маркерами
+    mapboxMapController!.addInteraction(
+      mp.TapInteraction(
+        mp.FeaturesetDescriptor(layerId: placesLayerId), 
+        (feature, context) {
+          if (_isDisposed) return;
+          
+          // Получаем координаты нажатия
+          final coordinates = context.coordinates;
+          
+          // Центрируем карту на маркере
+          _centerMapOnPoint(coordinates);
+          
+          // Если у фичи есть свойства, показываем их
+          if (feature.properties != null) {
+            // Если BottomSheet уже открыт, просто обновляем его содержимое
+            if (_bottomSheetContext != null) {
+              try {
+                PointDetailsBottomSheet.updateProperties(_bottomSheetContext!, feature.properties!);
+                // Обновляем информацию о выбранной точке
+                setState(() {
+                  _selectedPointProperties = feature.properties;
+                });
+              } catch (e) {
+                // Если произошла ошибка (например, контекст устарел), показываем новый BottomSheet
+                _showPointDetails(feature.properties!);
+              }
+            } else {
+              // Если BottomSheet не открыт, показываем новый
+              _showPointDetails(feature.properties!);
             }
-          } else {
-            // Если BottomSheet не открыт, показываем новый
-            _showPointDetails(feature.properties);
           }
         }
-      });
-    }));
+      ),
+      interactionID: "placesTapInteraction"
+    );
   }
 
   Future<void> _centerMapOnPoint(mp.Position coordinates) async {
@@ -831,7 +837,7 @@ class _MajorMapState extends State<MajorMap> {
       mp.CameraOptions(
         center: mp.Point(coordinates: coordinates),
         zoom: zoom > 13 ? zoom : 13, // Устанавливаем минимальный zoom для деталей
-        padding: mp.MbxEdgeInsets(bottom: 250), // Смещаем камеру вверх, чтобы маркер был виден над BottomSheet
+        padding: mp.MbxEdgeInsets(top: 0, left: 0, right: 0, bottom: 250), // Смещаем камеру вверх, чтобы маркер был виден над BottomSheet
       ),
       mp.MapAnimationOptions(
         duration: 500,
@@ -862,14 +868,13 @@ class _MajorMapState extends State<MajorMap> {
           ),
         );
       },
+    ).then((_) {
       // При закрытии BottomSheet очищаем информацию о выбранной точке
-      onDismissed: () {
-        setState(() {
-          _selectedPointProperties = null;
-          _bottomSheetContext = null;
-        });
-      },
-    );
+      setState(() {
+        _selectedPointProperties = null;
+        _bottomSheetContext = null;
+      });
+    });
   }
 
   @override
