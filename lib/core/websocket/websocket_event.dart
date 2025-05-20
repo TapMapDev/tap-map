@@ -9,11 +9,7 @@ class WebSocketEvent {
 
   void handleEvent(dynamic rawData) {
     try {
-      print('Received WebSocket event: $rawData');
-
       if (rawData is! String) {
-        print(
-            'Invalid event format: expected String, got ${rawData.runtimeType}');
         return;
       }
 
@@ -21,12 +17,8 @@ class WebSocketEvent {
       final eventType = data['event'] as String?;
 
       if (eventType == null) {
-        print('Event type is missing in the data');
         return;
       }
-
-      print('Processing event type: $eventType');
-
       switch (eventType) {
         case 'message':
           _handleMessage(data);
@@ -38,12 +30,8 @@ class WebSocketEvent {
           _handleReadMessage(data);
           break;
         default:
-          print('Unknown event type: $eventType');
       }
-    } catch (e, stackTrace) {
-      print('Error handling WebSocket event: $e');
-      print('Stack trace: $stackTrace');
-    }
+    } catch (_) {}
   }
 
   void _handleMessage(Map<String, dynamic> data) {
@@ -52,25 +40,29 @@ class WebSocketEvent {
     final senderId = data['sender_id'] as int?;
 
     if (message == null || chatId == null || senderId == null) {
-      print('Invalid message data: missing required fields');
       return;
     }
-
-    print('New message in chat $chatId from user $senderId: $message');
-    // TODO: Add message handling logic
   }
 
   void _handleTyping(Map<String, dynamic> data) {
+    print('⌨️ WebSocketEvent: Обработка события typing');
+    print('📦 WebSocketEvent: Данные события: $data');
+
     final chatId = data['chat_id'] as String?;
     final userId = data['user_id'] as int?;
+    final username = data['username'] as String?;
+    final isTyping = data['is_typing'] as bool?;
+
+    print(
+        '🔍 WebSocketEvent: chatId: $chatId, userId: $userId, username: $username, isTyping: $isTyping');
 
     if (chatId == null || userId == null) {
-      print('Invalid typing data: missing required fields');
+      print(
+          '❌ WebSocketEvent: Отсутствуют обязательные поля chatId или userId');
       return;
     }
 
-    print('User $userId is typing in chat $chatId');
-    // TODO: Add typing status handling logic
+    print('✅ WebSocketEvent: Событие typing успешно обработано');
   }
 
   void _handleReadMessage(Map<String, dynamic> data) {
@@ -79,14 +71,9 @@ class WebSocketEvent {
     final readerId = data['reader_id'];
 
     if (messageId == null || chatId == null || readerId == null) {
-      print('⚠️ Invalid read receipt data: missing required fields');
-      print('📝 Data received: $data');
       return;
     }
 
-    print('📖 Message $messageId in chat $chatId was read by user $readerId');
-
-    // Используем существующий метод readMessage
     _webSocketService.readMessage(
       chatId: chatId,
       messageId: messageId,

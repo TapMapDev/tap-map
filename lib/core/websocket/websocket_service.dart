@@ -7,10 +7,15 @@ class WebSocketService {
   late WebSocketChannel _channel;
   late Stream _broadcastStream;
   final String _jwtToken;
+  String? _currentUsername;
 
   WebSocketService({
     required String jwtToken,
   }) : _jwtToken = jwtToken;
+
+  void setCurrentUsername(String username) {
+    _currentUsername = username;
+  }
 
   void connect() {
     _channel = IOWebSocketChannel.connect(
@@ -83,7 +88,7 @@ class WebSocketService {
 
   void sendTyping({required int chatId, required bool isTyping}) {
     if (_channel.closeCode != null) {
-      print('WebSocket уже закрыт, событие typing не отправлено');
+      print('❌ WebSocket уже закрыт, событие typing не отправлено');
       return;
     }
     final jsonMessage = jsonEncode({
@@ -92,7 +97,7 @@ class WebSocketService {
       'is_typing': isTyping,
     });
     _channel.sink.add(jsonMessage);
-    print('Socket: Отправлено событие typing: $jsonMessage');
+    print('📤 Socket: Отправлено событие typing: $jsonMessage');
   }
 
   Stream get stream => _broadcastStream;

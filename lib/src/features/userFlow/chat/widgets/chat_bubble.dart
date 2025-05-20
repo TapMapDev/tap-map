@@ -25,11 +25,6 @@ class ChatBubble extends StatelessWidget {
     final isOwnMessage = message.senderUsername == currentUsername;
     if (!isOwnMessage) return const SizedBox.shrink();
 
-    print('📱 Building read status for message ${message.id}:');
-    print('   isRead = ${message.isRead}');
-    print('   sender = ${message.senderUsername}');
-    print('   current user = $currentUsername');
-
     final icon = message.isRead ? Icons.done_all : Icons.check;
     final color = message.isRead ? Colors.blue : Colors.grey;
 
@@ -125,9 +120,6 @@ class ChatBubble extends StatelessWidget {
                           (m) => m.id == message.id,
                           orElse: () => message,
                         );
-                        print('🔄 UI update for message ${message.id}:');
-                        print('   Old isRead = ${message.isRead}');
-                        print('   New isRead = ${updatedMessage.isRead}');
                         return updatedMessage;
                       }
                       return message;

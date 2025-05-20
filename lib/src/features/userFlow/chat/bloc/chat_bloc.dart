@@ -49,6 +49,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<PinMessage>(_onPinMessage);
     on<UnpinMessage>(_onUnpinMessage);
     on<UploadFile>(_onUploadFile);
+    on<SendTyping>(_onSendTyping);
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
@@ -89,12 +90,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Обновляем статус прочтения для непрочитанных сообщений
       final updatedMessages = messages.map((message) {
         if (!message.isRead && message.senderUsername != _currentUsername) {
-          print('📖 Marking message ${message.id} as read');
-          print('   Before: isRead = ${message.isRead}');
           final updated = message.copyWith(isRead: true);
-          print('   After: isRead = ${updated.isRead}');
 
-          // Отправляем статус прочтения через WebSocket
           _webSocketService?.readMessage(
             chatId: message.chatId,
             messageId: message.id,
@@ -105,7 +102,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         return message;
       }).toList();
 
-      print('✅ Emitting new state with updated messages');
       final currentState = state;
       if (currentState is ChatLoaded) {
         emit(currentState.copyWith(
@@ -146,6 +142,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       _webSocketService = WebSocketService(jwtToken: token);
       _webSocketService!.connect();
+      _webSocketService!.setCurrentUsername(_currentUsername!);
 
       _sendMessageUseCase = SendMessageUseCase(
         webSocketService: _webSocketService!,
@@ -246,52 +243,84 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (currentState is! ChatLoaded) return;
 
       dynamic rawData = event.message;
+      print('📥 Socket: Получено событие: $rawData');
 
       // Надёжно декодим строку JSON, если нужно
       if (rawData is String) {
         try {
           rawData = jsonDecode(rawData);
+          print('🔄 Socket: Декодировано JSON: $rawData');
         } catch (e) {
-          print('❌ Failed to decode WebSocket string message: $e');
+          print('❌ Socket: Ошибка декодирования JSON: $e');
           return;
         }
       }
-
-      // Проверяем, что это Map и содержит поле type
       if (rawData is! Map<String, dynamic> || !rawData.containsKey('type')) {
-        print('⚠️ Ignored non-map or invalid message: $rawData');
+        print('❌ Socket: Неверный формат данных или отсутствует тип события');
         return;
       }
 
       final messageData = rawData;
       final type = messageData['type'];
-      print('📨 Received message of type: $type');
+      print('📝 Socket: Тип события: $type');
+
+      if (type == 'typing') {
+        final userId = messageData['user_id'] as int?;
+        final isTyping = messageData['is_typing'] as bool?;
+        print(
+            '⌨️ Socket: Событие typing - userId: $userId, isTyping: $isTyping');
+
+        if (userId == null || isTyping == null) {
+          print('❌ Socket: Отсутствуют обязательные поля userId или isTyping');
+          return;
+        }
+
+        try {
+          // Получаем username по userId
+          final user = await _userRepository.getUserById(userId);
+          if (user.username == null) {
+            print('❌ Socket: Username не найден для userId: $userId');
+            return;
+          }
+          final username = user.username!;
+          print('👤 Socket: Получен username: $username для userId: $userId');
+
+          // Обновляем список печатающих пользователей
+          final updatedTypingUsers = Set<String>.from(currentState.typingUsers);
+          if (isTyping) {
+            updatedTypingUsers.add(username);
+            print('➕ Socket: Добавлен печатающий пользователь: $username');
+          } else {
+            updatedTypingUsers.remove(username);
+            print('➖ Socket: Удален печатающий пользователь: $username');
+          }
+
+          print('👥 Socket: Текущий список печатающих: $updatedTypingUsers');
+
+          emit(currentState.copyWith(
+            typingUsers: updatedTypingUsers,
+          ));
+        } catch (e) {
+          print('❌ Socket: Ошибка получения username для userId $userId: $e');
+        }
+        return;
+      }
 
       if (type == 'read_message') {
         final chatId = messageData['chat_id'];
         final messageId = messageData['message_id'];
         final readerId = messageData['reader_id'];
-        print(
-            '📖 Read message event: messageId=$messageId, chatId=$chatId, readerId=$readerId');
-        print('👤 Current username: $_currentUsername');
 
         // Обновляем только сообщения, которые мы отправили
         final updatedMessages = currentState.messages.map((msg) {
           if (msg.id == messageId && msg.senderUsername == _currentUsername) {
-            print('✅ Marking our message as read: ${msg.id}');
-            print('   Before: isRead = ${msg.isRead}');
             final updated = msg.copyWith(isRead: true);
-            print('   After: isRead = ${updated.isRead}');
             return updated;
           }
           return msg;
         }).toList();
 
-        print('📊 Messages count: ${updatedMessages.length}');
-        print('📊 Updated messages with read status:');
-        for (var msg in updatedMessages) {
-          print('   Message ${msg.id}: isRead = ${msg.isRead}');
-        }
+        for (var msg in updatedMessages) {}
 
         final newState = currentState.copyWith(
           messages: updatedMessages,
@@ -300,19 +329,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           forwardFrom: currentState.forwardFrom,
           pinnedMessage: currentState.pinnedMessage,
         );
-
-        print('🔄 Emitting new state with updated messages');
         emit(newState);
         return;
       }
 
-      if (type == 'message') {
+      if (type == 'message' || type == 'new_message') {
         final newMessage = MessageModel.fromJson(messageData);
-        print('📝 New message received: ${newMessage.text}');
 
         // Если это новое сообщение от другого пользователя, отправляем статус прочтения
         if (newMessage.senderUsername != _currentUsername) {
-          print('🔵 Sending read status for message: ${newMessage.id}');
           _webSocketService?.readMessage(
             chatId: newMessage.chatId,
             messageId: newMessage.id,
@@ -331,11 +356,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ));
         return;
       }
-
-      // Обработка других типов сообщений (не обязательно, но полезно для отладки)
-      print('ℹ️ Unhandled message type: $type → $messageData');
     } catch (e, stack) {
-      print('❌ Error in _onNewMessage: $e\n$stack');
+      print('❌ Socket: Ошибка обработки события: $e\n$stack');
       emit(ChatError(e.toString()));
     }
   }
@@ -442,20 +464,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     PinMessage event,
     Emitter<ChatState> emit,
   ) async {
-    print(
-        '🔵 PinMessage event received: chatId=${event.chatId}, messageId=${event.messageId}');
     try {
       await _chatRepository.pinMessage(
         chatId: event.chatId,
         messageId: event.messageId,
       );
-      print('✅ PinMessage API call successful');
 
       final currentState = state;
       if (currentState is ChatLoaded) {
         final pinnedMessage =
             currentState.messages.firstWhere((m) => m.id == event.messageId);
-        print('📌 Found message to pin: ${pinnedMessage.text}');
 
         final updatedMessages = currentState.messages
             .map((message) => message.id == event.messageId
@@ -473,10 +491,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: updatedMessages,
           pinnedMessage: pinnedMessage,
         ));
-        print('🔄 State updated with pinned message');
       }
     } catch (e) {
-      print('❌ Error in _onPinMessage: $e');
       emit(ChatError('Ошибка при закреплении: $e'));
     }
   }
@@ -547,5 +563,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         throw Exception('Not connected to chat');
       }
     } catch (e) {}
+  }
+
+  void _onSendTyping(SendTyping event, Emitter<ChatState> emit) {
+    try {
+      print(
+          '⌨️ Socket: Отправка события typing - chatId: ${event.chatId}, isTyping: ${event.isTyping}');
+      _webSocketService?.sendTyping(
+        chatId: event.chatId,
+        isTyping: event.isTyping,
+      );
+    } catch (e) {
+      print('❌ Socket: Ошибка отправки события typing: $e');
+    }
   }
 }

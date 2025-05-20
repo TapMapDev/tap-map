@@ -20,6 +20,7 @@ class MessageModel extends Equatable {
   final MessageType type;
   final bool isPinned;
   final bool isRead;
+  final bool isTyping;
 
   const MessageModel({
     required this.id,
@@ -34,6 +35,7 @@ class MessageModel extends Equatable {
     this.type = MessageType.text,
     this.isPinned = false,
     this.isRead = false,
+    this.isTyping = false,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -59,6 +61,7 @@ class MessageModel extends Equatable {
       type: _parseMessageType(json['type'] as String?),
       isPinned: json['is_pinned'] as bool? ?? false,
       isRead: json['is_read'] as bool? ?? false,
+      isTyping: json['is_typing'] as bool? ?? false,
     );
   }
 
@@ -88,6 +91,7 @@ class MessageModel extends Equatable {
       'type': type.toString().split('.').last,
       'is_pinned': isPinned,
       'is_read': isRead,
+      'is_typing': isTyping,
     };
   }
 
@@ -104,6 +108,7 @@ class MessageModel extends Equatable {
     MessageType? type,
     bool? isPinned,
     bool? isRead,
+    bool? isTyping,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -118,6 +123,7 @@ class MessageModel extends Equatable {
       type: type ?? this.type,
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? this.isRead,
+      isTyping: isTyping ?? this.isTyping,
     );
   }
 
@@ -135,6 +141,7 @@ class MessageModel extends Equatable {
         type,
         isPinned,
         isRead,
+        isTyping,
       ];
 
   static MessageModel empty() {
@@ -146,6 +153,7 @@ class MessageModel extends Equatable {
       createdAt: DateTime.now(),
       isPinned: false,
       isRead: false,
+      isTyping: false,
     );
   }
 }

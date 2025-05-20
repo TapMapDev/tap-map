@@ -11,6 +11,7 @@ import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -219,6 +220,20 @@ class _ChatScreenState extends State<ChatScreen> {
                         return const SizedBox();
                       },
                     ),
+                  ),
+                  BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
+                      if (state is ChatLoaded && state.typingUsers.isNotEmpty) {
+                        final otherTypingUsers = state.typingUsers
+                            .where((username) => username != _currentUsername)
+                            .toSet();
+
+                        if (otherTypingUsers.isNotEmpty) {
+                          return TypingIndicator(typingUsers: otherTypingUsers);
+                        }
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                   BlocBuilder<ChatBloc, ChatState>(
                     builder: (context, state) {

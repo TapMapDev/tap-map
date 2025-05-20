@@ -29,7 +29,6 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
         listener: (context, state) {
           debugPrint('=== State Change ===');
           debugPrint('State: $state');
-          debugPrint('State type: ${state.runtimeType}');
 
           if (state is AuthorizationFailed) {
             debugPrint('=== Authorization Failed ===');

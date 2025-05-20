@@ -11,6 +11,7 @@ import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_m
 abstract class IUserRepository {
   Future<UserModel> getCurrentUser();
   Future<UserModel> getUserByUsername(String username);
+  Future<UserModel> getUserById(int userId);
   Future<UserModel> updateUser(UserModel user);
   Future<String> updateAvatar(File imageFile);
   Future<List<UserAvatarModel>> getUserAvatars();
@@ -62,6 +63,33 @@ class UserRepository implements IUserRepository {
       if (response['statusCode'] == 200) {
         dynamic userData = response['data'];
         // Если userData — строка, проверяем, что это не HTML
+        if (userData is String) {
+          if (userData.trim().startsWith('<!DOCTYPE html>')) {
+            throw Exception('Пользователь не найден или ссылка некорректна');
+          }
+          userData = json.decode(userData);
+        }
+        debugPrint('✅ Parsing user data: $userData');
+        return UserModel.fromJson(userData);
+      } else {
+        debugPrint('❌ API Error: ${response['data']}');
+        throw Exception('Пользователь не найден или сервер вернул ошибку');
+      }
+    } catch (e) {
+      debugPrint('❌ Repository Error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserModel> getUserById(int userId) async {
+    try {
+      debugPrint('🔄 Making API request for user ID: $userId');
+      final response = await apiService.getData('/users/$userId/');
+      debugPrint('📥 API Response: $response');
+
+      if (response['statusCode'] == 200) {
+        dynamic userData = response['data'];
         if (userData is String) {
           if (userData.trim().startsWith('<!DOCTYPE html>')) {
             throw Exception('Пользователь не найден или ссылка некорректна');

@@ -36,6 +36,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final MessageModel? forwardFrom;
   final MessageModel? pinnedMessage;
   final bool isRead;
+  final Set<String> typingUsers;
 
   ChatLoaded({
     required this.chat,
@@ -44,11 +45,19 @@ class ChatLoaded extends ChatState with EquatableMixin {
     this.forwardFrom,
     this.pinnedMessage,
     this.isRead = false,
+    this.typingUsers = const {},
   });
 
   @override
-  List<Object?> get props =>
-      [chat, messages, replyTo, forwardFrom, pinnedMessage, isRead];
+  List<Object?> get props => [
+        chat,
+        messages,
+        replyTo,
+        forwardFrom,
+        pinnedMessage,
+        isRead,
+        typingUsers,
+      ];
 
   ChatLoaded copyWith({
     ChatModel? chat,
@@ -57,6 +66,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
     MessageModel? forwardFrom,
     MessageModel? pinnedMessage,
     bool? isRead,
+    Set<String>? typingUsers,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
@@ -65,6 +75,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
       forwardFrom: forwardFrom ?? this.forwardFrom,
       pinnedMessage: pinnedMessage ?? this.pinnedMessage,
       isRead: isRead ?? this.isRead,
+      typingUsers: typingUsers ?? this.typingUsers,
     );
   }
 }
@@ -77,15 +88,6 @@ class MessageSent extends ChatState {
   @override
   List<Object?> get props => [message];
 }
-
-// class NewMessageReceived extends ChatState {
-//   final MessageModel message;
-
-//   const NewMessageReceived(this.message);
-
-//   @override
-//   List<Object?> get props => [message];
-// }
 
 class UserTyping extends ChatState {
   final int userId;
@@ -163,8 +165,8 @@ class MessageEdited extends ChatState {
   List<Object?> get props => [messageId, newText];
 }
 
-  class FileUploaded extends ChatState {
-    final String filePath;
+class FileUploaded extends ChatState {
+  final String filePath;
 
-    const FileUploaded(this.filePath);
-  }
+  const FileUploaded(this.filePath);
+}
