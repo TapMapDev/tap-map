@@ -36,23 +36,22 @@ class WebSocketService {
   void sendMessage({
     required int chatId,
     required String text,
-    List<Map<String, String>>? attachments,
     int? replyToId,
     int? forwardedFromId,
+    List<Map<String, String>>? attachments,
   }) {
-    if (_channel.closeCode != null) {
-      return;
-    }
-    final jsonMessage = jsonEncode({
+    final message = {
       'type': 'create_message',
       'chat_id': chatId,
       'text': text,
-      'attachments': attachments ?? [],
-      'reply_to_id': replyToId,
-      'forwarded_from_id': forwardedFromId,
-    });
+      if (replyToId != null) 'reply_to_id': replyToId,
+      if (forwardedFromId != null) 'forwarded_from_id': forwardedFromId,
+      if (attachments != null && attachments.isNotEmpty)
+        'attachments': attachments,
+    };
 
-    _channel.sink.add(jsonMessage);
+    print('📤 Socket: Sending message: $message');
+    _channel.sink.add(jsonEncode(message));
   }
 
   void editMessage({

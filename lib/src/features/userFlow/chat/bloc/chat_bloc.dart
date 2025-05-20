@@ -537,19 +537,47 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final fileUrl = await _chatRepository.uploadFile(event.file.path);
 
       // Отправляем сообщение с файлом
-      if (_sendMessageUseCase != null) {
-        _sendMessageUseCase!.execute(
+      if (_webSocketService != null) {
+        _webSocketService!.sendMessage(
           chatId: currentState.chat.chatId,
-          text: fileUrl,
+          text: '',
+          attachments: [
+            {
+              'url': fileUrl,
+              'content_type': event.file.path.toLowerCase().endsWith('.mp4') ||
+                      event.file.path.toLowerCase().endsWith('.mov') ||
+                      event.file.path.toLowerCase().endsWith('.avi') ||
+                      event.file.path.toLowerCase().endsWith('.webm')
+                  ? 'video/mp4'
+                  : 'image/jpeg',
+            }
+          ],
         );
 
         // Создаем новое сообщение
         final newMessage = MessageModel(
           id: DateTime.now().millisecondsSinceEpoch,
           chatId: currentState.chat.chatId,
-          text: fileUrl,
+          text: '',
           senderUsername: _currentUsername ?? 'Unknown',
           createdAt: DateTime.now(),
+          attachments: [
+            {
+              'url': fileUrl,
+              'content_type': event.file.path.toLowerCase().endsWith('.mp4') ||
+                      event.file.path.toLowerCase().endsWith('.mov') ||
+                      event.file.path.toLowerCase().endsWith('.avi') ||
+                      event.file.path.toLowerCase().endsWith('.webm')
+                  ? 'video/mp4'
+                  : 'image/jpeg',
+            }
+          ],
+          type: event.file.path.toLowerCase().endsWith('.mp4') ||
+                  event.file.path.toLowerCase().endsWith('.mov') ||
+                  event.file.path.toLowerCase().endsWith('.avi') ||
+                  event.file.path.toLowerCase().endsWith('.webm')
+              ? MessageType.video
+              : MessageType.image,
         );
 
         // Обновляем состояние, сохраняя все важные данные
@@ -562,7 +590,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       } else {
         throw Exception('Not connected to chat');
       }
-    } catch (e) {}
+    } catch (e) {
+      print('❌ Error uploading file: $e');
+      emit(ChatError(e.toString()));
+    }
   }
 
   void _onSendTyping(SendTyping event, Emitter<ChatState> emit) {

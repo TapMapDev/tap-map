@@ -16,9 +16,10 @@ class SendMessageUseCase {
     required String text,
     int? replyToId,
     int? forwardedFromId,
+    List<Map<String, String>>? attachments,
   }) {
-    if (text.trim().isEmpty) {
-      throw Exception('Message text cannot be empty');
+    if (text.trim().isEmpty && (attachments == null || attachments.isEmpty)) {
+      throw Exception('Message must have either text or attachments');
     }
 
     _webSocketService.sendMessage(
@@ -26,6 +27,7 @@ class SendMessageUseCase {
       text: text,
       replyToId: replyToId,
       forwardedFromId: forwardedFromId,
+      attachments: attachments,
     );
 
     final message = MessageModel(
@@ -37,8 +39,24 @@ class SendMessageUseCase {
       createdAt: DateTime.now(),
       senderUsername: _currentUsername,
       isRead: false,
-      type: MessageType.text,
+      type: _getMessageType(attachments),
+      attachments: attachments ?? [],
     );
     return message;
+  }
+
+  MessageType _getMessageType(List<Map<String, String>>? attachments) {
+    if (attachments == null || attachments.isEmpty) {
+      return MessageType.text;
+    }
+
+    final contentType = attachments.first['content_type']?.toLowerCase() ?? '';
+    if (contentType.startsWith('video/')) {
+      return MessageType.video;
+    } else if (contentType.startsWith('image/')) {
+      return MessageType.image;
+    } else {
+      return MessageType.file;
+    }
   }
 }
