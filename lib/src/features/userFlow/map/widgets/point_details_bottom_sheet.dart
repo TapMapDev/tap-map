@@ -126,9 +126,6 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         minChildSize: 0.5,
         maxChildSize: 1.0,
         builder: (context, scrollController) {
-          // Заменяем переданный контроллер на новый, чтобы лист можно было прокручивать
-          widget.scrollController = scrollController;
-          
           return Container(
             width: MediaQuery.of(context).size.width,
             clipBehavior: Clip.antiAlias,
@@ -186,7 +183,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                         return true;
                       },
                       child: ListView(
-                        controller: scrollController,
+                        controller: scrollController, // Используем scrollController из DraggableScrollableSheet
                         padding: EdgeInsets.only(top: 0, bottom: 24),
                         children: [
                           // Индикатор перетаскивания
