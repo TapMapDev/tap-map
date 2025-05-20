@@ -136,6 +136,25 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
             if (_properties['description'] != null)
               _buildInfoRow('Описание', _properties['description'].toString()),
               
+            // Дополнительная информация
+            if (_properties['working_hours'] != null)
+              _buildInfoRow('Часы работы', _properties['working_hours'].toString()),
+              
+            if (_properties['phone'] != null)
+              _buildInfoRow('Телефон', _properties['phone'].toString()),
+              
+            if (_properties['website'] != null)
+              _buildInfoRow('Сайт', _properties['website'].toString()),
+              
+            if (_properties['openStatus'] != null || _properties['open_status'] != null)
+              _buildInfoRow('Статус', (_properties['openStatus'] ?? _properties['open_status']).toString()),
+              
+            if (_properties['distance'] != null)
+              _buildInfoRow('Расстояние', _properties['distance'].toString()),
+              
+            if (_properties['rating'] != null)
+              _buildInfoRow('Рейтинг', _properties['rating'].toString()),
+              
             SizedBox(height: 24),
           ],
         ),
