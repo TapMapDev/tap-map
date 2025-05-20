@@ -44,7 +44,7 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
       width: double.infinity,
       child: Stack(
         children: [
-          // Галерея изображений
+          // Галерея изображений с обработкой ошибок
           PageView.builder(
             controller: _pageController,
             itemCount: widget.images.length,
@@ -52,22 +52,50 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
               final imageUrl = widget.images[index]['url'] ?? widget.images[index]['image'];
               return Container(
                 decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
-                  ),
+                  color: Colors.grey[200], // Фон для случая ошибки загрузки
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment(0.50, 0.41),
-                      end: Alignment(0.50, 1.00),
-                      colors: [
-                        Colors.black.withOpacity(0), 
-                        Colors.black
-                      ],
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Изображение с обработкой ошибок
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                            size: 48,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF4A69FF),
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
                     ),
-                  ),
+                    // Градиент поверх изображения
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment(0.50, 0.41),
+                          end: Alignment(0.50, 1.00),
+                          colors: [
+                            Colors.black.withOpacity(0), 
+                            Colors.black
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -89,13 +117,10 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
                     borderRadius: BorderRadius.circular(40),
                   ),
                 ),
-                child: Transform.rotate(
-                  angle: 3.14, // 180 градусов в радианах
-                  child: Icon(
-                    Icons.arrow_forward,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                child: Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
             ),
@@ -107,7 +132,7 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
             bottom: 48,
             child: Container(
               height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: ShapeDecoration(
                 color: Color(0x7F2F2E2D),
                 shape: RoundedRectangleBorder(
@@ -131,8 +156,6 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
                       fontSize: 16,
                       fontFamily: 'SF Pro Display',
                       fontWeight: FontWeight.w600,
-                      height: 1.38,
-                      letterSpacing: -0.43,
                     ),
                   ),
                 ],
@@ -140,63 +163,28 @@ class _ImageGalleryWidgetState extends State<ImageGalleryWidget> {
             ),
           ),
           
-          // Индикаторы страниц
+          // Индикаторы страниц с учетом активной страницы
           Positioned(
             left: 16,
             right: 16,
             bottom: 16,
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 widget.images.length > 7 ? 7 : widget.images.length,
                 (index) {
-                  if (index == 0) {
-                    return Expanded(
-                      child: Container(
-                        height: 4,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: ShapeDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              child: Container(
-                                width: 22,
-                                height: 4,
-                                decoration: ShapeDecoration(
-                                  color: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                  final bool isActive = index == _currentPage;
+                  return Container(
+                    width: isActive ? 20 : 8,
+                    height: 4,
+                    margin: EdgeInsets.symmetric(horizontal: 2),
+                    decoration: ShapeDecoration(
+                      color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  } else {
-                    return Container(
-                      width: 49,
-                      height: 4,
-                      margin: EdgeInsets.only(left: 2),
-                      clipBehavior: Clip.antiAlias,
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  }
+                    ),
+                  );
                 },
               ),
             ),

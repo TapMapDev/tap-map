@@ -40,7 +40,7 @@ class WorkingHoursFormatter {
     final List<Widget> result = [];
     
     if (parsedData.isEmpty) {
-      return [Text('Нет информации о времени работы')];
+      return []; 
     }
     
     // Добавляем информацию по каждому дню
@@ -51,10 +51,14 @@ class WorkingHoursFormatter {
         final bool is24 = dayData['is_24'] == true;
         
         String timeInfo;
+        Color timeColor = Color(0xFF2F2E2D);
+        
         if (isClosed) {
           timeInfo = 'Закрыто';
+          timeColor = Color(0xFFEB5757);
         } else if (is24) {
           timeInfo = 'Круглосуточно';
+          timeColor = Color(0xFF27AE60);
         } else {
           final String openTime = dayData['open_times'] is List 
               ? dayData['open_times'][0] 
@@ -65,19 +69,34 @@ class WorkingHoursFormatter {
           timeInfo = '$openTime - $closeTime';
         }
         
+        // Проверка, является ли день текущим
+        final DateTime now = DateTime.now();
+        final bool isToday = _getDayIndex(englishDay) == now.weekday - 1;
+        
         result.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 4.0),
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   russianDay,
                   style: TextStyle(
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    fontFamily: 'SF Pro Display',
+                    fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+                    color: isToday ? Color(0xFF4A69FF) : Color(0xFF2F2E2D),
                   ),
                 ),
-                Text(timeInfo),
+                Text(
+                  timeInfo,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'SF Pro Display',
+                    fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+                    color: timeColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -86,5 +105,11 @@ class WorkingHoursFormatter {
     });
     
     return result;
+  }
+  
+  // Вспомогательный метод для получения индекса дня (0 = понедельник, 6 = воскресенье)
+  static int _getDayIndex(String englishDay) {
+    final List<String> days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    return days.indexOf(englishDay);
   }
 }
