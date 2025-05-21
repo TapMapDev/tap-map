@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide StyleManager;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
+import 'package:http/http.dart' as http;
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/network/dio_client.dart';
 import 'package:tap_map/core/services/deep_link_service.dart';
@@ -23,6 +24,7 @@ import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository_impl.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
 
@@ -35,6 +37,9 @@ Future<void> setup() async {
   // Регистрация SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
+
+  // Регистрация http.Client
+  getIt.registerLazySingleton<http.Client>(() => http.Client());
 
   // Регистрация DioClient
   getIt.registerLazySingleton<DioClient>(() => DioClient());
@@ -74,9 +79,12 @@ Future<void> setup() async {
   );
 
   // Place Detail
-  getIt.registerLazySingleton<PlaceRepositoryImpl>(
-          () => PlaceRepositoryImpl(getIt()));
-  getIt.registerFactory(() => PlaceDetailBloc(getIt()));
+  getIt.registerLazySingleton<PlaceRepository>(
+        () => PlaceRepositoryImpl(getIt<http.Client>()),
+  );
+  getIt.registerFactory<PlaceDetailBloc>(
+        () => PlaceDetailBloc(getIt<PlaceRepository>()),
+  );
 
   // Register ChatRepository
   getIt.registerLazySingleton<ChatRepository>(
