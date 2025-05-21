@@ -38,13 +38,13 @@ Future<void> setup() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
 
-  // Регистрация http.Client
-  getIt.registerLazySingleton<http.Client>(() => http.Client());
-
   // Регистрация DioClient
   getIt.registerLazySingleton<DioClient>(() => DioClient());
 
   getIt.registerLazySingleton<ApiService>(() => ApiService(getIt<DioClient>()));
+
+  // Регистрация http.Client
+  getIt.registerLazySingleton<http.Client>(() => http.Client());
 
   getIt.registerLazySingleton<RegistrationRepositoryImpl>(
       () => RegistrationRepositoryImpl(apiService: getIt<ApiService>()));
