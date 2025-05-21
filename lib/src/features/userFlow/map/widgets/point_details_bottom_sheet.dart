@@ -96,12 +96,12 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     ),
                   ),
 
-                  HeaderSection(name: d.name, category: d.category),
+                  HeaderSection(title: d.name, category: d.category),
                   const SizedBox(height: 16),
 
                   FriendsSection(
                     totalFriends: d.friendsCount,
-                    avatars: d.friendAvatars,
+                    avatarUrls: d.friendAvatars,
                   ),
                   const SizedBox(height: 13),
 
@@ -116,7 +116,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
 
                   FeaturesSection(
                     features: d.features.map((f) => f.title).toList(),
-                    priceRange: d.priceRange,
+                    averageCheck: d.priceRange,
                   ),
                   const SizedBox(height: 13),
 

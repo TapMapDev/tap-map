@@ -2,26 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 import 'package:tap_map/ui/theme/app_colors.dart';
-
-class Review {
-  final String author;
-  final DateTime date;
-  final int rating;               // 1-5
-  final String label;             // «Хорошо», «Плохо» …
-  final String text;
-  final int likes;
-  final int dislikes;
-
-  Review({
-    required this.author,
-    required this.date,
-    required this.rating,
-    required this.label,
-    required this.text,
-    this.likes = 0,
-    this.dislikes = 0,
-  });
-}
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/review.dart';
 
 class ReviewsSection extends StatelessWidget {
   final List<Review> reviews;

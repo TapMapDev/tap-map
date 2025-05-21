@@ -5,19 +5,19 @@ import 'package:tap_map/ui/theme/app_colors.dart';
 
 class FriendsSection extends StatelessWidget {
   final int totalFriends;           // сколько всего друзей были
-  final List<ImageProvider> avatars; // первые 4 аватарки
+  final List<String> avatarUrls;     // url-ы картинок, первые 4
   final VoidCallback? onMoreTap;
 
   const FriendsSection({
     Key? key,
     required this.totalFriends,
-    required this.avatars,
+    required this.avatarUrls,
     this.onMoreTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final moreCount = totalFriends - avatars.length;
+    final moreCount = totalFriends - avatarUrls.length;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -40,9 +40,9 @@ class FriendsSection extends StatelessWidget {
             ),
           ),
           // Аватарки
-          ...avatars.take(4).map((img) => Padding(
+          ...avatarUrls.take(4).map((url) => Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: CircleAvatar(radius: 23, backgroundImage: img),
+            child: CircleAvatar(radius: 23, backgroundImage: NetworkImage(url)),
           )),
           // Кнопка «ещё»
           if (moreCount > 0)
