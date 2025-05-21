@@ -23,6 +23,8 @@ import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository_impl.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -70,6 +72,11 @@ Future<void> setup() async {
   getIt.registerFactory<AuthorizationBloc>(
     () => AuthorizationBloc(getIt<AuthorizationRepositoryImpl>()),
   );
+
+  // Place Detail
+  getIt.registerLazySingleton<PlaceRepositoryImpl>(
+          () => PlaceRepositoryImpl(getIt()));
+  getIt.registerFactory(() => PlaceDetailBloc(getIt()));
 
   // Register ChatRepository
   getIt.registerLazySingleton<ChatRepository>(

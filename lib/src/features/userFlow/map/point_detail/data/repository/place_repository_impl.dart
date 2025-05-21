@@ -5,6 +5,7 @@ import 'place_repository.dart';
 
 class PlaceRepositoryImpl implements PlaceRepository {
   final http.Client _client;
+
   PlaceRepositoryImpl(this._client);
 
   @override
