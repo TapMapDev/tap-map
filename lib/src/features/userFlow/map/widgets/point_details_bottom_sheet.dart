@@ -8,7 +8,6 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/favorite_
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/route_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/open_status_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/features_section.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/average_check_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/contacts_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/photo_gallery_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/rating_summary_section.dart';
@@ -16,6 +15,8 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/reviews_s
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_action_bar.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 
+/// Bottom-sheet с полной информацией о выбранной точке на карте.
+/// Данные подтягиваются из [PlaceDetailBloc].
 class PointDetailsBottomSheet extends StatefulWidget {
   const PointDetailsBottomSheet({Key? key}) : super(key: key);
 
@@ -48,6 +49,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
       opacity: _fade,
       child: BlocBuilder<PlaceDetailBloc, PlaceDetailState>(
         builder: (context, state) {
+          // ───── loading / error ─────
           if (state is PlaceDetailLoading) {
             return const SizedBox(
               height: 250,
@@ -66,10 +68,12 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
           if (state is! PlaceDetailLoaded) return const SizedBox.shrink();
 
           final d = state.detail;
+
+          // ───── основной контент ─────
           return DraggableScrollableSheet(
             expand: false,
-            initialChildSize: 0.6,
-            minChildSize: 0.4,
+            initialChildSize: 0.60,
+            minChildSize: 0.40,
             maxChildSize: 0.95,
             builder: (_, scroll) => Container(
               decoration: const BoxDecoration(
@@ -83,7 +87,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                 controller: scroll,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  // drag-indicator
+                  // ─── drag-indicator ───
                   Center(
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -96,6 +100,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     ),
                   ),
 
+                  // ─── секции ───
                   HeaderSection(title: d.name, category: d.category),
                   const SizedBox(height: 16),
 
@@ -105,12 +110,14 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                   ),
                   const SizedBox(height: 13),
 
+                  // TODO d.isFavorite
                   FavoriteSection(isFavorite: false, listName: 'Кофейни'),
                   const SizedBox(height: 13),
 
                   RouteSection(address: d.address),
                   const SizedBox(height: 13),
 
+                  // TODO d.openStatus
                   OpenStatusSection(statusText: 'Откроется через 35 минут'),
                   const SizedBox(height: 13),
 
@@ -128,28 +135,28 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
 
                   PhotoGallerySection(
                     imageUrls: d.imageUrls,
-                    onAddPhoto: () {},
+                    onAddPhoto: () {}, // TODO: callback
                   ),
                   const SizedBox(height: 13),
 
                   RatingSummarySection(
                     rating: d.rating,
                     totalReviews: d.totalReviews,
-                    onRateTap: () {},
+                    onRateTap: () {}, // TODO: callback
                   ),
                   const SizedBox(height: 13),
 
                   ReviewsSection(
                     reviews: d.reviews,
                     totalCount: d.totalReviews,
-                    onSeeAll: () {},
+                    onSeeAll: () {}, // TODO: callback
                   ),
                   const SizedBox(height: 24),
 
                   BottomActionBar(
-                    onRoute: () {},
-                    onCall: () {},
-                    onShare: () {},
+                    onRoute: () {}, // TODO: callback
+                    onCall: () {},  // TODO: callback
+                    onShare: () {}, // TODO: callback
                   ),
                 ],
               ),
