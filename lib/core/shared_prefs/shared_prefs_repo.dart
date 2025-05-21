@@ -10,6 +10,7 @@ class SharedPrefsRepository {
   static const String _accessTokenKey = 'access_token';
   static const String _mapStyleKey = 'selected_map_style';
   static const String _mapStyleIdKey = 'selected_map_style_id';
+  static const String _deviceTokenIdKey = 'device_token_id';
   final Talker talker = getIt.get<Talker>();
 
   static const String _iconsCacheKey = 'icons_cache_map';
@@ -172,5 +173,40 @@ class SharedPrefsRepository {
   Future<String?> getSelectedFont() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('selectedFontName');
+  }
+
+  // Методы для device_token_id
+  Future<void> saveDeviceTokenId(String tokenId) async {
+    try {
+      talker.info('Saving device token ID: $tokenId');
+      await setString(_deviceTokenIdKey, tokenId);
+      talker.info('Device token ID saved successfully');
+    } catch (e) {
+      talker.error('Error saving device token ID: $e');
+      rethrow;
+    }
+  }
+
+  Future<String?> getDeviceTokenId() async {
+    try {
+      final tokenId = await getString(_deviceTokenIdKey);
+      talker.info(
+          'Retrieved device token ID: ${tokenId != null ? 'exists' : 'null'}');
+      return tokenId;
+    } catch (e) {
+      talker.error('Error getting device token ID: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteDeviceTokenId() async {
+    try {
+      talker.info('Deleting device token ID');
+      await deleteKey(_deviceTokenIdKey);
+      talker.info('Device token ID deleted successfully');
+    } catch (e) {
+      talker.error('Error deleting device token ID: $e');
+      rethrow;
+    }
   }
 }

@@ -87,7 +87,6 @@ class WebSocketService {
 
   void sendTyping({required int chatId, required bool isTyping}) {
     if (_channel.closeCode != null) {
-      print('❌ WebSocket уже закрыт, событие typing не отправлено');
       return;
     }
     final jsonMessage = jsonEncode({
@@ -95,8 +94,6 @@ class WebSocketService {
       'chat_id': chatId,
       'is_typing': isTyping,
     });
-    _channel.sink.add(jsonMessage);
-    print('📤 Socket: Отправлено событие typing: $jsonMessage');
   }
 
   Stream get stream => _broadcastStream;

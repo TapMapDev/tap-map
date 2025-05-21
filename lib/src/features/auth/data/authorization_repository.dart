@@ -133,10 +133,21 @@ class AuthorizationRepositoryImpl {
       await FirebaseMessaging.instance.deleteToken();
       final accessToken = await prefs.getString('access_token');
       final refreshToken = await prefs.getString('refresh_token');
+      final deviceTokenId = await prefs.getString('device_token_id');
 
       if (accessToken == null || refreshToken == null) {
-        debugPrint('Logout aborted: Missing tokens');
         return;
+      }
+
+      // Деактивируем FCM токен, если есть device_token_id
+      if (deviceTokenId != null) {
+        try {
+          await deactivateFcmToken(deviceTokenId);
+          await prefs.deleteKey('device_token_id');
+          debugPrint('✅ Device token ID deleted from local storage');
+        } catch (e) {
+          debugPrint('⚠️ Failed to deactivate FCM token: $e');
+        }
       }
 
       final response = await apiService.postData(
@@ -154,14 +165,45 @@ class AuthorizationRepositoryImpl {
       if (statusCode == 200 || statusCode == 204) {
         await prefs.deleteKey('access_token');
         await prefs.deleteKey('refresh_token');
-        debugPrint('Logout successful');
+        debugPrint('✅ Logout successful');
       } else {
-        debugPrint('Logout failed with status code: $statusCode');
+        debugPrint('⚠️ Logout failed with status code: $statusCode');
       }
     } catch (e, stackTrace) {
-      debugPrint('Logout error: $e');
+      debugPrint('❌ Logout error: $e');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
+    }
+  }
+
+  Future<void> deactivateFcmToken(String tokenId) async {
+    try {
+      final accessToken = await prefs.getString('access_token');
+
+      if (accessToken == null) {
+        debugPrint('No access token. Skipping FCM token deactivation.');
+        return;
+      }
+      final response = await apiService.postData(
+        '/users/me/device_tokens/$tokenId/deactivate/',
+        null,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        useAuth: false,
+      );
+      final statusCode = response['statusCode'] as int?;
+
+      if (statusCode == 200 || statusCode == 204) {
+        debugPrint('✅ FCM token deactivated successfully');
+      } else {
+        debugPrint(
+            '⚠️ Failed to deactivate FCM token. Status code: $statusCode');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error during FCM token deactivation: $e');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 }

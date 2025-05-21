@@ -111,7 +111,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               setState(() {
                 _user = user.copyWith(avatarUrl: newAvatarUrl);
               });
-              // Можно также отправить событие в BLoC для обновления на сервере, если нужно
             },
           ),
           const SizedBox(height: 16),

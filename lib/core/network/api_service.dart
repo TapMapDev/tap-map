@@ -145,7 +145,9 @@ class ApiService {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 &&
+          response.data.containsKey('access') &&
+          response.data.containsKey('refresh')) {
         await prefs.setString('access_token', response.data['access']);
         await prefs.saveRefreshToken(response.data['refresh']);
         return true;

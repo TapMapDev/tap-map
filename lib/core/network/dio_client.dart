@@ -207,16 +207,38 @@ class DioClient {
           'device_identifier': deviceIdentifier,
           'refresh_token': refreshToken,
         },
+        options: Options(
+          validateStatus: (status) => status != null && status < 400,
+        ),
       );
 
       _talker.info('📡 Response status: ${response.statusCode}');
       _talker.info('📡 Response data: ${response.data}');
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data != null &&
+            data['id'] != null &&
+            data['token'] != null &&
+            data['device_type'] != null &&
+            data['device_identifier'] != null &&
+            data['is_active'] != null) {
+          final deviceTokenId = data['id'].toString();
+          await prefs.saveDeviceTokenId(deviceTokenId);
+          _talker.info('✅ Device token ID saved: $deviceTokenId');
+          _talker.info('✅ Device token details:');
+          _talker.info('   - ID: ${data['id']}');
+          _talker.info('   - Token: ${data['token']}');
+          _talker.info('   - Device Type: ${data['device_type']}');
+          _talker.info('   - Device Identifier: ${data['device_identifier']}');
+          _talker.info('   - Is Active: ${data['is_active']}');
+        } else {
+          _talker.warning('⚠️ Response data is missing required fields');
+        }
+        _talker.info('✅ FCM token registered successfully');
+      } else {
         throw Exception('Failed to register FCM token: ${response.statusCode}');
       }
-
-      _talker.info('✅ FCM token registered successfully');
     } catch (e) {
       _talker.error('❌ Failed to register FCM token: $e');
       rethrow;
