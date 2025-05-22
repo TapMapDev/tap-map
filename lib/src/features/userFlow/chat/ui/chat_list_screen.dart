@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
-import '../bloc/chat_bloc.dart';
+import '../bloc/chat_bloc/chat_bloc.dart';
 import '../models/chat_model.dart';
 
 class ChatListScreen extends StatefulWidget {

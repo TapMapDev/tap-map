@@ -34,7 +34,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final List<MessageModel> messages;
   final MessageModel? replyTo;
   final MessageModel? forwardFrom;
-  final MessageModel? pinnedMessage;
+  // final MessageModel? pinnedMessage;
   final bool isRead;
   final Set<String> typingUsers;
 
@@ -43,7 +43,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
     required this.messages,
     this.replyTo,
     this.forwardFrom,
-    this.pinnedMessage,
+    // this.pinnedMessage,
     this.isRead = false,
     this.typingUsers = const {},
   });
@@ -54,7 +54,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
         messages,
         replyTo,
         forwardFrom,
-        pinnedMessage,
+        // pinnedMessage,
         isRead,
         typingUsers,
       ];
@@ -64,16 +64,16 @@ class ChatLoaded extends ChatState with EquatableMixin {
     List<MessageModel>? messages,
     MessageModel? replyTo,
     MessageModel? forwardFrom,
-    MessageModel? pinnedMessage,
+    // MessageModel? pinnedMessage,
     bool? isRead,
     Set<String>? typingUsers,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      replyTo: replyTo ?? this.replyTo,
+      // replyTo: replyTo ?? this.replyTo,
       forwardFrom: forwardFrom ?? this.forwardFrom,
-      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
+      // pinnedMessage: pinnedMessage ?? this.pinnedMessage,
       isRead: isRead ?? this.isRead,
       typingUsers: typingUsers ?? this.typingUsers,
     );

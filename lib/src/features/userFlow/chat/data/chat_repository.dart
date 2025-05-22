@@ -155,25 +155,46 @@ class ChatRepository {
     required int messageId,
   }) async {
     try {
-      print(
-          '📌 Sending pin request for chatId: $chatId, messageId: $messageId');
-      final response = await _dioClient.post(
-        '/chat/$chatId/pin/',
-        data: {
-          'message_id': messageId,
-        },
-      );
-      print('📌 Pin response status: ${response.statusCode}');
-      print('📌 Pin response data: ${response.data}');
+      // Проверяем формат данных, который мы отправляем
+      final requestData = {
+        'message_id': messageId,
+      };
+      print('📌 DEBUG: Request data: $requestData');
 
-      if (response.statusCode == 200) {
-        // Сохраняем ID закрепленного сообщения локально
-        await _prefs.setInt('$_pinnedMessageKey$chatId', messageId);
-      } else {
-        throw Exception('Failed to pin message');
+      // Используем правильный URL для закрепления сообщения, а не чата
+      final url = '/chat/$chatId/messages/$messageId/pin/';
+      print('📌 DEBUG: Request URL: $url');
+
+      try {
+        // Используем напрямую Dio для получения больше диагностики
+        final response = await _dioClient.client.post(
+          url,
+          data: {}, // Данные не нужны, т.к. ID уже в URL
+          options: Options(
+            headers: _dioClient.client.options.headers,
+            validateStatus: (status) =>
+                true, // Принимаем любой статус для диагностики
+          ),
+        );
+
+        // Проверяем на конкретное сообщение об ошибке в ответе
+        if (response.data is Map && response.data.containsKey('error')) {
+        }
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          await _prefs.setInt('$_pinnedMessageKey$chatId', messageId);
+          print('📌 DEBUG: Successfully pinned message');
+        } else {
+          throw Exception('Failed to pin message: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('📌 DEBUG: Inner exception: $e');
+        rethrow;
       }
     } catch (e) {
-      print('❌ Pin message error details: $e');
+      print('❌ DEBUG: Outer exception pinning message: $e');
+      if (e is DioException) {
+      }
       throw Exception('Error pinning message: $e');
     }
   }
@@ -183,20 +204,27 @@ class ChatRepository {
     required int messageId,
   }) async {
     try {
-      final response = await _dioClient.post(
-        '/chat/$chatId/unpin/',
-        data: {
-          'message_id': messageId,
-        },
+      // Используем аналогичный URL для открепления сообщения
+      final url = '/chat/$chatId/messages/$messageId/unpin/';
+      print('📌 DEBUG: Unpin request URL: $url');
+
+      final response = await _dioClient.client.post(
+        url,
+        data: {},
+        options: Options(
+          headers: _dioClient.client.options.headers,
+          validateStatus: (status) => true,
+        ),
       );
+
       print('📥 Unpin message response status: ${response.statusCode}');
       print('📥 Unpin message response data: ${response.data}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         // Удаляем ID закрепленного сообщения из локального хранилища
         await _prefs.remove('$_pinnedMessageKey$chatId');
       } else {
-        throw Exception('Failed to unpin message');
+        throw Exception('Failed to unpin message: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ Unpin message error details: $e');
@@ -210,16 +238,8 @@ class ChatRepository {
 
   Future<String> uploadFile(String filePath) async {
     try {
-      print('📤 Starting file upload process');
-      print('📤 File path: $filePath');
-
       final file = await MultipartFile.fromFile(filePath);
-      print('📤 File size: ${file.length} bytes');
-
       final formData = FormData.fromMap({'file': file});
-      print('📤 FormData created');
-
-      print('📤 Sending request to server...');
       final response = await _dioClient.client.post(
         '/chat/upload_file/',
         data: formData,
@@ -229,12 +249,7 @@ class ChatRepository {
           },
         ),
       );
-
-      print('📤 Upload file response status: ${response.statusCode}');
-      print('📤 Upload file response data: ${response.data}');
-
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('❌ Upload failed with status: ${response.statusCode}');
         throw Exception('Ошибка при загрузке файла: ${response.statusCode}');
       }
 
@@ -245,16 +260,9 @@ class ChatRepository {
       }
 
       final fileUrl = attachments[0]['url'] as String;
-      print('✅ File uploaded successfully. URL: $fileUrl');
       return fileUrl;
     } catch (e) {
-      print('❌ Error uploading file: $e');
       if (e is DioException) {
-        print('📤 Request URL: ${e.requestOptions.uri}');
-        print('📤 Request method: ${e.requestOptions.method}');
-        print('📤 Request headers: ${e.requestOptions.headers}');
-        print('📤 Response status: ${e.response?.statusCode}');
-        print('📤 Response data: ${e.response?.data}');
       }
       throw Exception('Ошибка при загрузке файла: $e');
     }

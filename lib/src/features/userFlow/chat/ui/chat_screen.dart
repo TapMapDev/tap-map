@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
@@ -35,9 +37,9 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageModel? _forwardFrom;
   final bool _isLoading = true;
   bool _isTyping = false;
-  final bool _otherUserIsTyping = false;
-  String? _typingUsername;
   MessageModel? _editingMessage;
+  File? _selectedMediaFile;
+  bool _isVideo = false;
 
   @override
   void initState() {
@@ -74,33 +76,56 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
 
-    if (_editingMessage != null) {
-      _chatBloc.add(EditMessage(
-        chatId: widget.chatId,
-        messageId: _editingMessage!.id,
-        text: text,
-      ));
-      setState(() {
-        _editingMessage = null;
-      });
-    } else {
-      final currentState = context.read<ChatBloc>().state;
-      final replyToId =
-          currentState is ChatLoaded ? currentState.replyTo?.id : null;
-
-      _chatBloc.add(
-        SendMessage(
+    if (_selectedMediaFile != null || text.isNotEmpty) {
+      if (_editingMessage != null) {
+        _chatBloc.add(EditMessage(
           chatId: widget.chatId,
+          messageId: _editingMessage!.id,
           text: text,
-          replyToId: replyToId,
-        ),
-      );
-    }
+        ));
+        setState(() {
+          _editingMessage = null;
+        });
+      } else if (_selectedMediaFile != null) {
+        _chatBloc.add(UploadFile(
+          file: _selectedMediaFile!,
+          caption: text,
+        ));
+        setState(() {
+          _selectedMediaFile = null;
+        });
+      } else {
+        final replyState = context.read<ReplyBloc>().state;
 
-    _messageController.clear();
-    _scrollToBottom();
+        int? replyToId;
+        if (replyState is ReplyActive) {
+          replyToId = replyState.message.id;
+        }
+
+        _chatBloc.add(
+          SendMessage(
+            chatId: widget.chatId,
+            text: text,
+            replyToId: replyToId,
+            forwardedFromId: _forwardFrom?.id,
+          ),
+        );
+
+        if (replyToId != null) {
+          context.read<ReplyBloc>().add(const ClearReplyTo());
+        }
+
+        if (_forwardFrom != null) {
+          setState(() {
+            _forwardFrom = null;
+          });
+        }
+      }
+
+      _messageController.clear();
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -144,12 +169,9 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Column(
                 children: [
-                  BlocBuilder<ChatBloc, ChatState>(
+                  BlocBuilder<PinBloc, PinBlocState>(
                     builder: (context, state) {
-                      if (state is ChatLoaded &&
-                          state.pinnedMessage != null &&
-                          state.messages
-                              .any((m) => m.id == state.pinnedMessage!.id)) {
+                      if (state is MessagePinned) {
                         return Container(
                           padding: const EdgeInsets.all(8.0),
                           color: Colors.amber.withOpacity(0.2),
@@ -159,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  state.pinnedMessage!.text,
+                                  state.pinnedMessage.text,
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w500),
                                   maxLines: 2,
@@ -169,9 +191,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               IconButton(
                                 icon: const Icon(Icons.close),
                                 onPressed: () {
-                                  context.read<ChatBloc>().add(UnpinMessage(
+                                  context.read<PinBloc>().add(UnpinMessage(
                                         chatId: widget.chatId,
-                                        messageId: state.pinnedMessage!.id,
+                                        messageId: state.pinnedMessage.id,
                                       ));
                                 },
                               ),
@@ -235,9 +257,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       return const SizedBox.shrink();
                     },
                   ),
-                  BlocBuilder<ChatBloc, ChatState>(
+                  BlocBuilder<ReplyBloc, ReplyState>(
                     builder: (context, state) {
-                      if (state is ChatLoaded && state.replyTo != null) {
+                      if (state is ReplyActive) {
                         return Container(
                           padding: const EdgeInsets.all(8.0),
                           color: Theme.of(context).cardColor,
@@ -260,7 +282,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                     ),
                                     Text(
-                                      state.replyTo!.text,
+                                      state.message.text,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -270,7 +292,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               IconButton(
                                 icon: const Icon(Icons.close),
                                 onPressed: () {
-                                  context.read<ChatBloc>().add(ClearReplyTo());
+                                  context
+                                      .read<ReplyBloc>()
+                                      .add(const ClearReplyTo());
                                 },
                               ),
                             ],
@@ -280,6 +304,87 @@ class _ChatScreenState extends State<ChatScreen> {
                       return const SizedBox.shrink();
                     },
                   ),
+                  if (_selectedMediaFile != null)
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      color: Theme.of(context).cardColor,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _isVideo ? Icons.videocam : Icons.image,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _isVideo ? 'Видео' : 'Изображение',
+                                  style: TextStyle(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedMediaFile = null;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 150,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: _isVideo
+                                  ? Container(
+                                      color: Colors.black87,
+                                      child: const Center(
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.video_file,
+                                              size: 48,
+                                              color: Colors.white54,
+                                            ),
+                                            Icon(
+                                              Icons.play_circle_outline,
+                                              size: 48,
+                                              color: Colors.white,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : Image.file(
+                                      _selectedMediaFile!,
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: Icon(Icons.error),
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   MessageInput(
                     controller: _messageController,
                     onSend: _sendMessage,
@@ -300,12 +405,29 @@ class _ChatScreenState extends State<ChatScreen> {
                     },
                     onFileSelected: (file) {
                       final fileToUpload = File(file.path!);
-                      _chatBloc.add(UploadFile(file: fileToUpload));
+                      final isVideo =
+                          file.path!.toLowerCase().endsWith('.mp4') ||
+                              file.path!.toLowerCase().endsWith('.mov') ||
+                              file.path!.toLowerCase().endsWith('.avi') ||
+                              file.path!.toLowerCase().endsWith('.webm');
+
+                      setState(() {
+                        _selectedMediaFile = fileToUpload;
+                        _isVideo = isVideo;
+                      });
                     },
                     onImageSelected: (file) {
                       final fileToUpload = File(file.path);
-                      _chatBloc.add(UploadFile(file: fileToUpload));
-                      _chatBloc.add(UploadFile(file: fileToUpload));
+                      final isVideo =
+                          file.path.toLowerCase().endsWith('.mp4') ||
+                              file.path.toLowerCase().endsWith('.mov') ||
+                              file.path.toLowerCase().endsWith('.avi') ||
+                              file.path.toLowerCase().endsWith('.webm');
+
+                      setState(() {
+                        _selectedMediaFile = fileToUpload;
+                        _isVideo = isVideo;
+                      });
                     },
                     editingMessage: _editingMessage,
                     onCancelEdit: () {
@@ -339,7 +461,7 @@ class _ChatScreenState extends State<ChatScreen> {
             title: const Text('Ответить'),
             onTap: () {
               Navigator.pop(context);
-              context.read<ChatBloc>().add(SetReplyTo(message));
+              context.read<ReplyBloc>().add(SetReplyTo(message));
             },
           ),
           ListTile(
@@ -391,7 +513,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Закрепить сообщение'),
               onTap: () {
                 Navigator.of(context).pop();
-                context.read<ChatBloc>().add(PinMessage(
+                context.read<PinBloc>().add(PinMessage(
                       chatId: widget.chatId,
                       messageId: message.id,
                     ));

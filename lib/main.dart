@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -14,7 +15,7 @@ import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.da
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
@@ -24,6 +25,7 @@ import 'package:tap_map/src/features/userFlow/search_screen/bloc/search_bloc.dar
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,6 +83,14 @@ class MyApp extends StatelessWidget {
               chatRepository: getIt.get<ChatRepository>(),
               prefsRepository: getIt.get<SharedPrefsRepository>(),
             ),
+          ),
+          BlocProvider(
+            create: (context) => PinBloc(
+              chatRepository: getIt.get<ChatRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => ReplyBloc(),
           ),
         ],
         child: MaterialApp.router(

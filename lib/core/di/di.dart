@@ -17,6 +17,7 @@ import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
@@ -101,6 +102,8 @@ Future<void> setup() async {
     (jwtToken, _) => WebSocketService(jwtToken: jwtToken),
   );
 
+  getIt.registerFactory<PinBloc>(
+      () => PinBloc(chatRepository: getIt<ChatRepository>()));
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 

@@ -1,5 +1,3 @@
-
-
 part of 'chat_bloc.dart';
 
 abstract class ChatEvent extends Equatable {
@@ -37,16 +35,7 @@ class SendMessage extends ChatEvent {
   List<Object?> get props => [chatId, text, replyToId, forwardedFromId];
 }
 
-class SetReplyTo extends ChatEvent {
-  final MessageModel? message;
-
-  const SetReplyTo(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class ClearReplyTo extends ChatEvent {}
+// class ClearReplyTo extends ChatEvent {}
 
 class SendTyping extends ChatEvent {
   final int chatId;
@@ -118,15 +107,6 @@ class SendReadReceipt extends ChatEvent {
   @override
   List<Object?> get props => [messageId];
 }
-
-// class NewMessageReceived extends ChatEvent {
-//   final dynamic message;
-
-//   const NewMessageReceived({required this.message});
-
-//   @override
-//   List<Object?> get props => [message];
-// }
 
 class TypingReceived extends ChatEvent {
   final int chatId;
@@ -208,23 +188,15 @@ class ClearForwardFrom extends ChatEvent {
   @override
   List<Object> get props => [];
 }
-
-class PinMessage extends ChatEvent {
-  final int chatId;
-  final int messageId;
-
-  const PinMessage({required this.chatId, required this.messageId});
-}
-
-class UnpinMessage extends ChatEvent {
-  final int chatId;
-  final int messageId;
-
-  const UnpinMessage({required this.chatId, required this.messageId});
-}
-
 class UploadFile extends ChatEvent {
   final File file;
+  final String? caption;
 
-  const UploadFile({required this.file});
+  const UploadFile({
+    required this.file,
+    this.caption,
+  });
+
+  @override
+  List<Object?> get props => [file, caption];
 }
