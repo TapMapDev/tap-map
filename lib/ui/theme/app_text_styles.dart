@@ -5,9 +5,8 @@ import 'app_colors.dart';
 /// Названия очевидные: h18 / body16 / caption14 и т. д.
 class AppTextStyles {
   // названия шрифтов
-  static const _sf      = 'SF Pro Display';
-  static const _poppins = 'Poppins';
   static const _inter   = 'Inter';
+  static const _poppins = 'Poppins';
 
   // ────────── Заголовки ──────────
   static const h24 = TextStyle(
@@ -22,7 +21,7 @@ class AppTextStyles {
   static const h18 = TextStyle(
     color: AppColors.dark,
     fontSize: 18,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w600,
     height: 1.22,
     letterSpacing: -0.43,
@@ -32,7 +31,7 @@ class AppTextStyles {
   static const body16       = TextStyle(
     color: AppColors.dark,
     fontSize: 16,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.25,
     letterSpacing: -0.43,
@@ -41,7 +40,7 @@ class AppTextStyles {
   static const body16Grey   = TextStyle(
     color: AppColors.grey,
     fontSize: 16,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.25,
     letterSpacing: -0.43,
@@ -50,7 +49,7 @@ class AppTextStyles {
   static const body16Green  = TextStyle(
     color: AppColors.green,
     fontSize: 16,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.25,
     letterSpacing: -0.43,
@@ -60,7 +59,7 @@ class AppTextStyles {
   static const caption14        = TextStyle(
     color: AppColors.grey,
     fontSize: 14,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.43,
     letterSpacing: -0.43,
@@ -69,7 +68,7 @@ class AppTextStyles {
   static const caption14Dark    = TextStyle(
     color: AppColors.dark,
     fontSize: 14,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.43,
     letterSpacing: -0.43,
@@ -78,7 +77,7 @@ class AppTextStyles {
   static const caption14Primary = TextStyle(
     color: AppColors.primary,
     fontSize: 14,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.43,
     letterSpacing: -0.43,
@@ -87,7 +86,7 @@ class AppTextStyles {
   static const caption14Green   = TextStyle(
     color: AppColors.green,
     fontSize: 14,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.43,
     letterSpacing: -0.43,
@@ -106,7 +105,7 @@ class AppTextStyles {
   static const badge12Green = TextStyle(
     color: AppColors.green,
     fontSize: 12,
-    fontFamily: _sf,
+    fontFamily: _inter,
     fontWeight: FontWeight.w500,
     height: 1.30,
     letterSpacing: -0.43,
