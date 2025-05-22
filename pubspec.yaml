@@ -62,6 +62,29 @@ flutter:
     - assets/png/
     - assets/jpeg/
     
+  # Добавляем шрифты
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter_24pt-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter/Inter_24pt-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter/Inter_24pt-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter/Inter_24pt-Bold.ttf
+          weight: 700
+    
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins/Poppins-Bold.ttf
+          weight: 700
 
 flutter_native_splash:
   color: "#FFFFFF" 
