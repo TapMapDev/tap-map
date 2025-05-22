@@ -41,19 +41,23 @@ class PlaceDetail {
     required this.friendAvatars,
   });
 
-  /// Приходит объект вида {type: "...", properties: {...}, geometry: {...}}
+  /// Создаёт модель из JSON «объекта-Feature»
   factory PlaceDetail.fromJson(Map<String, dynamic> json) {
-    // Если от сервера придёт «плоский» объект (без properties) – тоже сработает
+    // Если API положил данные внутрь "properties" — подставляем их,
+    // иначе работаем сразу с корнем.
     final Map<String, dynamic> p =
-        json['properties'] as Map<String, dynamic>? ?? json;
+        (json['properties'] as Map<String, dynamic>?) ?? json;
+
+    // Берём контактную инфу (массив) и вытягиваем первый телефон/сайт
+    final contact = p['contact_info'] as Map<String, dynamic>?;
 
     return PlaceDetail(
       id: (p['id'] ?? '').toString(),
       name: p['name'] as String? ?? '',
       category: p['category'] as String? ?? '',
       address: p['address'] as String? ?? '',
-      phone: (p['contact_info']?['phone_numbers'] as List?)?.firstOrNull ?? '',
-      website: (p['contact_info']?['websites'] as List?)?.firstOrNull ?? '',
+      phone: (contact?['phone_numbers'] as List<dynamic>?)?.firstOrNull ?? '',
+      website: (contact?['websites'] as List<dynamic>?)?.firstOrNull ?? '',
       rating: (p['rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: p['totalReviews'] as int? ?? 0,
       priceRange: p['priceRange'] as String? ?? '',
@@ -68,12 +72,12 @@ class PlaceDetail {
           .toList(),
       friendsCount: p['friendsCount'] as int? ?? 0,
       friendAvatars:
-          List<String>.from(p['friendAvatars'] as List<dynamic>? ?? const []),
+      List<String>.from(p['friendAvatars'] as List<dynamic>? ?? const []),
     );
   }
 }
 
-/// Маленькое расширение, чтобы безопасно получать первый элемент списка
+/// Хелпер-расширение для безопасного получения первого элемента списка.
 extension _FirstOrNull<E> on List<E> {
   E? get firstOrNull => isEmpty ? null : first;
 }
