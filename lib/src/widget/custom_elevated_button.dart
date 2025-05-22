@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tap_map/core/common/styles.dart';
+import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
 
 
 

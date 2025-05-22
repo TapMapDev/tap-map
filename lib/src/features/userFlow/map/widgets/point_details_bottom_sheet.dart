@@ -1,287 +1,169 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'working_hours_widget.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_state.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/header_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/friends_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/favorite_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/route_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/open_status_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/features_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/contacts_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/photo_gallery_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/rating_summary_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/reviews_section.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_action_bar.dart';
+import 'package:tap_map/ui/theme/app_text_styles.dart';
 
+/// Bottom-sheet с полной информацией о выбранной точке на карте.
+/// Данные подтягиваются из [PlaceDetailBloc].
 class PointDetailsBottomSheet extends StatefulWidget {
-  final Map<dynamic, dynamic> properties;
-  final ScrollController scrollController;
-  
-  // Ключ для доступа к состоянию BottomSheet
-  final GlobalKey<_PointDetailsBottomSheetState>? sheetKey;
-
-  const PointDetailsBottomSheet({
-    Key? key,
-    required this.properties,
-    required this.scrollController,
-    this.sheetKey,
-  }) : super(key: key ?? sheetKey);
+  const PointDetailsBottomSheet({Key? key}) : super(key: key);
 
   @override
   State<PointDetailsBottomSheet> createState() => _PointDetailsBottomSheetState();
-  
-  // Метод для обновления данных BottomSheet извне
-  static void updateProperties(BuildContext context, Map<dynamic, dynamic> newProperties) {
-    final state = context.findAncestorStateOfType<_PointDetailsBottomSheetState>();
-    if (state != null) {
-      state._updateProperties(newProperties);
-    }
-  }
 }
 
-class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet> 
+class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
     with SingleTickerProviderStateMixin {
-  
-  bool _isDragging = false;
-  late AnimationController _animController;
-  
-  // Локальная копия свойств для обновления
-  late Map<dynamic, dynamic> _properties;
-  
+  late final AnimationController _fade;
+
   @override
   void initState() {
     super.initState();
-    _properties = widget.properties;
-    
-    // Добавляем слушатель для отслеживания перетаскивания
-    widget.scrollController.addListener(_onScrollChange);
-    
-    // Инициализируем контроллер анимации
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+    _fade = AnimationController(
       vsync: this,
-    );
-    
-    // Запускаем анимацию
-    _animController.forward();
+      duration: const Duration(milliseconds: 300),
+    )..forward();
   }
-  
-  // Новый метод для обновления свойств
-  void _updateProperties(Map<dynamic, dynamic> newProperties) {
-    setState(() {
-      _properties = newProperties;
-      
-      // Воспроизводим короткую анимацию для индикации обновления
-      _animController.reset();
-      _animController.forward();
-    });
-  }
-  
-  void _onScrollChange() {
-    if (!mounted) return;
-    final isDragging = widget.scrollController.hasClients && 
-        widget.scrollController.position.isScrollingNotifier.value;
-    if (_isDragging != isDragging) {
-      setState(() {
-        _isDragging = isDragging;
-      });
-    }
-  }
-  
+
   @override
   void dispose() {
-    widget.scrollController.removeListener(_onScrollChange);
-    _animController.dispose();
+    _fade.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: _animController,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10.0,
-            ),
-          ],
-        ),
-        child: ListView(
-          controller: widget.scrollController,
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            // Индикатор перетаскивания
-            Center(
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 200),
-                margin: EdgeInsets.symmetric(vertical: 12),
-                width: _isDragging ? 60 : 40,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _isDragging ? Colors.grey[600] : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(5),
-                ),
+      opacity: _fade,
+      child: BlocBuilder<PlaceDetailBloc, PlaceDetailState>(
+        builder: (context, state) {
+          // ───── loading / error ─────
+          if (state is PlaceDetailLoading) {
+            return const SizedBox(
+              height: 250,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is PlaceDetailError) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                state.message,
+                style: AppTextStyles.body16,
               ),
-            ),
-            
-            // Заголовок
-            Text(
-              _properties['name']?.toString() ?? 'Информация о точке',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            );
+          }
+          if (state is! PlaceDetailLoaded) return const SizedBox.shrink();
+
+          final d = state.detail;
+
+          // ───── основной контент ─────
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.60,
+            minChildSize: 0.40,
+            maxChildSize: 0.95,
+            builder: (_, scroll) => Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 10),
+                ],
               ),
-            ),
-            
-            SizedBox(height: 16),
-            
-            // Базовая информация
-            if (_properties['subcategory'] != null)
-              _buildInfoRow('Категория', _properties['subcategory'].toString()),
-            
-            if (_properties['address'] != null)
-              _buildInfoRow('Адрес', _properties['address'].toString()),
-              
-            if (_properties['description'] != null)
-              _buildInfoRow('Описание', _properties['description'].toString()),
-              
-            // Дополнительная информация
-            if (_properties['working_hours'] != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: WorkingHoursWidget(workingHoursJson: _properties['working_hours'].toString()),
-              ),
-              
-            if (_properties['phone'] != null)
-              GestureDetector(
-                onTap: () => _launchUrl('tel:${_properties['phone']}'),
-                child: _buildInfoRow('Телефон', _properties['phone'].toString(), isClickable: true),
-              ),
-              
-            if (_properties['website'] != null)
-              GestureDetector(
-                onTap: () => _launchUrl(_properties['website'].toString()),
-                child: _buildInfoRow('Сайт', _properties['website'].toString(), isClickable: true),
-              ),
-              
-            if (_properties['openStatus'] != null || _properties['open_status'] != null)
-              _buildInfoRow('Статус', (_properties['openStatus'] ?? _properties['open_status']).toString()),
-              
-            if (_properties['distance'] != null)
-              _buildInfoRow('Расстояние', _properties['distance'].toString()),
-              
-            if (_properties['rating'] != null)
-              _buildInfoRow('Рейтинг', _properties['rating'].toString()),
-              
-            if (_properties['images'] != null && _properties['images'] is List && (_properties['images'] as List).isNotEmpty)
-              _buildImageGallery((_properties['images'] as List)),
-              
-            SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  // Метод для запуска URL
-  Future<void> _launchUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString);
-    if (!await launchUrl(url)) {
-      throw Exception('Could not launch $url');
-    }
-  }
-  
-  // Вспомогательный метод для отображения строки информации
-  Widget _buildInfoRow(String label, String value, {bool isClickable = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 4),
-          isClickable
-              ? Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline,
-                  ),
-                )
-              : Text(
-                  value,
-                  style: TextStyle(fontSize: 16),
-                ),
-        ],
-      ),
-    );
-  }
-  
-  // Вспомогательный метод для отображения галереи изображений
-  Widget _buildImageGallery(List images) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-          child: Text(
-            'Фотографии',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 150,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              final imageUrl = images[index]['url'] ?? images[index]['image'];
-              return Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    width: 200,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: 200,
-                        height: 150,
+              child: ListView(
+                controller: scroll,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  // ─── drag-indicator ───
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
                         color: Colors.grey[300],
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / 
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 200,
-                        height: 150,
-                        color: Colors.grey[300],
-                        child: Center(
-                          child: Icon(Icons.error, color: Colors.grey[600]),
-                        ),
-                      );
-                    },
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+
+                  // ─── секции ───
+                  HeaderSection(title: d.name, category: d.category),
+                  const SizedBox(height: 16),
+
+                  FriendsSection(
+                    totalFriends: d.friendsCount,
+                    avatarUrls: d.friendAvatars,
+                  ),
+                  const SizedBox(height: 13),
+
+                  // TODO d.isFavorite
+                  FavoriteSection(isFavorite: false, listName: 'Кофейни'),
+                  const SizedBox(height: 13),
+
+                  RouteSection(address: d.address),
+                  const SizedBox(height: 13),
+
+                  // TODO d.openStatus
+                  OpenStatusSection(statusText: 'Откроется через 35 минут'),
+                  const SizedBox(height: 13),
+
+                  FeaturesSection(
+                    features: d.features.map((f) => f.title).toList(),
+                    averageCheck: d.priceRange,
+                  ),
+                  const SizedBox(height: 13),
+
+                  ContactsSection(
+                    phone: d.phone,
+                    website: d.website,
+                  ),
+                  const SizedBox(height: 13),
+
+                  PhotoGallerySection(
+                    imageUrls: d.imageUrls,
+                    onAddPhoto: () {}, // TODO: callback
+                  ),
+                  const SizedBox(height: 13),
+
+                  RatingSummarySection(
+                    rating: d.rating,
+                    totalReviews: d.totalReviews,
+                    onRateTap: () {}, // TODO: callback
+                  ),
+                  const SizedBox(height: 13),
+
+                  ReviewsSection(
+                    reviews: d.reviews,
+                    totalCount: d.totalReviews,
+                    onSeeAll: () {}, // TODO: callback
+                  ),
+                  const SizedBox(height: 24),
+
+                  BottomActionBar(
+                    onRoute: () {}, // TODO: callback
+                    onCall: () {},  // TODO: callback
+                    onShare: () {}, // TODO: callback
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
