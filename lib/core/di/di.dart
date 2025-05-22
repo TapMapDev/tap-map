@@ -80,7 +80,9 @@ Future<void> setup() async {
 
   // Place Detail
   getIt.registerLazySingleton<PlaceRepository>(
-        () => PlaceRepositoryImpl(getIt<http.Client>()),
+        () => PlaceRepositoryImpl(
+              apiService: getIt<ApiService>(),
+        ),
   );
   getIt.registerFactory<PlaceDetailBloc>(
         () => PlaceDetailBloc(getIt<PlaceRepository>()),
