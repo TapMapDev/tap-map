@@ -1,6 +1,13 @@
 import 'feature.dart';
 import 'review.dart';
 
+/// Модель детальной информации о точке.
+/// Поддерживает формат ответа:
+/// {
+///   "type": "...",
+///   "properties": { ... },
+///   "geometry": { ... }
+/// }
 class PlaceDetail {
   final String id;
   final String name;
@@ -34,22 +41,39 @@ class PlaceDetail {
     required this.friendAvatars,
   });
 
-  factory PlaceDetail.fromJson(Map<String, dynamic> j) => PlaceDetail(
-    id: j['id'],
-    name: j['name'],
-    category: j['category'],
-    address: j['address'],
-    phone: j['phone'],
-    website: j['website'],
-    rating: (j['rating'] as num).toDouble(),
-    totalReviews: j['totalReviews'],
-    priceRange: j['priceRange'],
-    imageUrls: List<String>.from(j['imageUrls']),
-    features:
-    (j['features'] as List).map((e) => Feature.fromJson(e)).toList(),
-    reviews:
-    (j['reviews'] as List).map((e) => Review.fromJson(e)).toList(),
-    friendsCount: j['friendsCount'],
-    friendAvatars: List<String>.from(j['friendAvatars']),
-  );
+  /// Приходит объект вида {type: "...", properties: {...}, geometry: {...}}
+  factory PlaceDetail.fromJson(Map<String, dynamic> json) {
+    // Если от сервера придёт «плоский» объект (без properties) – тоже сработает
+    final Map<String, dynamic> p =
+        json['properties'] as Map<String, dynamic>? ?? json;
+
+    return PlaceDetail(
+      id: (p['id'] ?? '').toString(),
+      name: p['name'] as String? ?? '',
+      category: p['category'] as String? ?? '',
+      address: p['address'] as String? ?? '',
+      phone: (p['contact_info']?['phone_numbers'] as List?)?.firstOrNull ?? '',
+      website: (p['contact_info']?['websites'] as List?)?.firstOrNull ?? '',
+      rating: (p['rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: p['totalReviews'] as int? ?? 0,
+      priceRange: p['priceRange'] as String? ?? '',
+      imageUrls: (p['images'] as List<dynamic>? ?? [])
+          .map((e) => (e as Map<String, dynamic>)['image'] as String)
+          .toList(),
+      features: (p['features'] as List<dynamic>? ?? [])
+          .map((e) => Feature.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      reviews: (p['reviews'] as List<dynamic>? ?? [])
+          .map((e) => Review.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      friendsCount: p['friendsCount'] as int? ?? 0,
+      friendAvatars:
+          List<String>.from(p['friendAvatars'] as List<dynamic>? ?? const []),
+    );
+  }
+}
+
+/// Маленькое расширение, чтобы безопасно получать первый элемент списка
+extension _FirstOrNull<E> on List<E> {
+  E? get firstOrNull => isEmpty ? null : first;
 }
