@@ -10,7 +10,7 @@ class PlaceRepositoryImpl implements PlaceRepository {
   @override
   Future<PlaceDetail> fetchPlaceDetail(String id) async {
     final response = await apiService.getData(
-      'points/$id/',
+      '/points/$id/',
       // при необходимости queryParams: { ... }
     );
 
