@@ -22,7 +22,6 @@ class PlaceDetail {
   final List<Review> reviews;
   final int friendsCount;
   final List<String> friendAvatars;
-  final String priceRange;
 
   PlaceDetail({
     required this.id,
@@ -38,7 +37,6 @@ class PlaceDetail {
     required this.reviews,
     required this.friendsCount,
     required this.friendAvatars,
-    this.priceRange = '',
   });
 
   /// Создаёт модель из JSON «объекта-Feature»
@@ -72,7 +70,6 @@ class PlaceDetail {
       friendsCount: p['friendsCount'] as int? ?? 0,
       friendAvatars:
       List<String>.from(p['friendAvatars'] as List<dynamic>? ?? const []),
-      priceRange: p['price_range'] as String? ?? '',
     );
   }
 }
