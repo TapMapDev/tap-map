@@ -8,7 +8,7 @@ import 'review.dart';
 ///   "properties": { ... },
 ///   "geometry": { ... }
 /// }
-class PlaceDetail {
+class PointDetail {
   final String id;
   final String name;
   final String category;
@@ -23,7 +23,7 @@ class PlaceDetail {
   final int friendsCount;
   final List<String> friendAvatars;
 
-  PlaceDetail({
+  PointDetail({
     required this.id,
     required this.name,
     required this.category,
@@ -40,7 +40,7 @@ class PlaceDetail {
   });
 
   /// Создаёт модель из JSON «объекта-Feature»
-  factory PlaceDetail.fromJson(Map<String, dynamic> json) {
+  factory PointDetail.fromJson(Map<String, dynamic> json) {
     // Если API положил данные внутрь "properties" — подставляем их,
     // иначе работаем сразу с корнем.
     final Map<String, dynamic> p =
@@ -49,7 +49,7 @@ class PlaceDetail {
     // Берём контактную инфу (массив) и вытягиваем первый телефон/сайт
     final contact = p['contact_info'] as Map<String, dynamic>?;
 
-    return PlaceDetail(
+    return PointDetail(
       id: (p['id'] ?? '').toString(),
       name: p['name'] as String? ?? '',
       category: p['category'] as String? ?? '',

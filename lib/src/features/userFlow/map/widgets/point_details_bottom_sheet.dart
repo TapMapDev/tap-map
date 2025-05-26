@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_state.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_state.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/header_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/friends_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/favorite_section.dart';
@@ -16,7 +16,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_ac
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 
 /// Bottom-sheet с полной информацией о выбранной точке на карте.
-/// Данные подтягиваются из [PlaceDetailBloc].
+/// Данные подтягиваются из [PointDetailBloc].
 class PointDetailsBottomSheet extends StatefulWidget {
   const PointDetailsBottomSheet({Key? key}) : super(key: key);
 
@@ -47,16 +47,16 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fade,
-      child: BlocBuilder<PlaceDetailBloc, PlaceDetailState>(
+      child: BlocBuilder<PointDetailBloc, PointDetailState>(
         builder: (context, state) {
           // ───── loading / error ─────
-          if (state is PlaceDetailLoading) {
+          if (state is PointDetailLoading) {
             return const SizedBox(
               height: 250,
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          if (state is PlaceDetailError) {
+          if (state is PointDetailError) {
             return Container(
               padding: const EdgeInsets.all(24),
               child: Text(
@@ -65,7 +65,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               ),
             );
           }
-          if (state is! PlaceDetailLoaded) return const SizedBox.shrink();
+          if (state is! PointDetailLoaded) return const SizedBox.shrink();
 
           final d = state.detail;
 
