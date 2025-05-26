@@ -60,8 +60,16 @@ class WebSocketService {
     required String text,
   }) {
     if (_channel.closeCode != null) {
-      return;
+      print('❌ Socket: Channel is closed, attempting to reconnect...');
+      try {
+        connect(); // Попытка переподключиться
+        print('✅ Socket: Reconnected successfully');
+      } catch (e) {
+        print('❌ Socket: Failed to reconnect: $e');
+        return;
+      }
     }
+
     final jsonMessage = jsonEncode({
       'type': 'edit_message',
       'chat_id': chatId,
@@ -70,7 +78,14 @@ class WebSocketService {
       'edited_at': DateTime.now().toIso8601String(),
     });
 
-    _channel.sink.add(jsonMessage);
+    print('📤 Socket: Sending edit message: $jsonMessage');
+    try {
+      _channel.sink.add(jsonMessage);
+      print('✅ Socket: Edit message sent successfully');
+    } catch (e) {
+      print('❌ Socket: Failed to send edit message: $e');
+      throw e; // Пробрасываем ошибку для обработки в EditBloc
+    }
   }
 
   void readMessage({required int chatId, required int messageId}) {
@@ -94,6 +109,7 @@ class WebSocketService {
       'chat_id': chatId,
       'is_typing': isTyping,
     });
+    _channel.sink.add(jsonMessage);
   }
 
   Stream get stream => _broadcastStream;

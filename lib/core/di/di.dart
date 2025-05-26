@@ -28,7 +28,8 @@ import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository_impl.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
-
+import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 final getIt = GetIt.instance;
 
 Future<void> setup() async {
@@ -81,12 +82,19 @@ Future<void> setup() async {
 
   // Place Detail
   getIt.registerLazySingleton<PlaceRepository>(
-        () => PlaceRepositoryImpl(
-              apiService: getIt<ApiService>(),
-        ),
+    () => PlaceRepositoryImpl(
+      apiService: getIt<ApiService>(),
+    ),
   );
   getIt.registerFactory<PlaceDetailBloc>(
-        () => PlaceDetailBloc(getIt<PlaceRepository>()),
+    () => PlaceDetailBloc(getIt<PlaceRepository>()),
+  );
+
+  getIt.registerFactory<EditBloc>(
+    () => EditBloc(
+      chatRepository: getIt<ChatRepository>(),
+      webSocketService: getIt<WebSocketService>(),
+    ),
   );
 
   // Register ChatRepository
@@ -104,6 +112,9 @@ Future<void> setup() async {
 
   getIt.registerFactory<PinBloc>(
       () => PinBloc(chatRepository: getIt<ChatRepository>()));
+
+  getIt.registerFactory<DeleteMessageBloc>(
+      () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 

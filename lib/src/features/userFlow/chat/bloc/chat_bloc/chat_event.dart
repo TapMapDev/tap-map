@@ -35,8 +35,6 @@ class SendMessage extends ChatEvent {
   List<Object?> get props => [chatId, text, replyToId, forwardedFromId];
 }
 
-// class ClearReplyTo extends ChatEvent {}
-
 class SendTyping extends ChatEvent {
   final int chatId;
   final bool isTyping;
@@ -145,21 +143,6 @@ class ConnectToChat extends ChatEvent {
 
 class DisconnectFromChat extends ChatEvent {}
 
-class DeleteMessage extends ChatEvent {
-  final int chatId;
-  final int messageId;
-  final String action;
-
-  const DeleteMessage({
-    required this.chatId,
-    required this.messageId,
-    required this.action,
-  });
-
-  @override
-  List<Object?> get props => [chatId, messageId, action];
-}
-
 class EditMessage extends ChatEvent {
   final int chatId;
   final int messageId;
@@ -173,20 +156,6 @@ class EditMessage extends ChatEvent {
 
   @override
   List<Object?> get props => [chatId, messageId, text];
-}
-
-class SetForwardFrom extends ChatEvent {
-  final MessageModel message;
-
-  const SetForwardFrom(this.message);
-
-  @override
-  List<Object> get props => [message];
-}
-
-class ClearForwardFrom extends ChatEvent {
-  @override
-  List<Object> get props => [];
 }
 class UploadFile extends ChatEvent {
   final File file;

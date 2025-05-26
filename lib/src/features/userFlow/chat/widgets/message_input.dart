@@ -116,10 +116,16 @@ class MessageInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('MessageInput: Building with editingMessage: $editingMessage');
     final theme = Theme.of(context);
     final defaultBackgroundColor = theme.scaffoldBackgroundColor;
     final defaultTextColor = theme.textTheme.bodyLarge?.color;
     final defaultIconColor = theme.iconTheme.color;
+
+    if (editingMessage != null) {
+      print(
+          'MessageInput: Building edit preview for message: ${editingMessage!.text}');
+    }
 
     return Container(
       padding: const EdgeInsets.all(8.0),
@@ -145,6 +151,7 @@ class MessageInput extends StatelessWidget {
   }
 
   Widget _buildEditPreview(BuildContext context) {
+    print('MessageInput: Building edit preview');
     return Container(
       padding: const EdgeInsets.all(8.0),
       color: Colors.grey[200],
@@ -176,7 +183,10 @@ class MessageInput extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.close, color: iconColor),
-            onPressed: onCancelEdit,
+            onPressed: () {
+              print('MessageInput: Cancel edit button pressed');
+              onCancelEdit?.call();
+            },
           ),
         ],
       ),

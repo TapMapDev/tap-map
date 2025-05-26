@@ -34,7 +34,6 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final List<MessageModel> messages;
   final MessageModel? replyTo;
   final MessageModel? forwardFrom;
-  // final MessageModel? pinnedMessage;
   final bool isRead;
   final Set<String> typingUsers;
 
@@ -43,7 +42,6 @@ class ChatLoaded extends ChatState with EquatableMixin {
     required this.messages,
     this.replyTo,
     this.forwardFrom,
-    // this.pinnedMessage,
     this.isRead = false,
     this.typingUsers = const {},
   });
@@ -54,7 +52,6 @@ class ChatLoaded extends ChatState with EquatableMixin {
         messages,
         replyTo,
         forwardFrom,
-        // pinnedMessage,
         isRead,
         typingUsers,
       ];
@@ -64,16 +61,13 @@ class ChatLoaded extends ChatState with EquatableMixin {
     List<MessageModel>? messages,
     MessageModel? replyTo,
     MessageModel? forwardFrom,
-    // MessageModel? pinnedMessage,
     bool? isRead,
     Set<String>? typingUsers,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      // replyTo: replyTo ?? this.replyTo,
       forwardFrom: forwardFrom ?? this.forwardFrom,
-      // pinnedMessage: pinnedMessage ?? this.pinnedMessage,
       isRead: isRead ?? this.isRead,
       typingUsers: typingUsers ?? this.typingUsers,
     );
@@ -142,15 +136,6 @@ class MessageRead extends ChatState {
 class ChatConnected extends ChatState {}
 
 class ChatDisconnected extends ChatState {}
-
-class MessageDeleted extends ChatState {
-  final int messageId;
-
-  const MessageDeleted(this.messageId);
-
-  @override
-  List<Object?> get props => [messageId];
-}
 
 class MessageEdited extends ChatState {
   final int messageId;

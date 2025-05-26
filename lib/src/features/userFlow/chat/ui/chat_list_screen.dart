@@ -32,8 +32,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
         listener: (context, state) {
           if (state is ChatDisconnected) {
             context.read<ChatBloc>().add(FetchChats());
-          } else if (state is MessageDeleted) {
-            context.read<ChatBloc>().add(FetchChats());
           }
         },
         builder: (context, state) {

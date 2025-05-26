@@ -25,6 +25,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   WebSocketService? _webSocketService;
   StreamSubscription? _wsSubscription;
 
+  // Добавляем геттер для доступа к WebSocketService
+  WebSocketService? get webSocketService => _webSocketService;
+
   String? _currentUsername;
   SendMessageUseCase? _sendMessageUseCase;
 
@@ -42,8 +45,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatErrorEvent>(_onChatError);
     on<ConnectToChat>(_onConnectToChat);
     on<DisconnectFromChat>(_onDisconnectFromChat);
-    on<DeleteMessage>(_onDeleteMessage);
-    on<EditMessage>(_onEditMessage);
     on<UploadFile>(_onUploadFile);
     on<SendTyping>(_onSendTyping);
   }
@@ -103,7 +104,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         emit(currentState.copyWith(
           chat: chat,
           messages: updatedMessages,
-          // pinnedMessage: pinnedMessage,
           isRead: true,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
@@ -112,12 +112,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         emit(ChatLoaded(
           chat: chat,
           messages: updatedMessages,
-          // pinnedMessage: pinnedMessage,
           isRead: true,
         ));
       }
     } catch (e) {
-      print('❌ Error fetching chat: $e');
       emit(ChatError(e.toString()));
     }
   }
@@ -172,26 +170,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatDisconnected());
   }
 
-  // void _onSetReplyTo(SetReplyTo event, Emitter<ChatState> emit) {
-  //   final currentState = state;
-  //   if (currentState is ChatLoaded) {
-  //     emit(currentState.copyWith(
-  //       replyTo: event.message,
-  //       // pinnedMessage: currentState.pinnedMessage,
-  //     ));
-  //   }
-  // }
-
-  // void _onClearReplyTo(ClearReplyTo event, Emitter<ChatState> emit) {
-  //   final currentState = state;
-  //   if (currentState is ChatLoaded) {
-  //     emit(currentState.copyWith(
-  //       replyTo: null,
-  //       // pinnedMessage: currentState.pinnedMessage,
-  //     ));
-  //   }
-  // }
-
   Future<void> _onSendMessage(
     SendMessage event,
     Emitter<ChatState> emit,
@@ -243,20 +221,71 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (rawData is String) {
         try {
           rawData = jsonDecode(rawData);
-          print('🔄 Socket: Декодировано JSON: $rawData');
+          print('📝 Socket: Decoded message: $rawData');
         } catch (e) {
-          print('❌ Socket: Ошибка декодирования JSON: $e');
+          print('❌ Socket: Failed to decode message: $e');
           return;
         }
       }
       if (rawData is! Map<String, dynamic> || !rawData.containsKey('type')) {
-        print('❌ Socket: Неверный формат данных или отсутствует тип события');
+        print('❌ Socket: Invalid message format: $rawData');
         return;
       }
 
       final messageData = rawData;
       final type = messageData['type'];
       print('📝 Socket: Тип события: $type');
+
+      // Обработка события редактирования сообщения
+      if (type == 'edit_message' || type == 'message_edited') {
+        print('🖊️ Socket: Получено событие редактирования сообщения');
+        final chatId = messageData['chat_id'] as int?;
+        final messageId = messageData['message_id'] as int?;
+        final newText = messageData['text'] as String?;
+        final editedAtStr = messageData['edited_at'] as String?;
+
+        print('🖊️ Socket: chatId=$chatId, messageId=$messageId');
+        print('🖊️ Socket: newText="$newText", editedAt=$editedAtStr');
+
+        if (chatId == null || messageId == null || newText == null) {
+          print('❌ Socket: Отсутствуют обязательные поля для edit_message');
+          return;
+        }
+
+        final editedAt =
+            editedAtStr != null ? DateTime.parse(editedAtStr) : DateTime.now();
+
+        // Проверяем, существует ли сообщение с таким ID
+        final messageExists =
+            currentState.messages.any((msg) => msg.id == messageId);
+        if (!messageExists) {
+          print('❌ Socket: Сообщение с id=$messageId не найдено в списке');
+          return;
+        }
+
+        // Обновляем сообщение в списке
+        print('🖊️ Socket: Обновление сообщения в списке');
+        final updatedMessages = currentState.messages.map((msg) {
+          if (msg.id == messageId) {
+            print('🖊️ Socket: Старый текст: "${msg.text}"');
+            print('🖊️ Socket: Новый текст: "$newText"');
+            return msg.copyWith(
+              text: newText,
+              editedAt: editedAt,
+            );
+          }
+          return msg;
+        }).toList();
+
+        print('✅ Socket: Сообщение успешно обновлено');
+        emit(currentState.copyWith(
+          messages: updatedMessages,
+          replyTo: currentState.replyTo,
+          forwardFrom: currentState.forwardFrom,
+        ));
+
+        return;
+      }
 
       if (type == 'typing') {
         final userId = messageData['user_id'] as int?;
@@ -321,7 +350,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           isRead: true,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
-          // pinnedMessage: currentState.pinnedMessage,
         );
         emit(newState);
         return;
@@ -354,7 +382,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           isRead: true,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
-          // pinnedMessage: currentState.pinnedMessage,
         ));
         return;
       }
@@ -368,166 +395,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatError(event.message));
   }
 
-  Future<void> _onDeleteMessage(
-    DeleteMessage event,
-    Emitter<ChatState> emit,
-  ) async {
-    final currentState = state;
-    if (currentState is ChatLoaded) {
-      try {
-        await _chatRepository.deleteMessage(
-          event.chatId,
-          event.messageId,
-          event.action,
-        );
-        final updatedMessages = currentState.messages
-            .where((msg) => msg.id != event.messageId)
-            .toList();
-
-        // Проверяем, не было ли удалено закрепленное сообщение
-        // MessageModel? pinnedMessage = currentState.pinnedMessage;
-        // if (pinnedMessage?.id == event.messageId) {
-        //   pinnedMessage = null;
-        // }
-
-        emit(currentState.copyWith(
-          chat: currentState.chat,
-          messages: updatedMessages,
-          // pinnedMessage: pinnedMessage,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-          isRead: true,
-        ));
-      } catch (e) {
-        emit(ChatError(e.toString()));
-      }
-    }
-  }
-
-  Future<void> _onEditMessage(
-    EditMessage event,
-    Emitter<ChatState> emit,
-  ) async {
-    final currentState = state;
-    if (currentState is ChatLoaded) {
-      try {
-        if (_webSocketService == null) {
-          emit(const ChatError('Not connected to chat'));
-          return;
-        }
-
-        _webSocketService!.editMessage(
-          chatId: event.chatId,
-          messageId: event.messageId,
-          text: event.text,
-        );
-
-        final updatedMessages = currentState.messages.map((message) {
-          if (message.id == event.messageId) {
-            return message.copyWith(
-              text: event.text,
-              editedAt: DateTime.now(),
-            );
-          }
-          return message;
-        }).toList();
-
-        // Обновляем закрепленное сообщение, если оно было отредактировано
-        // MessageModel? pinnedMessage = currentState.pinnedMessage;
-        // if (pinnedMessage != null && pinnedMessage.id == event.messageId) {
-        //   pinnedMessage = pinnedMessage.copyWith(
-        //     text: event.text,
-        //     editedAt: DateTime.now(),
-        //   );
-        // }
-
-        emit(currentState.copyWith(
-          chat: currentState.chat,
-          messages: updatedMessages,
-          // pinnedMessage: pinnedMessage,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-          isRead: true,
-        ));
-      } catch (e) {
-        emit(ChatError(e.toString()));
-      }
-    }
-  }
-
   @override
   Future<void> close() {
     _wsSubscription?.cancel();
     _webSocketService?.disconnect();
     return super.close();
   }
-
-  // Future<void> _onPinMessage(
-  //   PinMessage event,
-  //   Emitter<ChatState> emit,
-  // ) async {
-  //   try {
-  //     await _chatRepository.pinMessage(
-  //       chatId: event.chatId,
-  //       messageId: event.messageId,
-  //     );
-
-  //     final currentState = state;
-  //     if (currentState is ChatLoaded) {
-  //       final pinnedMessage =
-  //           currentState.messages.firstWhere((m) => m.id == event.messageId);
-
-  //       final updatedMessages = currentState.messages
-  //           .map((message) => message.id == event.messageId
-  //               ? message.copyWith(isPinned: true)
-  //               : message)
-  //           .toList();
-
-  //       // Обновляем чат с новым pinnedMessageId
-  //       final updatedChat = currentState.chat.copyWith(
-  //         pinnedMessageId: event.messageId,
-  //       );
-
-  //       emit(currentState.copyWith(
-  //         chat: updatedChat,
-  //         messages: updatedMessages,
-  //         pinnedMessage: pinnedMessage,
-  //       ));
-  //     }
-  //   } catch (e) {
-  //     emit(ChatError('Ошибка при закреплении: $e'));
-  //   }
-  // }
-
-  // Future<void> _onUnpinMessage(
-  //     UnpinMessage event, Emitter<ChatState> emit) async {
-  //   try {
-  //     await _chatRepository.unpinMessage(
-  //       chatId: event.chatId,
-  //       messageId: event.messageId,
-  //     );
-
-  //     final currentState = state;
-  //     if (currentState is ChatLoaded) {
-  //       final updatedMessages = currentState.messages
-  //           .map((message) => message.id == event.messageId
-  //               ? message.copyWith(isPinned: false)
-  //               : message)
-  //           .toList();
-
-  //       // Обновляем чат, очищая pinnedMessageId
-  //       final updatedChat = currentState.chat.copyWith(
-  //         pinnedMessageId: null,
-  //       );
-
-  //       emit(currentState.copyWith(
-  //         chat: updatedChat,
-  //         messages: updatedMessages,
-  //         pinnedMessage: null,
-  //       ));
-  //     }
-  //   } catch (e) {}
-  // }
 
   void _onUploadFile(UploadFile event, Emitter<ChatState> emit) async {
     try {
@@ -585,7 +458,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Обновляем состояние, сохраняя все важные данные
         emit(currentState.copyWith(
           messages: [newMessage, ...currentState.messages],
-          // pinnedMessage: currentState.pinnedMessage,
           replyTo: currentState.replyTo,
           forwardFrom: currentState.forwardFrom,
         ));
@@ -606,8 +478,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         chatId: event.chatId,
         isTyping: event.isTyping,
       );
-    } catch (e) {
-      print('❌ Socket: Ошибка отправки события typing: $e');
-    }
+    } catch (_) {}
   }
 }

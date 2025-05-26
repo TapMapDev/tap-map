@@ -26,6 +26,8 @@ import 'package:tap_map/src/features/userFlow/search_screen/data/search_reposito
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -91,6 +93,16 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (context) => ReplyBloc(),
+          ),
+          BlocProvider(
+            create: (context) => DeleteMessageBloc(
+              chatRepository: getIt.get<ChatRepository>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => EditBloc(
+              chatRepository: getIt.get<ChatRepository>(),
+            ),
           ),
         ],
         child: MaterialApp.router(

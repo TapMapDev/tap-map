@@ -117,18 +117,19 @@ class ChatRepository {
 
   Future<void> deleteMessage(int chatId, int messageId, String action) async {
     try {
+      final url = '/chat/$chatId/messages/$messageId/delete/';
+      final data = {'action': action};
       final response = await _dioClient.post(
-        '/chat/$chatId/messages/$messageId/delete/',
-        data: {
-          'action': action,
-        },
+        url,
+        data: data,
       );
 
       if (response.statusCode != 200) {
         throw Exception('Failed to delete message: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Failed to delete message: $e');
+      if (e is DioException) {}
+      rethrow;
     }
   }
 
@@ -163,7 +164,6 @@ class ChatRepository {
 
       // Используем правильный URL для закрепления сообщения, а не чата
       final url = '/chat/$chatId/messages/$messageId/pin/';
-      print('📌 DEBUG: Request URL: $url');
 
       try {
         // Используем напрямую Dio для получения больше диагностики
@@ -178,8 +178,7 @@ class ChatRepository {
         );
 
         // Проверяем на конкретное сообщение об ошибке в ответе
-        if (response.data is Map && response.data.containsKey('error')) {
-        }
+        if (response.data is Map && response.data.containsKey('error')) {}
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           await _prefs.setInt('$_pinnedMessageKey$chatId', messageId);
@@ -193,8 +192,7 @@ class ChatRepository {
       }
     } catch (e) {
       print('❌ DEBUG: Outer exception pinning message: $e');
-      if (e is DioException) {
-      }
+      if (e is DioException) {}
       throw Exception('Error pinning message: $e');
     }
   }
@@ -262,8 +260,7 @@ class ChatRepository {
       final fileUrl = attachments[0]['url'] as String;
       return fileUrl;
     } catch (e) {
-      if (e is DioException) {
-      }
+      if (e is DioException) {}
       throw Exception('Ошибка при загрузке файла: $e');
     }
   }
