@@ -15,6 +15,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/rating_su
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/reviews_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_action_bar.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/tab_navigation_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_detail.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 
 /// Bottom-sheet с полной информацией о выбранной точке на карте.
