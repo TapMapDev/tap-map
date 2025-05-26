@@ -8,7 +8,7 @@ import 'package:tap_map/ui/theme/app_colors.dart';
 
 /// Компонент навигации между вкладками для детальной информации о точке,
 /// интегрированный с BLoC для управления состоянием.
-class TabNavigationBloc extends StatelessWidget {
+class TabNavigationBloc extends StatefulWidget {
   /// Количество фотографий для отображения в бэйдже
   final int photoCount;
 
@@ -22,39 +22,99 @@ class TabNavigationBloc extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<TabNavigationBloc> createState() => _TabNavigationBlocState();
+}
+
+class _TabNavigationBlocState extends State<TabNavigationBloc> {
+  // Контроллер для анимации прокрутки к выбранному табу
+  final ScrollController _scrollController = ScrollController();
+  
+  // Map для хранения глобальных ключей для каждого таба
+  final Map<PointDetailTab, GlobalKey> _tabKeys = {
+    PointDetailTab.overview: GlobalKey(),
+    PointDetailTab.photos: GlobalKey(),
+    PointDetailTab.reviews: GlobalKey(),
+    PointDetailTab.menu: GlobalKey(),
+  };
+  
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Прокрутка к выбранному табу с анимацией
+  void _scrollToSelectedTab(PointDetailTab selectedTab) {
+    final key = _tabKeys[selectedTab];
+    if (key?.currentContext != null) {
+      final RenderBox box = key!.currentContext!.findRenderObject() as RenderBox;
+      final position = box.localToGlobal(Offset.zero);
+      
+      // Вычисляем позицию для центрирования таба
+      final centerPosition = position.dx - MediaQuery.of(context).size.width / 2 + box.size.width / 2;
+      
+      // Анимированная прокрутка к табу
+      _scrollController.animateTo(
+        centerPosition.clamp(0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PointDetailBloc, PointDetailState>(
+    return BlocConsumer<PointDetailBloc, PointDetailState>(
+      listenWhen: (previous, current) {
+        // Слушаем только изменения выбранного таба
+        if (previous is PointDetailLoaded && current is PointDetailLoaded) {
+          return previous.selectedTab != current.selectedTab;
+        }
+        return false;
+      },
+      listener: (context, state) {
+        if (state is PointDetailLoaded) {
+          // Прокручиваем к выбранному табу при его изменении
+          _scrollToSelectedTab(state.selectedTab);
+        }
+      },
       builder: (context, state) {
         if (state is! PointDetailLoaded) return const SizedBox.shrink();
 
         return Container(
-          height: 37,
+          height: 45,
           margin: const EdgeInsets.only(bottom: 16),
           child: ListView(
+            controller: _scrollController,
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             children: [
               _buildTab(
-                context: context, 
+                context: context,
+                key: _tabKeys[PointDetailTab.overview]!,
                 text: 'Обзор', 
                 tab: PointDetailTab.overview, 
                 selected: state.selectedTab == PointDetailTab.overview,
               ),
               _buildTabWithBadge(
-                context: context, 
+                context: context,
+                key: _tabKeys[PointDetailTab.photos]!,
                 text: 'Фото', 
                 tab: PointDetailTab.photos, 
-                count: photoCount, 
+                count: widget.photoCount, 
                 selected: state.selectedTab == PointDetailTab.photos,
               ),
               _buildTabWithBadge(
-                context: context, 
+                context: context,
+                key: _tabKeys[PointDetailTab.reviews]!,
                 text: 'Отзывы', 
                 tab: PointDetailTab.reviews, 
-                count: reviewCount, 
+                count: widget.reviewCount, 
                 selected: state.selectedTab == PointDetailTab.reviews,
               ),
               _buildTab(
-                context: context, 
+                context: context,
+                key: _tabKeys[PointDetailTab.menu]!,
                 text: 'Меню', 
                 tab: PointDetailTab.menu, 
                 selected: state.selectedTab == PointDetailTab.menu,
@@ -69,24 +129,35 @@ class TabNavigationBloc extends StatelessWidget {
   /// Создает простую вкладку без бэйджа
   Widget _buildTab({
     required BuildContext context,
+    required GlobalKey key,
     required String text,
     required PointDetailTab tab,
     required bool selected,
   }) {
-    return GestureDetector(
-      onTap: () => _onTabTap(context, tab),
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLightest : null,
-          borderRadius: BorderRadius.circular(100),
-        ),
-        child: Text(
-          text,
+    return AnimatedContainer(
+      key: key,
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.primaryLightest : Colors.transparent,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: selected ? [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ] : null,
+      ),
+      child: GestureDetector(
+        onTap: () => _onTabTap(context, tab),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 250),
           style: selected
               ? AppTextStyles.body16.copyWith(color: AppColors.primary)
               : AppTextStyles.body16Grey,
+          child: Text(text),
         ),
       ),
     );
@@ -95,38 +166,54 @@ class TabNavigationBloc extends StatelessWidget {
   /// Создает вкладку с бэйджем, показывающим количество
   Widget _buildTabWithBadge({
     required BuildContext context,
+    required GlobalKey key,
     required String text,
     required PointDetailTab tab,
     required int count,
     required bool selected,
   }) {
-    return GestureDetector(
-      onTap: () => _onTabTap(context, tab),
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLightest : null,
-          borderRadius: BorderRadius.circular(100),
-        ),
+    return AnimatedContainer(
+      key: key,
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.primaryLightest : Colors.transparent,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: selected ? [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ] : null,
+      ),
+      child: GestureDetector(
+        onTap: () => _onTabTap(context, tab),
         child: Row(
           children: [
-            Text(
-              text,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
               style: selected
                   ? AppTextStyles.body16.copyWith(color: AppColors.primary)
                   : AppTextStyles.body16Grey,
+              child: Text(text),
             ),
             const SizedBox(width: 4),
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primaryLightest,
+                color: selected 
+                    ? AppColors.primary.withOpacity(0.2) 
+                    : AppColors.primaryLightest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$count',
-                style: AppTextStyles.badge12Primary,
+                style: selected 
+                    ? AppTextStyles.badge12Primary.copyWith(fontWeight: FontWeight.bold)
+                    : AppTextStyles.badge12Primary,
               ),
             ),
           ],
