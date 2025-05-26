@@ -21,7 +21,6 @@ class PointRepositoryImpl implements PointRepository {
     }
 
     final data = response['data'] as Map<String, dynamic>;
-    print(data);
     return PlaceDetail.fromJson(data);
   }
 }
