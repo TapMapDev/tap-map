@@ -145,7 +145,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                                 const SizedBox(width: 4),
                                 Text(
                                   d.rating.toStringAsFixed(1),
-                                  style: AppTextStyles.body14,
+                                  style: AppTextStyles.caption14Dark,
                                 ),
                               ],
                             ),
@@ -153,7 +153,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                             // Кол-во оценок
                             Text(
                               '${d.totalReviews} оценок',
-                              style: AppTextStyles.body14Grey,
+                              style: AppTextStyles.caption14,
                             ),
                             const SizedBox(width: 8),
                             // Разделитель
@@ -172,8 +172,8 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                                 const Icon(Icons.place_outlined, color: Colors.grey, size: 16),
                                 const SizedBox(width: 2),
                                 Text(
-                                  '340 м', // TODO: получать из d.distance
-                                  style: AppTextStyles.body14Grey,
+                                  '340 м', // TODO: Получать расстояние из модели
+                                  style: AppTextStyles.caption14,
                                 ),
                               ],
                             ),
