@@ -1,5 +1,5 @@
-import '../models/place_detail.dart';
+import '../models/point_detail.dart';
 
 abstract class PointRepository {
-  Future<PlaceDetail> fetchPlaceDetail(String id);
+  Future<PointDetail> fetchPointDetail(String id);
 }

@@ -27,7 +27,7 @@ import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/point_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/point_repository_impl.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 final getIt = GetIt.instance;
@@ -86,8 +86,8 @@ Future<void> setup() async {
       apiService: getIt<ApiService>(),
     ),
   );
-  getIt.registerFactory<PlaceDetailBloc>(
-    () => PlaceDetailBloc(getIt<PointRepository>()),
+  getIt.registerFactory<PointDetailBloc>(
+    () => PointDetailBloc(getIt<PointRepository>()),
   );
 
   getIt.registerFactory<EditBloc>(

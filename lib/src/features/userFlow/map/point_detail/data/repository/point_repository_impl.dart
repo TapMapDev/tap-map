@@ -1,5 +1,5 @@
 import 'package:tap_map/core/network/api_service.dart';
-import '../models/place_detail.dart';
+import '../models/point_detail.dart';
 import 'point_repository.dart';
 
 class PointRepositoryImpl implements PointRepository {
@@ -8,7 +8,7 @@ class PointRepositoryImpl implements PointRepository {
   PointRepositoryImpl({required this.apiService});
 
   @override
-  Future<PlaceDetail> fetchPlaceDetail(String id) async {
+  Future<PointDetail> fetchPointDetail(String id) async {
     final response = await apiService.getData(
       '/points/$id/',
       // при необходимости queryParams: { ... }
@@ -21,6 +21,6 @@ class PointRepositoryImpl implements PointRepository {
     }
 
     final data = response['data'] as Map<String, dynamic>;
-    return PlaceDetail.fromJson(data);
+    return PointDetail.fromJson(data);
   }
 }
