@@ -21,8 +21,8 @@ import 'package:tap_map/src/features/userFlow/map/widgets/location_service.dart'
 import 'package:tap_map/src/features/userFlow/map/widgets/map_style_buttons.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/point_details_bottom_sheet.dart';
 // import 'package:tap_map/src/features/userFlow/map/widgets/video_marker_manager.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_event.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_event.dart';
 
 class MajorMap extends StatefulWidget {
   const MajorMap({super.key});
@@ -835,7 +835,7 @@ class _MajorMapState extends State<MajorMap> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => BlocProvider(
-        create: (_) => getIt<PlaceDetailBloc>()..add(FetchPlaceDetail(featureId)),
+        create: (_) => getIt<PointDetailBloc>()..add(FetchPointDetail(featureId)),
         child: const PointDetailsBottomSheet(), // ⬅ без параметров
       ),
     );
