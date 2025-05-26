@@ -1,5 +1,5 @@
 import '../models/place_detail.dart';
 
-abstract class PlaceRepository {
+abstract class PointRepository {
   Future<PlaceDetail> fetchPlaceDetail(String id);
 }

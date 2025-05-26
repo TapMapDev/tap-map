@@ -25,8 +25,8 @@ import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/place_repository_impl.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/point_repository.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/repository/point_repository_impl.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/place_detail_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
@@ -81,13 +81,13 @@ Future<void> setup() async {
   );
 
   // Place Detail
-  getIt.registerLazySingleton<PlaceRepository>(
-    () => PlaceRepositoryImpl(
+  getIt.registerLazySingleton<PointRepository>(
+    () => PointRepositoryImpl(
       apiService: getIt<ApiService>(),
     ),
   );
   getIt.registerFactory<PlaceDetailBloc>(
-    () => PlaceDetailBloc(getIt<PlaceRepository>()),
+    () => PlaceDetailBloc(getIt<PointRepository>()),
   );
 
   getIt.registerFactory<EditBloc>(

@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/repository/place_repository.dart';
+import '../data/repository/point_repository.dart';
 import 'place_detail_event.dart';
 import 'place_detail_state.dart';
 
 class PlaceDetailBloc extends Bloc<PlaceDetailEvent, PlaceDetailState> {
-  final PlaceRepository repo;
+  final PointRepository repo;
 
   PlaceDetailBloc(this.repo) : super(PlaceDetailInitial()) {
     on<FetchPlaceDetail>(_onFetch);
