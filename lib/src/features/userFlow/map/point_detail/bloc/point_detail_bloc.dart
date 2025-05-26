@@ -8,6 +8,7 @@ class PointDetailBloc extends Bloc<PointDetailEvent, PointDetailState> {
 
   PointDetailBloc(this.repo) : super(PointDetailInitial()) {
     on<FetchPointDetail>(_onFetch);
+    on<SwitchPointDetailTab>(_onSwitchTab);
   }
 
   Future<void> _onFetch(
@@ -18,6 +19,14 @@ class PointDetailBloc extends Bloc<PointDetailEvent, PointDetailState> {
       emit(PointDetailLoaded(detail));
     } catch (err) {
       emit(PointDetailError(err.toString()));
+    }
+  }
+  
+  /// Обработчик переключения вкладок
+  void _onSwitchTab(SwitchPointDetailTab event, Emitter<PointDetailState> emit) {
+    final currentState = state;
+    if (currentState is PointDetailLoaded) {
+      emit(currentState.copyWith(selectedTab: event.tab));
     }
   }
 }
