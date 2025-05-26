@@ -1,11 +1,11 @@
 import 'package:tap_map/core/network/api_service.dart';
 import '../models/place_detail.dart';
-import 'place_repository.dart';
+import 'point_repository.dart';
 
-class PlaceRepositoryImpl implements PlaceRepository {
+class PointRepositoryImpl implements PointRepository {
   final ApiService apiService;
 
-  PlaceRepositoryImpl({required this.apiService});
+  PointRepositoryImpl({required this.apiService});
 
   @override
   Future<PlaceDetail> fetchPlaceDetail(String id) async {
