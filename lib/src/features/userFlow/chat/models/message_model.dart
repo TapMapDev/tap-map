@@ -21,6 +21,8 @@ class MessageModel extends Equatable {
   final bool isPinned;
   final bool isRead;
   final bool isTyping;
+  final int? senderUserId;
+  final bool isMe;
 
   const MessageModel({
     required this.id,
@@ -36,10 +38,13 @@ class MessageModel extends Equatable {
     this.isPinned = false,
     this.isRead = false,
     this.isTyping = false,
+    this.senderUserId,
+    this.isMe = false,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     final editedAt = json['edited_at'] as String?;
+    final senderUserId = json['user_id'] as int?;
     return MessageModel(
       id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
       chatId: json['chat'] as int? ?? 0,
@@ -62,6 +67,8 @@ class MessageModel extends Equatable {
       isPinned: json['is_pinned'] as bool? ?? false,
       isRead: json['is_read'] as bool? ?? false,
       isTyping: json['is_typing'] as bool? ?? false,
+      senderUserId: senderUserId,
+      isMe: false,
     );
   }
 
@@ -83,6 +90,7 @@ class MessageModel extends Equatable {
       'chat_id': chatId,
       'text': text,
       'sender_username': senderUsername,
+      'sender_user_id': senderUserId,
       'created_at': createdAt.toIso8601String(),
       'edited_at': editedAt?.toIso8601String(),
       'reply_to_id': replyToId,
@@ -92,6 +100,7 @@ class MessageModel extends Equatable {
       'is_pinned': isPinned,
       'is_read': isRead,
       'is_typing': isTyping,
+
     };
   }
 
@@ -109,6 +118,8 @@ class MessageModel extends Equatable {
     bool? isPinned,
     bool? isRead,
     bool? isTyping,
+    int? senderUserId,
+    bool? isMe,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -124,6 +135,8 @@ class MessageModel extends Equatable {
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? this.isRead,
       isTyping: isTyping ?? this.isTyping,
+      senderUserId: senderUserId ?? this.senderUserId,
+      isMe: isMe ?? this.isMe,
     );
   }
 
@@ -142,6 +155,8 @@ class MessageModel extends Equatable {
         isPinned,
         isRead,
         isTyping,
+        senderUserId,
+        isMe,
       ];
 
   static MessageModel empty() {
@@ -154,6 +169,8 @@ class MessageModel extends Equatable {
       isPinned: false,
       isRead: false,
       isTyping: false,
+      senderUserId: null,
+      isMe: false,
     );
   }
 }

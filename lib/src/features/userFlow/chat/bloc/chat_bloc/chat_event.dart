@@ -157,6 +157,7 @@ class EditMessage extends ChatEvent {
   @override
   List<Object?> get props => [chatId, messageId, text];
 }
+
 class UploadFile extends ChatEvent {
   final File file;
   final String? caption;

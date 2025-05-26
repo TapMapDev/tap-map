@@ -188,201 +188,99 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           replyToId: event.replyToId,
           forwardedFromId: event.forwardedFromId,
         );
-
-        // Create new message
-        final newMessage = MessageModel(
-          id: DateTime.now().millisecondsSinceEpoch,
-          chatId: event.chatId,
-          text: event.text,
-          senderUsername: _currentUsername ?? 'Unknown',
-          createdAt: DateTime.now(),
-          replyToId: event.replyToId,
-          forwardedFromId: event.forwardedFromId,
-        );
-
-        // Update state
-        emit(currentState.copyWith(
-          messages: [newMessage, ...currentState.messages],
-        ));
       }
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
 
-  void _onNewMessage(NewMessageEvent event, Emitter<ChatState> emit) async {
+  Future<void> _onNewMessage(
+      NewMessageEvent event, Emitter<ChatState> emit) async {
     try {
+      print('📥 ChatBloc: Received new message: $event.message');
+
       final currentState = state;
-      if (currentState is! ChatLoaded) return;
+      if (currentState is! ChatLoaded) {
+        print('❌ ChatBloc: Current state is not ChatLoaded');
+        return;
+      }
 
-      dynamic rawData = event.message;
-
-      // Надёжно декодим строку JSON, если нужно
-      if (rawData is String) {
+      // Если сообщение пришло как строка, пробуем распарсить JSON
+      dynamic messageData = event.message;
+      if (messageData is String) {
         try {
-          rawData = jsonDecode(rawData);
-          print('📝 Socket: Decoded message: $rawData');
+          messageData = jsonDecode(messageData);
+          print('📝 Socket: Decoded message: $messageData');
         } catch (e) {
           print('❌ Socket: Failed to decode message: $e');
           return;
         }
       }
-      if (rawData is! Map<String, dynamic> || !rawData.containsKey('type')) {
-        print('❌ Socket: Invalid message format: $rawData');
+
+      // Проверяем тип сообщения
+      if (messageData is! Map<String, dynamic> ||
+          !messageData.containsKey('type')) {
+        print('❌ Socket: Invalid message format: $messageData');
         return;
       }
 
-      final messageData = rawData;
       final type = messageData['type'];
       print('📝 Socket: Тип события: $type');
 
-      // Обработка события редактирования сообщения
-      if (type == 'edit_message' || type == 'message_edited') {
-        print('🖊️ Socket: Получено событие редактирования сообщения');
-        final chatId = messageData['chat_id'] as int?;
-        final messageId = messageData['message_id'] as int?;
-        final newText = messageData['text'] as String?;
-        final editedAtStr = messageData['edited_at'] as String?;
-
-        print('🖊️ Socket: chatId=$chatId, messageId=$messageId');
-        print('🖊️ Socket: newText="$newText", editedAt=$editedAtStr');
-
-        if (chatId == null || messageId == null || newText == null) {
-          print('❌ Socket: Отсутствуют обязательные поля для edit_message');
-          return;
-        }
-
-        final editedAt =
-            editedAtStr != null ? DateTime.parse(editedAtStr) : DateTime.now();
-
-        // Проверяем, существует ли сообщение с таким ID
-        final messageExists =
-            currentState.messages.any((msg) => msg.id == messageId);
-        if (!messageExists) {
-          print('❌ Socket: Сообщение с id=$messageId не найдено в списке');
-          return;
-        }
-
-        // Обновляем сообщение в списке
-        print('🖊️ Socket: Обновление сообщения в списке');
-        final updatedMessages = currentState.messages.map((msg) {
-          if (msg.id == messageId) {
-            print('🖊️ Socket: Старый текст: "${msg.text}"');
-            print('🖊️ Socket: Новый текст: "$newText"');
-            return msg.copyWith(
-              text: newText,
-              editedAt: editedAt,
-            );
-          }
-          return msg;
-        }).toList();
-
-        print('✅ Socket: Сообщение успешно обновлено');
-        emit(currentState.copyWith(
-          messages: updatedMessages,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-        ));
-
-        return;
-      }
-
-      if (type == 'typing') {
-        final userId = messageData['user_id'] as int?;
-        final isTyping = messageData['is_typing'] as bool?;
-        print(
-            '⌨️ Socket: Событие typing - userId: $userId, isTyping: $isTyping');
-
-        if (userId == null || isTyping == null) {
-          print('❌ Socket: Отсутствуют обязательные поля userId или isTyping');
+      if (type == 'message' || type == 'new_message') {
+        final senderId = messageData['sender_id'] as int?;
+        if (senderId == null) {
+          print('❌ ChatBloc: No sender_id in message data');
           return;
         }
 
         try {
-          // Получаем username по userId
-          final user = await _userRepository.getUserById(userId);
+          final user = await _userRepository.getUserById(senderId);
           if (user.username == null) {
-            print('❌ Socket: Username не найден для userId: $userId');
+            print('❌ ChatBloc: No username for sender_id: $senderId');
             return;
           }
-          final username = user.username!;
-          print('👤 Socket: Получен username: $username для userId: $userId');
 
-          // Обновляем список печатающих пользователей
-          final updatedTypingUsers = Set<String>.from(currentState.typingUsers);
-          if (isTyping) {
-            updatedTypingUsers.add(username);
-            print('➕ Socket: Добавлен печатающий пользователь: $username');
-          } else {
-            updatedTypingUsers.remove(username);
-            print('➖ Socket: Удален печатающий пользователь: $username');
+          final newMessage = MessageModel.fromJson({
+            ...messageData,
+            'sender_username': user.username,
+          });
+
+          print(
+              '📨 ChatBloc: Processing new message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
+
+          // Проверяем, существует ли уже сообщение с таким ID
+          final messageExists =
+              currentState.messages.any((msg) => msg.id == newMessage.id);
+          if (messageExists) {
+            print('📝 Socket: Сообщение уже существует, пропускаем');
+            return;
           }
 
-          print('👥 Socket: Текущий список печатающих: $updatedTypingUsers');
+          // Если это новое сообщение от другого пользователя, отправляем статус прочтения
+          if (newMessage.senderUsername != _currentUsername) {
+            print(
+                '📨 ChatBloc: Sending read receipt for message ${newMessage.id}');
+            _webSocketService?.readMessage(
+              chatId: newMessage.chatId,
+              messageId: newMessage.id,
+            );
+          }
 
+          final updatedMessages = List<MessageModel>.from(currentState.messages)
+            ..insert(0, newMessage);
+
+          print(
+              '📨 ChatBloc: Emitting new state with ${updatedMessages.length} messages');
           emit(currentState.copyWith(
-            typingUsers: updatedTypingUsers,
+            messages: updatedMessages,
+            isRead: true,
+            replyTo: currentState.replyTo,
+            forwardFrom: currentState.forwardFrom,
           ));
         } catch (e) {
-          print('❌ Socket: Ошибка получения username для userId $userId: $e');
+          print('❌ ChatBloc: Error getting user info: $e');
         }
-        return;
-      }
-
-      if (type == 'read_message') {
-        final chatId = messageData['chat_id'];
-        final messageId = messageData['message_id'];
-        final readerId = messageData['reader_id'];
-
-        // Обновляем только сообщения, которые мы отправили
-        final updatedMessages = currentState.messages.map((msg) {
-          if (msg.id == messageId && msg.senderUsername == _currentUsername) {
-            final updated = msg.copyWith(isRead: true);
-            return updated;
-          }
-          return msg;
-        }).toList();
-
-        for (var msg in updatedMessages) {}
-
-        final newState = currentState.copyWith(
-          messages: updatedMessages,
-          isRead: true,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-        );
-        emit(newState);
-        return;
-      }
-
-      if (type == 'message' || type == 'new_message') {
-        final newMessage = MessageModel.fromJson(messageData);
-
-        // Проверяем, существует ли уже сообщение с таким ID
-        final messageExists =
-            currentState.messages.any((msg) => msg.id == newMessage.id);
-        if (messageExists) {
-          print('📝 Socket: Сообщение уже существует, пропускаем');
-          return;
-        }
-
-        // Если это новое сообщение от другого пользователя, отправляем статус прочтения
-        if (newMessage.senderUsername != _currentUsername) {
-          _webSocketService?.readMessage(
-            chatId: newMessage.chatId,
-            messageId: newMessage.id,
-          );
-        }
-
-        final updatedMessages = List<MessageModel>.from(currentState.messages)
-          ..insert(0, newMessage);
-
-        emit(currentState.copyWith(
-          messages: updatedMessages,
-          isRead: true,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-        ));
         return;
       }
     } catch (e, stack) {
@@ -428,39 +326,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             }
           ],
         );
-
-        // Создаем новое сообщение
-        final newMessage = MessageModel(
-          id: DateTime.now().millisecondsSinceEpoch,
-          chatId: currentState.chat.chatId,
-          text: event.caption ?? '',
-          senderUsername: _currentUsername ?? 'Unknown',
-          createdAt: DateTime.now(),
-          attachments: [
-            {
-              'url': fileUrl,
-              'content_type': event.file.path.toLowerCase().endsWith('.mp4') ||
-                      event.file.path.toLowerCase().endsWith('.mov') ||
-                      event.file.path.toLowerCase().endsWith('.avi') ||
-                      event.file.path.toLowerCase().endsWith('.webm')
-                  ? 'video/mp4'
-                  : 'image/jpeg',
-            }
-          ],
-          type: event.file.path.toLowerCase().endsWith('.mp4') ||
-                  event.file.path.toLowerCase().endsWith('.mov') ||
-                  event.file.path.toLowerCase().endsWith('.avi') ||
-                  event.file.path.toLowerCase().endsWith('.webm')
-              ? MessageType.video
-              : MessageType.image,
-        );
-
-        // Обновляем состояние, сохраняя все важные данные
-        emit(currentState.copyWith(
-          messages: [newMessage, ...currentState.messages],
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-        ));
       } else {
         throw Exception('Not connected to chat');
       }
