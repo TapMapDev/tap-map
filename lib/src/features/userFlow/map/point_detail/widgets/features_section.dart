@@ -5,11 +5,13 @@ import 'package:tap_map/ui/theme/app_text_styles.dart';
 
 class FeaturesSection extends StatelessWidget {
   final List<String> features; // пример: ['Wi-Fi', 'Парковка 🚗', …]
+  final String? averageCheck; // Средний чек, например "₽₽"
   final VoidCallback? onMoreTap;
 
   const FeaturesSection({
     Key? key,
     required this.features,
+    this.averageCheck,
     this.onMoreTap,
   }) : super(key: key);
 
@@ -28,7 +30,25 @@ class FeaturesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Особенности:', style: AppTextStyles.h18),
+          Row(
+            children: [
+              Text('Особенности:', style: AppTextStyles.h18),
+              if (averageCheck != null) ...[
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary20,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Средний чек: $averageCheck',
+                    style: AppTextStyles.caption14Primary,
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 6,

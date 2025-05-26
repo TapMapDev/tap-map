@@ -111,6 +111,15 @@ class AppTextStyles {
     height: 1.30,
     letterSpacing: -0.43,
   );
+  
+  static const badge12Primary = TextStyle(
+    color: AppColors.primary,
+    fontSize: 12,
+    fontFamily: _sf,
+    fontWeight: FontWeight.w500,
+    height: 1.30,
+    letterSpacing: -0.43,
+  );
 
   static const statusBarTime = TextStyle(
     color: Colors.white,

@@ -8,6 +8,7 @@ class PlaceDetailBloc extends Bloc<PlaceDetailEvent, PlaceDetailState> {
 
   PlaceDetailBloc(this.repo) : super(PlaceDetailInitial()) {
     on<FetchPlaceDetail>(_onFetch);
+    on<SwitchPlaceDetailTab>(_onSwitchTab);
   }
 
   Future<void> _onFetch(
@@ -18,6 +19,14 @@ class PlaceDetailBloc extends Bloc<PlaceDetailEvent, PlaceDetailState> {
       emit(PlaceDetailLoaded(detail));
     } catch (err) {
       emit(PlaceDetailError(err.toString()));
+    }
+  }
+  
+  /// Обработчик переключения вкладок
+  void _onSwitchTab(SwitchPlaceDetailTab event, Emitter<PlaceDetailState> emit) {
+    final currentState = state;
+    if (currentState is PlaceDetailLoaded) {
+      emit(currentState.copyWith(selectedTab: event.tab));
     }
   }
 }

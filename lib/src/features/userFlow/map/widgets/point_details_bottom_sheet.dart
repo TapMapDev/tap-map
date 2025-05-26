@@ -13,6 +13,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/photo_gal
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/rating_summary_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/reviews_section.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_action_bar.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/tab_navigation_bloc.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 
 /// Bottom-sheet с полной информацией о выбранной точке на карте.
@@ -100,58 +101,29 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     ),
                   ),
 
-                  // ─── секции ───
+                  // ─── Шапка с заголовком и категорией ───
                   HeaderSection(title: d.name, category: d.category),
                   const SizedBox(height: 16),
 
-                  FriendsSection(
-                    totalFriends: d.friendsCount,
-                    avatarUrls: d.friendAvatars,
-                  ),
-                  const SizedBox(height: 13),
-
-                  // TODO d.isFavorite
-                  FavoriteSection(isFavorite: false, listName: 'Кофейни'),
-                  const SizedBox(height: 13),
-
-                  RouteSection(address: d.address),
-                  const SizedBox(height: 13),
-
-                  // TODO d.openStatus
-                  OpenStatusSection(statusText: 'Откроется через 35 минут'),
-                  const SizedBox(height: 13),
-
-                  FeaturesSection(
-                    features: d.features.map((f) => f.title).toList(),
-                  ),
-                  const SizedBox(height: 13),
-
-                  ContactsSection(
-                    phone: d.phone,
-                    website: d.website,
-                  ),
-                  const SizedBox(height: 13),
-
-                  PhotoGallerySection(
-                    imageUrls: d.imageUrls,
-                    onAddPhoto: () {}, // TODO: callback
-                  ),
-                  const SizedBox(height: 13),
-
+                  // ─── Рейтинг и отзывы ───
                   RatingSummarySection(
                     rating: d.rating,
                     totalReviews: d.totalReviews,
                     onRateTap: () {}, // TODO: callback
                   ),
                   const SizedBox(height: 13),
-
-                  ReviewsSection(
-                    reviews: d.reviews,
-                    totalCount: d.totalReviews,
-                    onSeeAll: () {}, // TODO: callback
+                  
+                  // ─── Навигация по вкладкам ───
+                  TabNavigationBloc(
+                    photoCount: d.imageUrls.length,
+                    reviewCount: d.totalReviews,
                   ),
+                  
+                  // ─── Содержимое в зависимости от выбранной вкладки ───
+                  _buildTabContent(state),
+                  
+                  // ─── Нижняя панель действий (всегда видна) ───
                   const SizedBox(height: 24),
-
                   BottomActionBar(
                     onRoute: () {}, // TODO: callback
                     onCall: () {},  // TODO: callback
@@ -164,5 +136,79 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         },
       ),
     );
+  }
+  
+  /// Возвращает содержимое в зависимости от выбранной вкладки
+  Widget _buildTabContent(PlaceDetailLoaded state) {
+    final d = state.detail;
+    
+    switch (state.selectedTab) {
+      case PlaceDetailTab.overview:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FriendsSection(
+              totalFriends: d.friendsCount,
+              avatarUrls: d.friendAvatars,
+            ),
+            const SizedBox(height: 13),
+
+            // TODO d.isFavorite
+            FavoriteSection(isFavorite: false, listName: 'Кофейни'),
+            const SizedBox(height: 13),
+
+            RouteSection(address: d.address),
+            const SizedBox(height: 13),
+
+            // TODO d.openStatus
+            OpenStatusSection(statusText: 'Откроется через 35 минут'),
+            const SizedBox(height: 13),
+
+            FeaturesSection(
+              features: d.features.map((f) => f.title).toList(),
+              averageCheck: d.priceRange,
+            ),
+            const SizedBox(height: 13),
+
+            ContactsSection(
+              phone: d.phone,
+              website: d.website,
+            ),
+            const SizedBox(height: 13),
+          ],
+        );
+        
+      case PlaceDetailTab.photos:
+        return PhotoGallerySection(
+          imageUrls: d.imageUrls,
+          onAddPhoto: () {}, // TODO: callback
+          showFullGallery: true,
+        );
+        
+      case PlaceDetailTab.reviews:
+        return ReviewsSection(
+          reviews: d.reviews,
+          totalCount: d.totalReviews,
+          onSeeAll: () {}, // TODO: callback
+          showFullReviews: true,
+        );
+        
+      case PlaceDetailTab.menu:
+        // Заглушка для меню
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          alignment: Alignment.center,
+          child: Column(
+            children: [
+              const Icon(Icons.restaurant_menu, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Меню заведения пока недоступно',
+                style: AppTextStyles.body16Grey,
+              ),
+            ],
+          ),
+        );
+    }
   }
 }
