@@ -205,15 +205,15 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: selected 
-                    ? AppColors.primary.withOpacity(0.2) 
+                    ? AppColors.primary20
                     : AppColors.primaryLightest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$count',
-                style: selected 
-                    ? AppTextStyles.badge12Primary.copyWith(fontWeight: FontWeight.bold)
-                    : AppTextStyles.badge12Primary,
+                style: AppTextStyles.badge12Primary.copyWith(
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                ),
               ),
             ),
           ],
