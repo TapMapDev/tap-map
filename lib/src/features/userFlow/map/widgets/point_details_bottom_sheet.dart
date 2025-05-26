@@ -89,16 +89,42 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               child: Column(
                 children: [
                   // ─── drag-indicator ───
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(5),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
-                    ),
+                      // Кнопка закрытия
+                      Positioned(
+                        right: 16,
+                        top: 8,
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.close, size: 18),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   
                   // ─── основная информация (всегда видна) ───
@@ -107,6 +133,52 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     child: Column(
                       children: [
                         HeaderSection(title: d.name, category: d.category),
+                        const SizedBox(height: 8),
+                
+                        // ─── Рейтинг и расстояние ───
+                        Row(
+                          children: [
+                            // Звездочка и рейтинг
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  d.rating.toStringAsFixed(1),
+                                  style: AppTextStyles.body14,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
+                            // Кол-во оценок
+                            Text(
+                              '${d.totalReviews} оценок',
+                              style: AppTextStyles.body14Grey,
+                            ),
+                            const SizedBox(width: 8),
+                            // Разделитель
+                            Container(
+                              height: 4,
+                              width: 4,
+                              decoration: const BoxDecoration(
+                                color: Colors.grey,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Расстояние
+                            Row(
+                              children: [
+                                const Icon(Icons.place_outlined, color: Colors.grey, size: 16),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '340 м', // TODO: получать из d.distance
+                                  style: AppTextStyles.body14Grey,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                 
                         FriendsSection(
