@@ -17,7 +17,6 @@ class PlaceDetail {
   final String website;
   final double rating;
   final int totalReviews;
-  final String priceRange;
   final List<String> imageUrls;
   final List<Feature> features;
   final List<Review> reviews;
@@ -33,7 +32,6 @@ class PlaceDetail {
     required this.website,
     required this.rating,
     required this.totalReviews,
-    required this.priceRange,
     required this.imageUrls,
     required this.features,
     required this.reviews,
@@ -60,7 +58,6 @@ class PlaceDetail {
       website: (contact?['websites'] as List<dynamic>?)?.firstOrNull ?? '',
       rating: (p['rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: p['totalReviews'] as int? ?? 0,
-      priceRange: p['priceRange'] as String? ?? '',
       imageUrls: (p['images'] as List<dynamic>? ?? [])
           .map((e) => (e as Map<String, dynamic>)['image'] as String)
           .toList(),

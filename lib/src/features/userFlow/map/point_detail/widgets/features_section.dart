@@ -5,13 +5,11 @@ import 'package:tap_map/ui/theme/app_text_styles.dart';
 
 class FeaturesSection extends StatelessWidget {
   final List<String> features; // пример: ['Wi-Fi', 'Парковка 🚗', …]
-  final String? averageCheck;   // "10-20 \$"
   final VoidCallback? onMoreTap;
 
   const FeaturesSection({
     Key? key,
     required this.features,
-    this.averageCheck,
     this.onMoreTap,
   }) : super(key: key);
 
@@ -40,16 +38,6 @@ class FeaturesSection extends StatelessWidget {
               if (hasMore) _chip('Ещё', trailing: const Icon(Icons.add, size: 18), onTap: onMoreTap),
             ],
           ),
-          if (averageCheck != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text('Средний чек:', style: AppTextStyles.body16Grey),
-                const SizedBox(width: 4),
-                Text(averageCheck!, style: AppTextStyles.body16),
-              ],
-            ),
-          ],
         ],
       ),
     );

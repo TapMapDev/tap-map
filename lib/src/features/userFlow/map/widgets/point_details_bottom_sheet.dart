@@ -123,7 +123,6 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
 
                   FeaturesSection(
                     features: d.features.map((f) => f.title).toList(),
-                    averageCheck: d.priceRange,
                   ),
                   const SizedBox(height: 13),
 
