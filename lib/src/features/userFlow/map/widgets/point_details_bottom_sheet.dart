@@ -145,77 +145,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
                         // Отображаем разный контент в зависимости от выбранного таба
-                        if (selectedTab == PointDetailTab.overview) ...[
-                          // Обзор содержит все блоки с базовой информацией
-                          FeaturesSection(
-                            features: d.features.map((f) => f.title).toList(),
-                          ),
-                          const SizedBox(height: 13),
-                
-                          ContactsSection(
-                            phone: d.phone,
-                            website: d.website,
-                          ),
-                          const SizedBox(height: 13),
-                
-                          PhotoGallerySection(
-                            imageUrls: d.imageUrls,
-                            onAddPhoto: () {}, // TODO: callback
-                          ),
-                          const SizedBox(height: 13),
-                
-                          RatingSummarySection(
-                            rating: d.rating,
-                            totalReviews: d.totalReviews,
-                            onRateTap: () {}, // TODO: callback
-                          ),
-                          const SizedBox(height: 13),
-                
-                          ReviewsSection(
-                            reviews: d.reviews,
-                            totalCount: d.totalReviews,
-                            onSeeAll: () => context.read<PointDetailBloc>().add(
-                              SwitchPointDetailTab(PointDetailTab.reviews)),
-                          ),
-                        ] else if (selectedTab == PointDetailTab.photos) ...[
-                          // Вкладка Фото показывает полную галерею
-                          PhotoGallerySection(
-                            imageUrls: d.imageUrls,
-                            onAddPhoto: () {}, // TODO: callback
-                            showFullGallery: true,
-                          ),
-                        ] else if (selectedTab == PointDetailTab.reviews) ...[
-                          // Вкладка Отзывы показывает все отзывы и рейтинг
-                          RatingSummarySection(
-                            rating: d.rating,
-                            totalReviews: d.totalReviews,
-                            onRateTap: () {}, // TODO: callback
-                          ),
-                          const SizedBox(height: 13),
-                          
-                          ReviewsSection(
-                            reviews: d.reviews,
-                            totalCount: d.totalReviews,
-                            showFullReviews: true,
-                          ),
-                        ] else if (selectedTab == PointDetailTab.menu) ...[
-                          // Вкладка Меню (пока заглушка)
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            margin: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Меню этого заведения появится здесь в ближайшее время',
-                              style: AppTextStyles.body16Grey,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
+                        ..._buildTabContent(d, selectedTab, context),
                         
                         const SizedBox(height: 24),
                         
@@ -235,5 +165,106 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         },
       ),
     );
+  }
+  
+  /// Возвращает содержимое в зависимости от выбранной вкладки
+  List<Widget> _buildTabContent(PointDetail d, PointDetailTab selectedTab, BuildContext context) {
+    switch (selectedTab) {
+      case PointDetailTab.overview:
+        return [
+          // Обзор содержит все блоки с базовой информацией
+          FeaturesSection(
+            features: d.features.map((f) => f.title).toList(),
+          ),
+          const SizedBox(height: 13),
+
+          ContactsSection(
+            phone: d.phone,
+            website: d.website,
+          ),
+          const SizedBox(height: 13),
+
+          PhotoGallerySection(
+            imageUrls: d.imageUrls,
+            onAddPhoto: () {}, // TODO: callback
+          ),
+          const SizedBox(height: 13),
+
+          RatingSummarySection(
+            rating: d.rating,
+            totalReviews: d.totalReviews,
+            onRateTap: () {}, // TODO: callback
+          ),
+          const SizedBox(height: 13),
+
+          ReviewsSection(
+            reviews: d.reviews,
+            totalCount: d.totalReviews,
+            onSeeAll: () => context.read<PointDetailBloc>().add(
+              SwitchPointDetailTab(PointDetailTab.reviews)),
+          ),
+        ];
+        
+      case PointDetailTab.photos:
+        return [
+          // Вкладка Фото показывает полную галерею
+          PhotoGallerySection(
+            imageUrls: d.imageUrls,
+            onAddPhoto: () {}, // TODO: callback
+            showFullGallery: true,
+          ),
+        ];
+        
+      case PointDetailTab.reviews:
+        return [
+          // Вкладка Отзывы показывает все отзывы и рейтинг
+          RatingSummarySection(
+            rating: d.rating,
+            totalReviews: d.totalReviews,
+            onRateTap: () {}, // TODO: callback
+          ),
+          const SizedBox(height: 13),
+          
+          ReviewsSection(
+            reviews: d.reviews,
+            totalCount: d.totalReviews,
+            showFullReviews: true,
+          ),
+        ];
+        
+      case PointDetailTab.menu:
+        return [
+          // Вкладка Меню (пока заглушка)
+          Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'Меню этого заведения появится здесь в ближайшее время',
+              style: AppTextStyles.body16Grey,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ];
+        
+      default:
+        // Обработка на случай добавления новых вкладок в будущем
+        return [
+          Container(
+            padding: const EdgeInsets.all(24),
+            alignment: Alignment.center,
+            child: Text(
+              'Содержимое для этой вкладки находится в разработке',
+              style: AppTextStyles.body16Grey,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ];
+    }
   }
 }
