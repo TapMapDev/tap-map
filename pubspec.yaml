@@ -86,6 +86,17 @@ flutter:
         - asset: assets/fonts/Poppins/Poppins-Bold.ttf
           weight: 700
 
+    - family: SF Pro Display
+      fonts:
+        - asset: assets/fonts/SF Pro/SF-Pro-Display-Regular.otf
+          weight: 400
+        - asset: assets/fonts/SF Pro/SF-Pro-Display-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SF Pro/SF-Pro-Display-Semibold.otf
+          weight: 600
+        - asset: assets/fonts/SF Pro/SF-Pro-Display-Bold.otf
+          weight: 700
+
 flutter_native_splash:
   color: "#FFFFFF" 
   image: assets/png/logo_TM.png
