@@ -1,3 +1,4 @@
+// TODO compare model with PointDetil model
 class ScreenResponseModal {
   final int id;
   final String name;
