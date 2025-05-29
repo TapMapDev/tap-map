@@ -79,6 +79,8 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
             initialChildSize: 0.60,
             minChildSize: 0.40,
             maxChildSize: 0.95,
+            snap: true,
+            snapSizes: const [0.60, 0.95],
             builder: (_, scrollController) => Stack(
               clipBehavior: Clip.none,
               children: [
@@ -91,7 +93,10 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       BoxShadow(color: Colors.black26, blurRadius: 10),
                     ],
                   ),
-                  child: Column(
+                  // Используем ListView вместо Column для правильного скроллинга
+                  child: ListView(
+                    controller: scrollController,
+                    padding: EdgeInsets.zero,
                     children: [
                       // ─── drag-indicator ───
                       Center(
@@ -110,6 +115,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             HeaderSection(title: d.name, category: d.category),
                             const SizedBox(height: 8),
@@ -190,25 +196,28 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       ),
                       
                       // ─── контент в зависимости от выбранного таба ───
-                      Expanded(
-                        child: ListView(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          children: [
-                            // Отображаем разный контент в зависимости от выбранного таба
-                            ..._buildTabContent(d, selectedTab, context),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Кнопки внизу (всегда видны)
-                            BottomActionBar(
-                              onRoute: () {}, // TODO: callback
-                              onCall: () {},  // TODO: callback
-                              onShare: () {}, // TODO: callback
-                            ),
-                          ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _buildTabContent(d, selectedTab, context),
                         ),
                       ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Кнопки внизу (всегда видны)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: BottomActionBar(
+                          onRoute: () {}, // TODO: callback
+                          onCall: () {},  // TODO: callback
+                          onShare: () {}, // TODO: callback
+                        ),
+                      ),
+                      
+                      // Добавляем отступ внизу, чтобы контент был полностью виден
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
