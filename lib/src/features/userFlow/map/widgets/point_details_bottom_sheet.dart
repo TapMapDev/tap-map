@@ -288,14 +288,14 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       onToggle: () {}, // TODO: callback
                     ),
                     const SizedBox(height: 16),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFF0F3F5)),
+                    const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5EA)),
                     const SizedBox(height: 16),
                     RouteSection(
                       address: d.address,
                       onRouteTap: () {}, // TODO: callback
                     ),
                     const SizedBox(height: 16),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFF0F3F5)),
+                    const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5EA)),
                     const SizedBox(height: 16),
                     OpenStatusSection(
                       statusText: 'Откроется через 35 минут',
@@ -320,7 +320,9 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                   ],
                 ),
                 child: FeaturesSection(
-                  features: d.features.map((f) => f.title).toList(),
+                  features: d.features.isNotEmpty 
+                      ? d.features.map((f) => f.title).toList()
+                      : ['Wi-Fi', 'Парковка 🚗', 'Кондиционер ❄️', 'Летняя веранда 🌳', 'Доставка 🛵', 'Детское меню'],
                   onMoreTap: () => context.read<PointDetailBloc>().add(
                     SwitchPointDetailTab(PointDetailTab.features)),
                 ),
