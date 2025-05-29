@@ -47,3 +47,11 @@ android/key.properties
 *.jks
 *.apk
 *.bin
+
+# iOS build files
+ios/build/
+ios/Pods/
+ios/DerivedData/
+ios/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
