@@ -47,12 +47,20 @@ class DeepLinkService {
           final path = '${AppRoutes.newPassword}?uid=$uid&token=$token';
           router.go(path);
         }
+      } else if (uri.host == 'point') {
+        final id = uri.path.replaceAll('/', '');
+        final path = AppRoutes.mapPoint.replaceAll(':pointId', id);
+        router.go(path);
       }
     } else if (uri.scheme == 'https' && uri.host == 'api.tap-map.net') {
       if (uri.path.startsWith('/api/users/link/')) {
         // Извлекаем username из path, убирая @ если он есть
         final username = uri.pathSegments.last.replaceAll('@', '');
         final path = AppRoutes.publicProfile.replaceAll(':username', username);
+        router.go(path);
+      } else if (uri.path.startsWith('/api/points/link/')) {
+        final id = uri.pathSegments.last;
+        final path = AppRoutes.mapPoint.replaceAll(':pointId', id);
         router.go(path);
       }
     }

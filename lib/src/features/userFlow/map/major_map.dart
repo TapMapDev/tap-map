@@ -25,7 +25,9 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_event.dart';
 
 class MajorMap extends StatefulWidget {
-  const MajorMap({super.key});
+  final String? openPointId;
+
+  const MajorMap({super.key, this.openPointId});
 
   @override
   State<MajorMap> createState() => _MajorMapState();
@@ -58,6 +60,7 @@ class _MajorMapState extends State<MajorMap> {
 
   bool _isDisposed = false; // Добавляем флаг для отслеживания состояния виджета
   bool _wasInactive = false; // Флаг для отслеживания неактивного состояния
+  bool _initialPointHandled = false;
 
   @override
   void initState() {
@@ -385,6 +388,12 @@ class _MajorMapState extends State<MajorMap> {
     if (_isDisposed) return;
     if (currentStyleId != null) {
       context.read<IconsBloc>().add(FetchIconsEvent(styleId: currentStyleId!));
+    }
+
+    // Открываем точку из диплинка, если нужно
+    if (!_initialPointHandled && widget.openPointId != null) {
+      _initialPointHandled = true;
+      _openPointById(widget.openPointId!);
     }
   }
 
@@ -839,6 +848,34 @@ class _MajorMapState extends State<MajorMap> {
         child: const PointDetailsBottomSheet(), // ⬅ без параметров
       ),
     );
+  }
+
+  Future<void> _openPointById(String pointId) async {
+    if (mapboxMapController != null) {
+      try {
+        final features = await mapboxMapController!.querySourceFeatures(
+          'places_source',
+          mp.SourceQueryOptions(
+            sourceLayerIds: ['mylayer'],
+            filter: '["==",["get","id"],"$pointId"]',
+          ),
+        );
+
+        if (features.isNotEmpty) {
+          final data =
+              features.first?.queriedFeature.feature as Map<dynamic, dynamic>?;
+          final geom = data?['geometry'] as Map<dynamic, dynamic>?;
+          final coords = geom?['coordinates'] as List<dynamic>?;
+          if (coords != null && coords.length >= 2) {
+            await _centerMapOnPoint(
+              mp.Position(coords[0] as double, coords[1] as double),
+            );
+          }
+        }
+      } catch (_) {}
+    }
+
+    _showPointDetails(pointId);
   }
 
 
