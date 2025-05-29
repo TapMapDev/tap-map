@@ -147,6 +147,7 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 37, // Фиксированная высота из Figma
       decoration: BoxDecoration(
         color: selected ? AppColors.tabBgActive : Colors.transparent,
         borderRadius: BorderRadius.circular(100),
@@ -160,17 +161,19 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       ),
       child: GestureDetector(
         onTap: () => _onTabTap(context, tab),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 250),
-          style: TextStyle(
-            fontFamily: 'SF Pro Display',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
-            color: selected ? AppColors.tabTextActive : AppColors.tabTextInactive,
-            height: 1.25,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            style: TextStyle(
+              fontFamily: 'SF Pro Display',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2,
+              color: selected ? AppColors.tabTextActive : AppColors.tabTextInactive,
+              height: 1.25,
+            ),
+            child: Text(text),
           ),
-          child: Text(text),
         ),
       ),
     );
@@ -190,6 +193,7 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 37, // Фиксированная высота из Figma
       decoration: BoxDecoration(
         color: selected ? AppColors.tabBgActive : Colors.transparent,
         borderRadius: BorderRadius.circular(100),
@@ -204,6 +208,8 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       child: GestureDetector(
         onTap: () => _onTabTap(context, tab),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 250),

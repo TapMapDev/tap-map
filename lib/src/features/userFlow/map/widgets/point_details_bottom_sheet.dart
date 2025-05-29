@@ -177,7 +177,11 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                       ),
                       
                       // Контент в зависимости от выбранной вкладки
-                      _buildTabContent(d, selectedTab, context),
+                      Container(
+                        color: AppColors.contentBg,
+                        padding: const EdgeInsets.only(top: 16, bottom: 24),
+                        child: _buildTabContent(d, selectedTab, context),
+                      ),
                       
                       // Кнопки внизу (всегда видны)
                       Padding(
@@ -339,7 +343,13 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text(
                   'Все особенности',
-                  style: AppTextStyles.h18,
+                  style: TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.dark,
+                    height: 1.25,
+                  ),
                 ),
               ),
               
@@ -347,13 +357,13 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.primary20, width: 2),
+                  color: AppColors.cardBg,
+                  border: Border.all(color: AppColors.cardBorder, width: 1),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -372,8 +382,23 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         // Вкладка Меню (пока заглушка)
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: FeaturesSection(
-            features: d.features.map((f) => f.title).toList(),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg,
+              border: Border.all(color: AppColors.cardBorder, width: 1),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: FeaturesSection(
+              features: d.features.map((f) => f.title).toList(),
+            ),
           ),
         );
         

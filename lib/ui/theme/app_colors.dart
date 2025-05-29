@@ -24,4 +24,9 @@ class AppColors {
   static const tabBgActive = Color(0xFFCBE724);     // '#CBE724'
   static const tabBadgeBg = Color(0xFF015840);      // '#015840'
   static const tabBadgeText = Color(0xFFCBE724);    // '#CBE724'
+  
+  // Цвета фона и контента
+  static const contentBg = Color(0xFFF5F8FC);      // Светло-голубой фон контента
+  static const cardBg = Colors.white;              // Белый фон карточек
+  static const cardBorder = Color(0xFFEEF1F5);     // Цвет бордера для карточек
 }
