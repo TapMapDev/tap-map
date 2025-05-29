@@ -17,4 +17,11 @@ class AppColors {
   // акценты, использовавшиеся в макете
   static const green      = Color(0xFF015840);
   static const greenLight = Color(0xFFCBE724);
+  
+  // Цвета табов из дизайн-системы
+  static const tabTextInactive = Color(0x802E3243); // rgba(46, 50, 67, 0.5)
+  static const tabTextActive = Color(0xFF015840);   // '#015840'
+  static const tabBgActive = Color(0xFFCBE724);     // '#CBE724'
+  static const tabBadgeBg = Color(0xFF015840);      // '#015840'
+  static const tabBadgeText = Color(0xFFCBE724);    // '#CBE724'
 }
