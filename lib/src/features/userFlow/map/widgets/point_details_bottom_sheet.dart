@@ -245,12 +245,6 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Заголовок секции
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text('Обзор', style: AppTextStyles.h18),
-              ),
-              
               // Блок с друзьями
               Container(
                 padding: const EdgeInsets.all(16),

@@ -19,11 +19,6 @@ class RatingSummarySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.primary20, width: 2),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         children: [
           Row(
