@@ -20,7 +20,10 @@ class FavoriteSection extends StatelessWidget {
     return InkWell(
       onTap: onToggle,
       child: _tile(
-        leading: const Text('💙', style: TextStyle(fontSize: 18)),
+        leading: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          color: AppColors.primary,
+        ),
         title: 'Избранное',
         subtitle: 'В списке $listName',
       ),
