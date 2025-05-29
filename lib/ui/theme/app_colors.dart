@@ -26,7 +26,10 @@ class AppColors {
   static const tabBadgeText = Color(0xFFCBE724);    // '#CBE724'
   
   // Цвета фона и контента
-  static const contentBg = Color(0xFFF5F8FC);      // Светло-голубой фон контента
+  static const contentBg = Color(0xFFF5F8FC);      // Светло-голубой фон контента из Figma
   static const cardBg = Colors.white;              // Белый фон карточек
-  static const cardBorder = Color(0xFFEEF1F5);     // Цвет бордера для карточек
+  static const cardShadow = Color(0x0A000000);     // Тень для карточек 10% прозрачности
+  
+  // Иконки действий
+  static const iconBg = Color(0xFFF5F8FC);         // Фон для иконок действий
 }

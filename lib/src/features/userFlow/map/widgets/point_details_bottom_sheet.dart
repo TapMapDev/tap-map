@@ -239,93 +239,154 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
   Widget _buildTabContent(PointDetail d, PointDetailTab selectedTab, BuildContext context) {
     switch (selectedTab) {
       case PointDetailTab.overview:
-        // Обзор содержит все блоки с базовой информацией
+        // Вкладка Обзор
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Блоки для вкладки "Обзор"
-              FriendsSection(
-                totalFriends: d.friendsCount,
-                avatarUrls: d.friendAvatars,
+              // Заголовок секции
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text('Обзор', style: AppTextStyles.h18),
               ),
-              const SizedBox(height: 13),
               
-              // TODO d.isFavorite
-              FavoriteSection(isFavorite: false, listName: 'Кофейни'),
-              const SizedBox(height: 13),
+              // Блок с Избранным, адресом и временем работы
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    FavoriteSection(
+                      isFavorite: false,
+                      listName: 'Кофейни',
+                      onToggle: () {}, // TODO: callback
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, thickness: 1, color: Color(0xFFF0F3F5)),
+                    const SizedBox(height: 16),
+                    OpenStatusSection(
+                      statusText: 'Откроется через 35 минут',
+                    ),
+                  ],
+                ),
+              ),
               
-              RouteSection(address: d.address),
-              const SizedBox(height: 13),
+              // Блок с друзьями
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: FriendsSection(
+                  totalFriends: d.friendsCount,
+                  avatarUrls: d.friendAvatars,
+                ),
+              ),
               
-              // TODO d.openStatus
-              OpenStatusSection(statusText: 'Откроется через 35 минут'),
-              const SizedBox(height: 13),
+              // Блок с отзывами
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ReviewsSection(
+                  reviews: d.reviews,
+                  totalCount: d.totalReviews,
+                  onSeeAll: () => context.read<PointDetailBloc>().add(
+                    SwitchPointDetailTab(PointDetailTab.reviews)),
+                ),
+              ),
               
-              FeaturesSection(
-                features: d.features.map((f) => f.title).toList(),
-              ),
-              const SizedBox(height: 13),
-
-              ContactsSection(
-                phone: d.phone,
-                website: d.website,
-              ),
-              const SizedBox(height: 13),
-
-              PhotoGallerySection(
-                imageUrls: d.imageUrls,
-                onAddPhoto: () {}, // TODO: callback
-              ),
-              const SizedBox(height: 13),
-
-              RatingSummarySection(
-                rating: d.rating,
-                totalReviews: d.totalReviews,
-                onRateTap: () {}, // TODO: callback
-              ),
-              const SizedBox(height: 13),
-
-              ReviewsSection(
-                reviews: d.reviews,
-                totalCount: d.totalReviews,
-                onSeeAll: () => context.read<PointDetailBloc>().add(
-                  SwitchPointDetailTab(PointDetailTab.reviews)),
+              // Блок контактов
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ContactsSection(
+                  phone: d.phone ?? '+7 (999) 123-45-67',
+                  website: d.website ?? 'example.com',
+                  socialButtons: {
+                    'telegram': () {}, 
+                    'instagram': () {},
+                    'vk': () {},
+                  },
+                ),
               ),
             ],
           ),
         );
         
-      case PointDetailTab.photos:
-        // Вкладка Фото показывает только галерею
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: PhotoGallerySection(
-            imageUrls: d.imageUrls,
-            onAddPhoto: () {}, // TODO: callback
-            showFullGallery: true,
-          ),
-        );
-        
       case PointDetailTab.reviews:
-        // Вкладка Отзывы показывает все отзывы и рейтинг
+        // Вкладка отзывов
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              RatingSummarySection(
-                rating: d.rating,
-                totalReviews: d.totalReviews,
-                onRateTap: () {}, // TODO: callback
+              // Заголовок секции
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text('Отзывы', style: AppTextStyles.h18),
               ),
-              const SizedBox(height: 13),
               
-              ReviewsSection(
-                reviews: d.reviews,
-                totalCount: d.totalReviews,
-                showFullReviews: true,
+              // Основное содержимое в карточке
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ReviewsSection(
+                  reviews: d.reviews,
+                  totalCount: d.totalReviews,
+                  showFullReviews: true,
+                ),
               ),
             ],
           ),
@@ -341,16 +402,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
               // Заголовок секции
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'Все особенности',
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.dark,
-                    height: 1.25,
-                  ),
-                ),
+                child: Text('Все особенности', style: AppTextStyles.h18),
               ),
               
               // Полный список особенностей с более красивой разметкой
@@ -358,12 +410,11 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.cardBg,
-                  border: Border.all(color: AppColors.cardBorder, width: 1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 6,
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -379,26 +430,74 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
         );
         
       case PointDetailTab.menu:
-        // Вкладка Меню (пока заглушка)
+        // Вкладка Меню
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              border: Border.all(color: AppColors.cardBorder, width: 1),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок секции
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text('Меню', style: AppTextStyles.h18),
+              ),
+              
+              // Содержимое в карточке
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: FeaturesSection(
-              features: d.features.map((f) => f.title).toList(),
-            ),
+                child: FeaturesSection(
+                  features: d.features.map((f) => f.title).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+        
+      case PointDetailTab.photos:
+        // Вкладка с фотографиями
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок секции
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text('Фотографии', style: AppTextStyles.h18),
+              ),
+              
+              // Содержимое в карточке
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: PhotoGallerySection(
+                  imageUrls: d.imageUrls,
+                  onAddPhoto: () {}, // TODO: callback
+                  showFullGallery: true,
+                ),
+              ),
+            ],
           ),
         );
         
@@ -413,18 +512,8 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
       decoration: BoxDecoration(
         color: AppColors.primaryLightest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary20),
       ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontFamily: 'SF Pro Display',
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: AppColors.dark,
-          height: 1.25,
-        ),
-      ),
+      child: Text(title, style: AppTextStyles.caption14Dark),
     );
   }
 }
