@@ -251,7 +251,28 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                 child: Text('Обзор', style: AppTextStyles.h18),
               ),
               
+              // Блок с друзьями
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: FriendsSection(
+                  totalFriends: d.friendsCount,
+                  avatarUrls: d.friendAvatars,
+                ),
+              ),
+              
               // Блок с Избранным, адресом и временем работы
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -275,6 +296,13 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     const SizedBox(height: 16),
                     const Divider(height: 1, thickness: 1, color: Color(0xFFF0F3F5)),
                     const SizedBox(height: 16),
+                    RouteSection(
+                      address: d.address,
+                      onRouteTap: () {}, // TODO: callback
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, thickness: 1, color: Color(0xFFF0F3F5)),
+                    const SizedBox(height: 16),
                     OpenStatusSection(
                       statusText: 'Откроется через 35 минут',
                     ),
@@ -282,7 +310,7 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                 ),
               ),
               
-              // Блок с друзьями
+              // Блок особенностей
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -297,32 +325,10 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     ),
                   ],
                 ),
-                child: FriendsSection(
-                  totalFriends: d.friendsCount,
-                  avatarUrls: d.friendAvatars,
-                ),
-              ),
-              
-              // Блок с отзывами
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.cardShadow,
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ReviewsSection(
-                  reviews: d.reviews,
-                  totalCount: d.totalReviews,
-                  onSeeAll: () => context.read<PointDetailBloc>().add(
-                    SwitchPointDetailTab(PointDetailTab.reviews)),
+                child: FeaturesSection(
+                  features: d.features.map((f) => f.title).toList(),
+                  onMoreTap: () => context.read<PointDetailBloc>().add(
+                    SwitchPointDetailTab(PointDetailTab.features)),
                 ),
               ),
               
@@ -349,6 +355,72 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                     'instagram': () {},
                     'vk': () {},
                   },
+                ),
+              ),
+              
+              // Блок с фотографиями
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: PhotoGallerySection(
+                  imageUrls: d.imageUrls,
+                  onAddPhoto: () {}, // TODO: callback
+                ),
+              ),
+              
+              // Блок с рейтингом
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: RatingSummarySection(
+                  rating: d.rating,
+                  totalReviews: d.totalReviews,
+                  onRateTap: () {}, // TODO: callback
+                ),
+              ),
+              
+              // Блок с отзывами
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ReviewsSection(
+                  reviews: d.reviews,
+                  totalCount: d.totalReviews,
+                  onSeeAll: () => context.read<PointDetailBloc>().add(
+                    SwitchPointDetailTab(PointDetailTab.reviews)),
                 ),
               ),
             ],
