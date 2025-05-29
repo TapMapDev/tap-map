@@ -19,15 +19,20 @@ class DetailTabNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 37,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _chip('Обзор', 0),
-          _chipWithBadge('Фото', 1, photoCount),
-          _chipWithBadge('Отзывы', 2, reviewCount),
-          _chip('Меню', 3),
-          _chip('Особенности', 4),
-        ],
+      child: AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            return ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _chip('Обзор', 0),
+                _chipWithBadge('Фото', 1, photoCount),
+                _chipWithBadge('Отзывы', 2, reviewCount),
+                _chip('Меню', 3),
+                _chip('Особенности', 4),
+              ],
+            );
+          },
       ),
     );
   }

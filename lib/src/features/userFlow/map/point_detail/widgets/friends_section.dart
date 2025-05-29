@@ -17,7 +17,8 @@ class FriendsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final moreCount = totalFriends - avatarUrls.length;
+    // Ensure "more" count isn't negative if more avatars than total friends
+    final moreCount = (totalFriends - avatarUrls.length).clamp(0, totalFriends);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
