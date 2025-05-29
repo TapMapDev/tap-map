@@ -21,11 +21,6 @@ class FriendsSection extends StatelessWidget {
     final moreCount = (totalFriends - avatarUrls.length).clamp(0, totalFriends);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.primary20, width: 2),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Row(
         children: [
           // Текст слева

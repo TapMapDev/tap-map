@@ -35,6 +35,7 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
     PointDetailTab.photos: GlobalKey(),
     PointDetailTab.reviews: GlobalKey(),
     PointDetailTab.menu: GlobalKey(),
+    PointDetailTab.features: GlobalKey(),
   };
   
   @override
@@ -119,6 +120,13 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
                 tab: PointDetailTab.menu, 
                 selected: state.selectedTab == PointDetailTab.menu,
               ),
+              _buildTab(
+                context: context,
+                key: _tabKeys[PointDetailTab.features]!,
+                text: 'Особенности', 
+                tab: PointDetailTab.features, 
+                selected: state.selectedTab == PointDetailTab.features,
+              ),
             ],
           ),
         );
@@ -138,26 +146,34 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       key: key,
       duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 37, // Фиксированная высота из Figma
       decoration: BoxDecoration(
-        color: selected ? AppColors.primaryLightest : Colors.transparent,
+        color: selected ? AppColors.tabBgActive : Colors.transparent,
         borderRadius: BorderRadius.circular(100),
         boxShadow: selected ? [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
-            blurRadius: 8,
+            color: AppColors.green.withOpacity(0.1),
+            blurRadius: 4,
             offset: const Offset(0, 2),
           )
         ] : null,
       ),
       child: GestureDetector(
         onTap: () => _onTabTap(context, tab),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 250),
-          style: selected
-              ? AppTextStyles.body16.copyWith(color: AppColors.primary)
-              : AppTextStyles.body16Grey,
-          child: Text(text),
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            style: TextStyle(
+              fontFamily: 'SF Pro Display',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2,
+              color: selected ? AppColors.tabTextActive : AppColors.tabTextInactive,
+              height: 1.25,
+            ),
+            child: Text(text),
+          ),
         ),
       ),
     );
@@ -176,14 +192,15 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       key: key,
       duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 37, // Фиксированная высота из Figma
       decoration: BoxDecoration(
-        color: selected ? AppColors.primaryLightest : Colors.transparent,
+        color: selected ? AppColors.tabBgActive : Colors.transparent,
         borderRadius: BorderRadius.circular(100),
         boxShadow: selected ? [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
-            blurRadius: 8,
+            color: AppColors.green.withOpacity(0.1),
+            blurRadius: 4,
             offset: const Offset(0, 2),
           )
         ] : null,
@@ -191,12 +208,19 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
       child: GestureDetector(
         onTap: () => _onTabTap(context, tab),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 250),
-              style: selected
-                  ? AppTextStyles.body16.copyWith(color: AppColors.primary)
-                  : AppTextStyles.body16Grey,
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: selected ? AppColors.tabTextActive : AppColors.tabTextInactive,
+                height: 1.25,
+              ),
               child: Text(text),
             ),
             const SizedBox(width: 4),
@@ -205,14 +229,21 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: selected 
-                    ? AppColors.primary20
-                    : AppColors.primaryLightest,
-                borderRadius: BorderRadius.circular(12),
+                    ? AppColors.tabBadgeBg
+                    : AppColors.tabBgActive,
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
                 '$count',
-                style: AppTextStyles.badge12Primary.copyWith(
-                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.43,
+                  color: selected 
+                      ? AppColors.tabBadgeText
+                      : AppColors.tabTextActive,
+                  height: 1.3,
                 ),
               ),
             ),

@@ -52,7 +52,12 @@ class RouteSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.body16),
+                Text(
+                  title, 
+                  style: AppTextStyles.body16,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (subtitle != null)
                   Text(subtitle, style: subtitleStyle ?? AppTextStyles.caption14),
               ],

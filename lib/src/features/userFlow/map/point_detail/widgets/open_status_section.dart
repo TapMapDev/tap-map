@@ -20,11 +20,6 @@ class OpenStatusSection extends StatelessWidget {
     return Container(
       height: 66,
       padding: const EdgeInsets.only(left: 8),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.primary20),
-        ),
-      ),
       child: Row(
         children: [
           CircleAvatar(
@@ -43,7 +38,8 @@ class OpenStatusSection extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 20),
+          Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.grey),
+          const SizedBox(width: 8),
         ],
       ),
     );

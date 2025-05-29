@@ -22,9 +22,6 @@ class BottomActionBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0x1E767680)),
-        ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       child: Row(

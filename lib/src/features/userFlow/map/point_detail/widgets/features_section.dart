@@ -20,22 +20,17 @@ class FeaturesSection extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.primary20, width: 2),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Особенности:', style: AppTextStyles.h18),
-          const SizedBox(height: 12),
+          Text('Особенности', style: AppTextStyles.h18),
+          const SizedBox(height: 16),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ...display.map(_chip),
-              if (hasMore) _chip('Ещё', trailing: const Icon(Icons.add, size: 18), onTap: onMoreTap),
+              if (hasMore) _chip('Ещё', trailing: const Icon(Icons.add, size: 16), onTap: onMoreTap),
             ],
           ),
         ],
@@ -49,8 +44,7 @@ class FeaturesSection extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.primary20,
-          border: Border.all(color: AppColors.primary20),
+          color: AppColors.primaryLightest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
