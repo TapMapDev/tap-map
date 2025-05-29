@@ -6,8 +6,8 @@ import 'app_colors.dart';
 class AppTextStyles {
   // названия шрифтов
   static const _sf      = 'SF Pro Display';
-  static const _poppins = 'Poppins';
   static const _inter   = 'Inter';
+  static const _poppins = 'Poppins';
 
   // ────────── Заголовки ──────────
   static const h24 = TextStyle(
@@ -103,8 +103,18 @@ class AppTextStyles {
     letterSpacing: -1,
   );
 
+  // ────────── Бейджи ──────────
   static const badge12Green = TextStyle(
     color: AppColors.green,
+    fontSize: 12,
+    fontFamily: _sf,
+    fontWeight: FontWeight.w500,
+    height: 1.30,
+    letterSpacing: -0.43,
+  );
+
+  static const badge12Primary = TextStyle(
+    color: AppColors.primary,
     fontSize: 12,
     fontFamily: _sf,
     fontWeight: FontWeight.w500,

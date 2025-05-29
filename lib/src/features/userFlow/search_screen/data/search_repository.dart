@@ -50,6 +50,7 @@ class SearchRepositoryImpl implements SearchRepository {
     throw Exception('Unexpected error in retry operation');
   }
 
+  // TODO fetchPoint, compare model with PointDetil model
   @override
   Future<List<ScreenResponseModal>> fetchPlace() async {
     try {
