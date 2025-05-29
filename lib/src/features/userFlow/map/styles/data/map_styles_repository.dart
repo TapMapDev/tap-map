@@ -1,6 +1,9 @@
 import 'package:tap_map/core/network/api_service.dart';
 import '../model/map_styles_responce_modal.dart';
 
+// TODO(tapmap): Отказаться от интерфейса MapStyleRepository и использовать
+// простой класс репозитория, как в остальных частях проекта.
+
 abstract class MapStyleRepository {
   Future<List<MapStyleResponceModel>> fetchMapStyles();
   List<MapStyleResponceModel> getCachedMapStyles(); // ✅ Добавили метод

@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/model/search_response_modal.dart';
 
+// TODO(tapmap): Упростить репозиторий, избавиться от интерфейса SearchRepository
+// и придерживаться общего подхода BLoC + репозиторий.
+
 abstract class SearchRepository {
   Future<List<ScreenResponseModal>> getPlaces({
     required int offset,

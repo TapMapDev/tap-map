@@ -17,13 +17,10 @@ dependencies:
   dio: ^5.7.0
   get_it: ^8.0.3
   talker: ^4.6.0
-  get: ^4.6.6
   flutter_bloc: ^9.0.0
   shared_preferences: ^2.5.2
   bloc: ^9.0.0
   flutter_svg: ^2.0.17
-  auto_route: ^9.3.0+1
-  latlong2: ^0.9.1
   equatable: ^2.0.7
   video_player: ^2.9.5
   tcard: ^1.3.5
