@@ -165,54 +165,31 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
                               ],
                             ),
                             const SizedBox(height: 16),
-                
-                            FriendsSection(
-                              totalFriends: d.friendsCount,
-                              avatarUrls: d.friendAvatars,
+                            
+                            // ─── навигация по табам ─── (перенесено сюда согласно дизайну)
+                            TabNavigationBloc(
+                              photoCount: d.imageUrls.length,
+                              reviewCount: d.totalReviews,
                             ),
-                            const SizedBox(height: 13),
-                
-                            // TODO d.isFavorite
-                            FavoriteSection(isFavorite: false, listName: 'Кофейни'),
-                            const SizedBox(height: 13),
-                
-                            RouteSection(address: d.address),
-                            const SizedBox(height: 13),
-                
-                            // TODO d.openStatus
-                            OpenStatusSection(statusText: 'Откроется через 35 минут'),
-                            const SizedBox(height: 13),
                           ],
                         ),
                       ),
                       
-                      // ─── навигация по табам ───
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: TabNavigationBloc(
-                          photoCount: d.imageUrls.length,
-                          reviewCount: d.totalReviews,
-                        ),
-                      ),
-                      
-                      // ─── контент в зависимости от выбранного таба ───
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildTabContent(d, selectedTab, context),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
+                      // Контент в зависимости от выбранной вкладки
+                      _buildTabContent(d, selectedTab, context),
                       
                       // Кнопки внизу (всегда видны)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: BottomActionBar(
-                          onRoute: () {}, // TODO: callback
-                          onCall: () {},  // TODO: callback
-                          onShare: () {}, // TODO: callback
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 24),
+                            BottomActionBar(
+                              onRoute: () {}, // TODO: callback
+                              onCall: () {},  // TODO: callback
+                              onShare: () {}, // TODO: callback
+                            ),
+                          ],
                         ),
                       ),
                       
@@ -254,103 +231,112 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
   }
   
   /// Возвращает содержимое в зависимости от выбранной вкладки
-  List<Widget> _buildTabContent(PointDetail d, PointDetailTab selectedTab, BuildContext context) {
+  Widget _buildTabContent(PointDetail d, PointDetailTab selectedTab, BuildContext context) {
     switch (selectedTab) {
       case PointDetailTab.overview:
-        return [
-          // Обзор содержит все блоки с базовой информацией
-          FeaturesSection(
-            features: d.features.map((f) => f.title).toList(),
-          ),
-          const SizedBox(height: 13),
+        // Обзор содержит все блоки с базовой информацией
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Блоки для вкладки "Обзор"
+              FriendsSection(
+                totalFriends: d.friendsCount,
+                avatarUrls: d.friendAvatars,
+              ),
+              const SizedBox(height: 13),
+              
+              // TODO d.isFavorite
+              FavoriteSection(isFavorite: false, listName: 'Кофейни'),
+              const SizedBox(height: 13),
+              
+              RouteSection(address: d.address),
+              const SizedBox(height: 13),
+              
+              // TODO d.openStatus
+              OpenStatusSection(statusText: 'Откроется через 35 минут'),
+              const SizedBox(height: 13),
+              
+              FeaturesSection(
+                features: d.features.map((f) => f.title).toList(),
+              ),
+              const SizedBox(height: 13),
 
-          ContactsSection(
-            phone: d.phone,
-            website: d.website,
-          ),
-          const SizedBox(height: 13),
+              ContactsSection(
+                phone: d.phone,
+                website: d.website,
+              ),
+              const SizedBox(height: 13),
 
-          PhotoGallerySection(
-            imageUrls: d.imageUrls,
-            onAddPhoto: () {}, // TODO: callback
-          ),
-          const SizedBox(height: 13),
+              PhotoGallerySection(
+                imageUrls: d.imageUrls,
+                onAddPhoto: () {}, // TODO: callback
+              ),
+              const SizedBox(height: 13),
 
-          RatingSummarySection(
-            rating: d.rating,
-            totalReviews: d.totalReviews,
-            onRateTap: () {}, // TODO: callback
-          ),
-          const SizedBox(height: 13),
+              RatingSummarySection(
+                rating: d.rating,
+                totalReviews: d.totalReviews,
+                onRateTap: () {}, // TODO: callback
+              ),
+              const SizedBox(height: 13),
 
-          ReviewsSection(
-            reviews: d.reviews,
-            totalCount: d.totalReviews,
-            onSeeAll: () => context.read<PointDetailBloc>().add(
-              SwitchPointDetailTab(PointDetailTab.reviews)),
+              ReviewsSection(
+                reviews: d.reviews,
+                totalCount: d.totalReviews,
+                onSeeAll: () => context.read<PointDetailBloc>().add(
+                  SwitchPointDetailTab(PointDetailTab.reviews)),
+              ),
+            ],
           ),
-        ];
+        );
         
       case PointDetailTab.photos:
-        return [
-          // Вкладка Фото показывает полную галерею
-          PhotoGallerySection(
+        // Вкладка Фото показывает только галерею
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: PhotoGallerySection(
             imageUrls: d.imageUrls,
             onAddPhoto: () {}, // TODO: callback
             showFullGallery: true,
           ),
-        ];
+        );
         
       case PointDetailTab.reviews:
-        return [
-          // Вкладка Отзывы показывает все отзывы и рейтинг
-          RatingSummarySection(
-            rating: d.rating,
-            totalReviews: d.totalReviews,
-            onRateTap: () {}, // TODO: callback
+        // Вкладка Отзывы показывает все отзывы и рейтинг
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RatingSummarySection(
+                rating: d.rating,
+                totalReviews: d.totalReviews,
+                onRateTap: () {}, // TODO: callback
+              ),
+              const SizedBox(height: 13),
+              
+              ReviewsSection(
+                reviews: d.reviews,
+                totalCount: d.totalReviews,
+                showFullReviews: true,
+              ),
+            ],
           ),
-          const SizedBox(height: 13),
-          
-          ReviewsSection(
-            reviews: d.reviews,
-            totalCount: d.totalReviews,
-            showFullReviews: true,
-          ),
-        ];
+        );
         
       case PointDetailTab.menu:
-        return [
-          // Вкладка Меню (пока заглушка)
-          Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Меню этого заведения появится здесь в ближайшее время',
-              style: AppTextStyles.body16Grey,
-              textAlign: TextAlign.center,
-            ),
+        // Вкладка Меню (пока заглушка)
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: FeaturesSection(
+            features: d.features.map((f) => f.title).toList(),
           ),
-        ];
+        );
         
       default:
-        // Обработка на случай добавления новых вкладок в будущем
-        return [
-          Container(
-            padding: const EdgeInsets.all(24),
-            alignment: Alignment.center,
-            child: Text(
-              'Содержимое для этой вкладки находится в разработке',
-              style: AppTextStyles.body16Grey,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ];
+        return const SizedBox.shrink();
     }
   }
 }
