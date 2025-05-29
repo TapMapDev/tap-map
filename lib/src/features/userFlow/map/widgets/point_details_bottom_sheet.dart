@@ -17,6 +17,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/bottom_ac
 import 'package:tap_map/src/features/userFlow/map/point_detail/widgets/tab_navigation_bloc.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_detail.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
+import 'package:tap_map/ui/theme/app_colors.dart';
 
 /// Bottom-sheet с полной информацией о выбранной точке на карте.
 /// Данные подтягиваются из [PointDetailBloc].
@@ -326,6 +327,47 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
           ),
         );
         
+      case PointDetailTab.features:
+        // Вкладка с полным списком особенностей
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок секции
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text(
+                  'Все особенности',
+                  style: AppTextStyles.h18,
+                ),
+              ),
+              
+              // Полный список особенностей с более красивой разметкой
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.primary20, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: d.features.map((feature) => _buildFeatureChip(feature.title)).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+        
       case PointDetailTab.menu:
         // Вкладка Меню (пока заглушка)
         return Padding(
@@ -338,5 +380,26 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
       default:
         return const SizedBox.shrink();
     }
+  }
+  
+  Widget _buildFeatureChip(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLightest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary20),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'SF Pro Display',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppColors.dark,
+          height: 1.25,
+        ),
+      ),
+    );
   }
 }

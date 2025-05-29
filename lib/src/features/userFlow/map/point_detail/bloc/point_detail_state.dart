@@ -5,7 +5,8 @@ enum PointDetailTab {
   overview,  // Обзор
   photos,    // Фото
   reviews,   // Отзывы
-  menu       // Меню
+  menu,      // Меню
+  features   // Особенности
 }
 
 abstract class PointDetailState {}

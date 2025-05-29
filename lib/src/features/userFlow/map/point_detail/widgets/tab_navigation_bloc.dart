@@ -35,6 +35,7 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
     PointDetailTab.photos: GlobalKey(),
     PointDetailTab.reviews: GlobalKey(),
     PointDetailTab.menu: GlobalKey(),
+    PointDetailTab.features: GlobalKey(),
   };
   
   @override
@@ -118,6 +119,13 @@ class _TabNavigationBlocState extends State<TabNavigationBloc> {
                 text: 'Меню', 
                 tab: PointDetailTab.menu, 
                 selected: state.selectedTab == PointDetailTab.menu,
+              ),
+              _buildTab(
+                context: context,
+                key: _tabKeys[PointDetailTab.features]!,
+                text: 'Особенности', 
+                tab: PointDetailTab.features, 
+                selected: state.selectedTab == PointDetailTab.features,
               ),
             ],
           ),
