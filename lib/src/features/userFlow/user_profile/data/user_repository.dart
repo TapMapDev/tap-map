@@ -8,6 +8,9 @@ import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 
+// TODO(tapmap): Упростить репозиторий, убрать абстракцию IUserRepository и
+// использовать единый класс репозитория.
+
 abstract class IUserRepository {
   Future<UserModel> getCurrentUser();
   Future<UserModel> getUserByUsername(String username);

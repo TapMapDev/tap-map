@@ -3,6 +3,9 @@ import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/src/features/registration/model/registration_response_model.dart';
 
+// TODO(tapmap): Упростить репозиторий, убрав абстракцию RegistrationRepository
+// и придерживаться единого стиля (BLoC + репозиторий).
+
 abstract class RegistrationRepository {
   Future<RegistrationResponseModel> register({
     required String email,
