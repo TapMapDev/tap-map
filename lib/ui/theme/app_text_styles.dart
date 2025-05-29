@@ -6,8 +6,8 @@ import 'app_colors.dart';
 class AppTextStyles {
   // названия шрифтов
   static const _sf      = 'SF Pro Display';
-  static const _poppins = 'Poppins';
   static const _inter   = 'Inter';
+  static const _poppins = 'Poppins';
 
   // ────────── Заголовки ──────────
   static const h24 = TextStyle(
