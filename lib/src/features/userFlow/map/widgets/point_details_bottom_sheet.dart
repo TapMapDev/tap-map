@@ -79,160 +79,164 @@ class _PointDetailsBottomSheetState extends State<PointDetailsBottomSheet>
             initialChildSize: 0.60,
             minChildSize: 0.40,
             maxChildSize: 0.95,
-            builder: (_, scroll) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black26, blurRadius: 10),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // ─── drag-indicator ───
-                  Stack(
-                    alignment: Alignment.center,
+            builder: (_, scrollController) => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Основной контейнер
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black26, blurRadius: 10),
+                    ],
+                  ),
+                  child: Column(
                     children: [
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 12),
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(5),
+                      // ─── drag-indicator ───
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(5),
+                          ),
                         ),
                       ),
-                      // Кнопка закрытия
-                      Positioned(
-                        right: 16,
-                        top: 8,
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                      
+                      // ─── основная информация (всегда видна) ───
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            HeaderSection(title: d.name, category: d.category),
+                            const SizedBox(height: 8),
+                
+                            // ─── Рейтинг и расстояние ───
+                            Row(
+                              children: [
+                                // Звездочка и рейтинг
+                                Row(
+                                  children: [
+                                    const Icon(Icons.star, color: Colors.amber, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      d.rating.toStringAsFixed(1),
+                                      style: AppTextStyles.caption14Dark,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 8),
+                                // Кол-во оценок
+                                Text(
+                                  '${d.totalReviews} оценок',
+                                  style: AppTextStyles.caption14,
+                                ),
+                                const SizedBox(width: 8),
+                                // Разделитель
+                                Container(
+                                  height: 4,
+                                  width: 4,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Расстояние
+                                Row(
+                                  children: [
+                                    const Icon(Icons.place_outlined, color: Colors.grey, size: 16),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '340 м', // TODO: Получать расстояние из модели
+                                      style: AppTextStyles.caption14,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.close, size: 18),
-                          ),
+                            const SizedBox(height: 16),
+                
+                            FriendsSection(
+                              totalFriends: d.friendsCount,
+                              avatarUrls: d.friendAvatars,
+                            ),
+                            const SizedBox(height: 13),
+                
+                            // TODO d.isFavorite
+                            FavoriteSection(isFavorite: false, listName: 'Кофейни'),
+                            const SizedBox(height: 13),
+                
+                            RouteSection(address: d.address),
+                            const SizedBox(height: 13),
+                
+                            // TODO d.openStatus
+                            OpenStatusSection(statusText: 'Откроется через 35 минут'),
+                            const SizedBox(height: 13),
+                          ],
+                        ),
+                      ),
+                      
+                      // ─── навигация по табам ───
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: TabNavigationBloc(
+                          photoCount: d.imageUrls.length,
+                          reviewCount: d.totalReviews,
+                        ),
+                      ),
+                      
+                      // ─── контент в зависимости от выбранного таба ───
+                      Expanded(
+                        child: ListView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            // Отображаем разный контент в зависимости от выбранного таба
+                            ..._buildTabContent(d, selectedTab, context),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Кнопки внизу (всегда видны)
+                            BottomActionBar(
+                              onRoute: () {}, // TODO: callback
+                              onCall: () {},  // TODO: callback
+                              onShare: () {}, // TODO: callback
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  
-                  // ─── основная информация (всегда видна) ───
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        HeaderSection(title: d.name, category: d.category),
-                        const SizedBox(height: 8),
+                ),
                 
-                        // ─── Рейтинг и расстояние ───
-                        Row(
-                          children: [
-                            // Звездочка и рейтинг
-                            Row(
-                              children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  d.rating.toStringAsFixed(1),
-                                  style: AppTextStyles.caption14Dark,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 8),
-                            // Кол-во оценок
-                            Text(
-                              '${d.totalReviews} оценок',
-                              style: AppTextStyles.caption14,
-                            ),
-                            const SizedBox(width: 8),
-                            // Разделитель
-                            Container(
-                              height: 4,
-                              width: 4,
-                              decoration: const BoxDecoration(
-                                color: Colors.grey,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Расстояние
-                            Row(
-                              children: [
-                                const Icon(Icons.place_outlined, color: Colors.grey, size: 16),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '340 м', // TODO: Получать расстояние из модели
-                                  style: AppTextStyles.caption14,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                
-                        FriendsSection(
-                          totalFriends: d.friendsCount,
-                          avatarUrls: d.friendAvatars,
-                        ),
-                        const SizedBox(height: 13),
-                
-                        // TODO d.isFavorite
-                        FavoriteSection(isFavorite: false, listName: 'Кофейни'),
-                        const SizedBox(height: 13),
-                
-                        RouteSection(address: d.address),
-                        const SizedBox(height: 13),
-                
-                        // TODO d.openStatus
-                        OpenStatusSection(statusText: 'Откроется через 35 минут'),
-                        const SizedBox(height: 13),
-                      ],
+                // Кнопка закрытия
+                Positioned(
+                  right: 16,
+                  top: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.close, size: 18),
                     ),
                   ),
-                  
-                  // ─── навигация по табам ───
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: TabNavigationBloc(
-                      photoCount: d.imageUrls.length,
-                      reviewCount: d.totalReviews,
-                    ),
-                  ),
-                  
-                  // ─── контент в зависимости от выбранного таба ───
-                  Expanded(
-                    child: ListView(
-                      controller: scroll,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        // Отображаем разный контент в зависимости от выбранного таба
-                        ..._buildTabContent(d, selectedTab, context),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Кнопки внизу (всегда видны)
-                        BottomActionBar(
-                          onRoute: () {}, // TODO: callback
-                          onCall: () {},  // TODO: callback
-                          onShare: () {}, // TODO: callback
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
