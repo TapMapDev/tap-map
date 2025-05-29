@@ -145,6 +145,15 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: AppRoutes.map,
               builder: (context, state) => const MajorMap(),
+              routes: [
+                GoRoute(
+                  path: ':pointId',
+                  builder: (context, state) {
+                    final id = state.pathParameters['pointId']!;
+                    return MajorMap(openPointId: id);
+                  },
+                ),
+              ],
             ),
           ],
         ),
