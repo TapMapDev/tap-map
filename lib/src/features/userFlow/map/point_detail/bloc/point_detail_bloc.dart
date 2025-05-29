@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../data/repository/point_repository.dart';
+import '../data/repositories/point_repository.dart';
 import 'point_detail_event.dart';
 import 'point_detail_state.dart';
 
