@@ -6,6 +6,7 @@ class AppColors {
   // brand
   static const primary = Color(0xFF4A69FF);
   static const primary20 = Color(0x334A69FF); // 20 % прозрачности
+  static const primaryLightest = Color(0xFFF0F3FF); // Очень светлый оттенок primary для фона табов
 
   // нейтральные
   static const dark = Color(0xFF2F2E2D);

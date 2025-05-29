@@ -103,8 +103,18 @@ class AppTextStyles {
     letterSpacing: -1,
   );
 
+  // ────────── Бейджи ──────────
   static const badge12Green = TextStyle(
     color: AppColors.green,
+    fontSize: 12,
+    fontFamily: _sf,
+    fontWeight: FontWeight.w500,
+    height: 1.30,
+    letterSpacing: -0.43,
+  );
+
+  static const badge12Primary = TextStyle(
+    color: AppColors.primary,
     fontSize: 12,
     fontFamily: _sf,
     fontWeight: FontWeight.w500,

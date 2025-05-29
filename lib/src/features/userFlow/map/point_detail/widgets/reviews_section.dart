@@ -8,16 +8,20 @@ class ReviewsSection extends StatelessWidget {
   final List<Review> reviews;
   final int totalCount;
   final VoidCallback? onSeeAll;
+  final bool showFullReviews;
 
   const ReviewsSection({
     Key? key,
     required this.reviews,
     required this.totalCount,
     this.onSeeAll,
+    this.showFullReviews = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final displayReviews = showFullReviews ? reviews : reviews.take(2).toList();
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -28,22 +32,55 @@ class ReviewsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Что говорят о месте:', style: AppTextStyles.h18),
-          const SizedBox(height: 12),
-          ...reviews.take(2).map(_card),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: onSeeAll,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary20,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text('Смотреть все $totalCount',
-                  style: AppTextStyles.body16.copyWith(color: AppColors.primary)),
-            ),
+          Text(
+            showFullReviews 
+                ? 'Отзывы ($totalCount)' 
+                : 'Что говорят о месте:', 
+            style: AppTextStyles.h18
           ),
+          const SizedBox(height: 12),
+          
+          if (reviews.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              alignment: Alignment.center,
+              child: Text(
+                'Отзывов пока нет. Будьте первым!',
+                style: AppTextStyles.body16Grey,
+              ),
+            )
+          else
+            ...displayReviews.map(_card),
+            
+          if (!showFullReviews && reviews.length > 2) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: onSeeAll,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary20,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text('Смотреть все $totalCount',
+                    style: AppTextStyles.body16.copyWith(color: AppColors.primary)),
+              ),
+            ),
+          ] else if (showFullReviews) ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {}, // TODO: добавить callback для написания отзыва
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary20,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text('Написать отзыв',
+                    style: AppTextStyles.body16.copyWith(color: AppColors.primary)),
+              ),
+            ),
+          ],
         ],
       ),
     );
