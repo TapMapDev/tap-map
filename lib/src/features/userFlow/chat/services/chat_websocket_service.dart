@@ -222,6 +222,12 @@ class ChatWebSocketService {
   ConnectionState _connectionState = ConnectionState.disconnected;
   ConnectionState get connectionState => _connectionState;
 
+  /// Текущая попытка переподключения
+  int get reconnectAttempt => _reconnectAttempts;
+  
+  /// Максимальное количество попыток переподключения
+  int get maxReconnectAttempts => _maxReconnectAttempts;
+
   /// Конструктор
   ChatWebSocketService({
     required SharedPrefsRepository prefsRepository,

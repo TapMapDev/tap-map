@@ -74,10 +74,10 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
         emit(const ConnectionLost(message: event.errorMessage));
         break;
       case ws.ConnectionState.reconnecting:
-        // Получаем информацию о попытках из самого сервиса
-        emit(const ConnectionReconnecting(
-          attempt: 1, // В текущей реализации ChatWebSocketService не экспортирует счетчик попыток
-          maxAttempts: 5, // Используем константу из ChatWebSocketService
+        // Получаем информацию о попытках из сервиса
+        emit(ConnectionReconnecting(
+          attempt: _webSocketService.reconnectAttempt,
+          maxAttempts: _webSocketService.maxReconnectAttempts,
         ));
         break;
       case ws.ConnectionState.waitingForNetwork:
