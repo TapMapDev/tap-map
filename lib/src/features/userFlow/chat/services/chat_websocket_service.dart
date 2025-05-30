@@ -24,6 +24,7 @@ enum ConnectionState {
   disconnected,
   reconnecting,
   waitingForNetwork,
+  error,
 }
 
 /// Данные события WebSocket

@@ -60,7 +60,7 @@ class ConnectionBlocState extends Equatable {
 
   /// Состояние ошибки с сообщением
   factory ConnectionBlocState.error(String message) => ConnectionBlocState(
-    state: ConnectionState.disconnected,
+    state: ConnectionState.error,
     message: message,
   );
 

@@ -82,6 +82,9 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
       case ConnectionState.waitingForNetwork:
         emit(ConnectionBlocState.waitingForNetwork());
         break;
+      case ConnectionState.error:
+        emit(ConnectionBlocState.error(event.errorMessage ?? 'Неизвестная ошибка'));
+        break;
     }
   }
 
@@ -99,33 +102,14 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
   /// Обработка событий от WebSocketService
   void _handleWebSocketEvent(WebSocketEventData event) {
     if (event.type == WebSocketEventType.connection) {
-      final connectionStateStr = event.data['state'] as String;
-      final connectionState = _parseConnectionState(connectionStateStr);
+      // Получаем состояние напрямую из данных события
+      final connectionState = event.data['connectionState'] as ConnectionState? ?? 
+                              ConnectionState.disconnected;
       
       add(ConnectionStatusEvent(connectionState: connectionState));
     } else if (event.type == WebSocketEventType.error && event.error != null) {
       add(ConnectionErrorEvent(event.error!));
     }
-  }
-
-  /// Преобразование строки состояния в enum
-  ConnectionState _parseConnectionState(String stateStr) {
-    final parts = stateStr.split('.');
-    if (parts.length == 2 && parts[0] == 'ConnectionState') {
-      switch (parts[1]) {
-        case 'connected':
-          return ConnectionState.connected;
-        case 'connecting':
-          return ConnectionState.connecting;
-        case 'disconnected':
-          return ConnectionState.disconnected;
-        case 'reconnecting':
-          return ConnectionState.reconnecting;
-        case 'waitingForNetwork':
-          return ConnectionState.waitingForNetwork;
-      }
-    }
-    return ConnectionState.disconnected;
   }
 
   /// Освобождение ресурсов
