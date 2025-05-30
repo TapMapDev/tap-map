@@ -83,19 +83,6 @@ class MessageSent extends ChatState {
   List<Object?> get props => [message];
 }
 
-class UserTyping extends ChatState {
-  final int userId;
-  final bool isTyping;
-
-  const UserTyping({
-    required this.userId,
-    required this.isTyping,
-  });
-
-  @override
-  List<Object?> get props => [userId, isTyping];
-}
-
 class MessageReceived extends ChatState {
   final dynamic message;
 
@@ -136,19 +123,6 @@ class MessageRead extends ChatState {
 class ChatConnected extends ChatState {}
 
 class ChatDisconnected extends ChatState {}
-
-class MessageEdited extends ChatState {
-  final int messageId;
-  final String newText;
-
-  const MessageEdited({
-    required this.messageId,
-    required this.newText,
-  });
-
-  @override
-  List<Object?> get props => [messageId, newText];
-}
 
 class FileUploaded extends ChatState {
   final String filePath;

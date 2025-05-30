@@ -43,6 +43,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    print(
+        '🚀 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
@@ -58,9 +60,17 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadCurrentUser() async {
     try {
       final user = await _userRepository.getCurrentUser();
-      _currentUsername = user.username;
-      _currentUserId = user.id;
-    } catch (_) {}
+      print(
+          '👤 ChatScreen: Loading current user - username: ${user.username}, id: ${user.id}');
+      setState(() {
+        _currentUsername = user.username;
+        _currentUserId = user.id;
+      });
+      print(
+          '👤 ChatScreen: Current user set - username: $_currentUsername, id: $_currentUserId');
+    } catch (e) {
+      print('❌ ChatScreen: Error loading current user: $e');
+    }
   }
 
   void _scrollToBottom() {
@@ -292,6 +302,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                 final message = state.messages[index];
                                 final isMe =
                                     message.senderUsername == _currentUsername;
+                                print(
+                                    '📱 Message from ${message.senderUsername}, isMe: $isMe, currentUsername: $_currentUsername');
 
                                 return ChatBubble(
                                   message: message,
