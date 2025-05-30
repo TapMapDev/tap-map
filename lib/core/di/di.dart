@@ -36,6 +36,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -148,6 +149,13 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ChatWebSocketService>(
     () => ChatWebSocketService(
       prefsRepository: getIt<SharedPrefsRepository>(),
+    ),
+  );
+
+  // Register chat-related blocs
+  getIt.registerLazySingleton<ChatsListBloc>(
+    () => ChatsListBloc(
+      chatRepository: getIt<ChatRepository>(),
     ),
   );
 
