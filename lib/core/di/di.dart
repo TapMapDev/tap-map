@@ -17,8 +17,6 @@ import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_database.dart';
@@ -34,8 +32,6 @@ import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories/point_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories/point_repository_impl.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
@@ -99,21 +95,6 @@ Future<void> setup() async {
   );
   getIt.registerFactory<PointDetailBloc>(
     () => PointDetailBloc(getIt<PointRepository>()),
-  );
-
-  getIt.registerFactory<EditBloc>(
-    () => EditBloc(
-      chatRepository: getIt<ChatRepository>(),
-      webSocketService: getIt<WebSocketService>(),
-    ),
-  );
-
-  // Register ChatRepository
-  getIt.registerLazySingleton<ChatRepositoryOld>(
-    () => ChatRepositoryOld(
-      dioClient: getIt<DioClient>(),
-      prefs: getIt<SharedPreferences>(),
-    ),
   );
   
   // Регистрируем базу данных для чатов
@@ -182,14 +163,6 @@ Future<void> setup() async {
       webSocketService: getIt<ChatWebSocketService>(),
     ),
   );
-
-  // TODO: Удалить эти блоки после полного тестирования MessageActionsBloc
-  // getIt.registerFactory<PinBloc>(
-  //     () => PinBloc(chatRepository: getIt<ChatRepository>()));
-  // getIt.registerFactory<DeleteMessageBloc>(
-  //     () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
-  // getIt.registerFactory<EditBloc>(
-  //     () => EditBloc(chatRepository: getIt<ChatRepository>()));
 
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);

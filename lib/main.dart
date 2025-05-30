@@ -93,25 +93,9 @@ class MyApp extends StatelessWidget {
               webSocketService: getIt.get<ChatWebSocketService>(),
             ),
           ),
-          // Старые блоки закомментированы и будут удалены после полного тестирования MessageActionsBloc
-          // BlocProvider(
-          //   create: (context) => PinBloc(
-          //     chatRepository: getIt.get<ChatRepository>(),
-          //   ),
-          // ),
           BlocProvider(
             create: (context) => ReplyBloc(),
           ),
-          // BlocProvider(
-          //   create: (context) => DeleteMessageBloc(
-          //     chatRepository: getIt.get<ChatRepository>(),
-          //   ),
-          // ),
-          // BlocProvider(
-          //   create: (context) => EditBloc(
-          //     chatRepository: getIt.get<ChatRepository>(),
-          //   ),
-          // ),
         ],
         child: MaterialApp.router(
           routerConfig: appRouter,
