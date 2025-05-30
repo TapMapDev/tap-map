@@ -36,7 +36,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setup() async {
@@ -139,13 +139,6 @@ Future<void> setup() async {
     ),
   );
 
-  getIt.registerFactory<ChatBloc>(
-    () => ChatBloc(
-      chatRepository: getIt.get<ChatRepository>(),
-      prefsRepository: getIt.get<SharedPrefsRepository>(),
-    ),
-  );
-
   // WebSocket Service
   getIt.registerFactoryParam<WebSocketService, String, void>(
     (jwtToken, _) => WebSocketService(jwtToken: jwtToken),
@@ -163,6 +156,7 @@ Future<void> setup() async {
 
   getIt.registerFactory<DeleteMessageBloc>(
       () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
+
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);
 
