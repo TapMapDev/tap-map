@@ -5,12 +5,12 @@ import 'package:tap_map/core/network/dio_client.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
-class ChatRepository {
+class ChatRepositoryOld {
   final DioClient _dioClient;
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
 
-  ChatRepository({
+  ChatRepositoryOld({
     required DioClient dioClient,
     required SharedPreferences prefs,
   })  : _dioClient = dioClient,

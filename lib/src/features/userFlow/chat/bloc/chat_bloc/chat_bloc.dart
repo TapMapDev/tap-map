@@ -10,7 +10,7 @@ import 'package:tap_map/core/websocket/websocket_event.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
-import '../../data/chat_repository.dart';
+import '../../data/chat_repository_old.dart';
 import '../../models/chat_model.dart';
 import '../../models/message_model.dart';
 import '../../services/send_message_use_case.dart';
@@ -19,7 +19,7 @@ part 'chat_event.dart';
 part 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  final ChatRepository _chatRepository;
+  final ChatRepositoryOld _chatRepository;
   final SharedPrefsRepository _prefsRepository;
   final UserRepository _userRepository;
   WebSocketService? _webSocketService;
@@ -32,7 +32,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   SendMessageUseCase? _sendMessageUseCase;
 
   ChatBloc({
-    required ChatRepository chatRepository,
+    required ChatRepositoryOld chatRepository,
     required SharedPrefsRepository prefsRepository,
   })  : _chatRepository = chatRepository,
         _prefsRepository = prefsRepository,
