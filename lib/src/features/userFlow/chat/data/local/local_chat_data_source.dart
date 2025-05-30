@@ -221,7 +221,6 @@ class LocalChatDataSource implements ChatDataSource {
           messageType: Value(message.type.toString().split('.').last), // Обновлено с type на messageType
           isRead: Value(message.isRead),
         ),
-        mode: InsertMode.insertOrReplace,
       );
     }
   }
@@ -243,7 +242,6 @@ class LocalChatDataSource implements ChatDataSource {
         messageType: Value(message.type.toString().split('.').last),
         isRead: Value(message.isRead),
       ),
-      mode: InsertMode.insertOrReplace,
     );
   }
   

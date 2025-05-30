@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
@@ -12,15 +13,21 @@ import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_servi
 /// Объединенный блок для управления чатами и сообщениями
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _chatRepository;
+  final ChatWebSocketService _chatWebSocketService;
   StreamSubscription<WebSocketEventData>? _webSocketSubscription;
   
   /// Текущий активный чат
   int? _currentChatId;
   
+  /// Публичный доступ к WebSocketService для других блоков
+  WebSocketService get webSocketService => _chatWebSocketService;
+  
   /// Конструктор блока
   ChatBloc({
     required ChatRepository chatRepository,
+    required ChatWebSocketService chatWebSocketService,
   }) : _chatRepository = chatRepository,
+       _chatWebSocketService = chatWebSocketService,
        super(const ChatInitial()) {
     // События для списка чатов
     on<FetchChatsEvent>(_onFetchChats);
@@ -55,7 +62,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   
   /// Подписка на события WebSocket
   void _subscribeToWebSocket() {
-    _webSocketSubscription = _chatRepository.webSocketEvents.listen((event) {
+    _webSocketSubscription = _chatWebSocketService.events.listen((event) {
       if (event.type == WebSocketEventType.message && event.data != null) {
         add(NewWebSocketMessageEvent(event.data));
       } else if (event.type == WebSocketEventType.error) {

@@ -3,7 +3,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -26,8 +25,6 @@ import 'package:tap_map/src/features/userFlow/search_screen/data/search_reposito
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();

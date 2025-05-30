@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
+import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
