@@ -39,6 +39,7 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart
 import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -175,11 +176,21 @@ Future<void> setup() async {
     ),
   );
 
+  getIt.registerLazySingleton<MessageActionsBloc>(
+    () => MessageActionsBloc(
+      chatRepository: getIt<ChatRepository>(),
+      webSocketService: null, // Будет установлен позже
+    ),
+  );
+
   getIt.registerFactory<PinBloc>(
       () => PinBloc(chatRepository: getIt<ChatRepository>()));
 
   getIt.registerFactory<DeleteMessageBloc>(
       () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
+
+  getIt.registerFactory<EditBloc>(
+      () => EditBloc(chatRepository: getIt<ChatRepository>()));
 
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);
