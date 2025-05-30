@@ -19,6 +19,11 @@ import 'package:tap_map/src/features/password_reset/data/password_reset_reposito
 import 'package:tap_map/src/features/registration/data/registration_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/local/chat_database.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/local/local_chat_data_source.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/remote/remote_chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
@@ -103,6 +108,33 @@ Future<void> setup() async {
     () => ChatRepositoryOld(
       dioClient: getIt<DioClient>(),
       prefs: getIt<SharedPreferences>(),
+    ),
+  );
+  
+  // Регистрируем базу данных для чатов
+  getIt.registerLazySingleton<ChatDatabase>(
+    () => ChatDatabase(),
+  );
+  
+  // Регистрируем источники данных для чатов
+  getIt.registerLazySingleton<ChatDataSource>(
+    () => RemoteChatDataSource(
+      dioClient: getIt<DioClient>(),
+      prefs: getIt<SharedPreferences>(),
+    ),
+    instanceName: 'remote',
+  );
+  
+  getIt.registerLazySingleton<ChatDataSource>(
+    () => LocalChatDataSource(getIt<ChatDatabase>()),
+    instanceName: 'local',
+  );
+  
+  // Регистрируем новый ChatRepository
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepository(
+      remoteDataSource: getIt<ChatDataSource>(instanceName: 'remote'),
+      localDataSource: getIt<ChatDataSource>(instanceName: 'local'),
     ),
   );
 
