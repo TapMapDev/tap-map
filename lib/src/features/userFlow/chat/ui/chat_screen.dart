@@ -348,7 +348,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
-                                    context.read<MessageActionsBloc>().add(UnpinMessageAction(
+                                    _messageActionsBloc.add(UnpinMessageAction(
                                           chatId: widget.chatId,
                                           messageId: state.pinnedMessage.id,
                                         ));
@@ -612,7 +612,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                       editingMessage: _editingMessage,
                       onCancelEdit: () {
-                        context.read<MessageActionsBloc>().add(const CancelEditAction());
+                        _messageActionsBloc.add(const CancelEditAction());
                         setState(() {
                           _editingMessage = null;
                           _messageController.clear();
@@ -664,7 +664,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 print('Message text: ${message.text}');
                 Navigator.pop(context);
                 print('Navigator popped');
-                context.read<MessageActionsBloc>().add(StartEditingAction(
+                _messageActionsBloc.add(StartEditingAction(
                       messageId: message.id,
                       originalText: message.text,
                     ));
@@ -676,7 +676,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Удалить только у себя'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<MessageActionsBloc>().add(DeleteMessageRequest(
+                _messageActionsBloc.add(DeleteMessageAction(
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_me',
@@ -684,11 +684,11 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
+              leading: const Icon(Icons.delete_forever, color: Colors.red),
               title: const Text('Удалить', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
-                context.read<MessageActionsBloc>().add(DeleteMessageRequest(
+                _messageActionsBloc.add(DeleteMessageAction(
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_all',
@@ -700,7 +700,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Закрепить сообщение'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<MessageActionsBloc>().add(PinMessageAction(
+                _messageActionsBloc.add(PinMessageAction(
                       chatId: widget.chatId,
                       messageId: message.id,
                     ));
