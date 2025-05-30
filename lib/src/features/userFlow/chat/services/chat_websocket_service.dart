@@ -13,6 +13,8 @@ enum WebSocketEventType {
   userStatus,
   error,
   connection,
+  ping,
+  unknown,
 }
 
 /// Состояние подключения WebSocket
@@ -21,6 +23,7 @@ enum ConnectionState {
   connected,
   disconnected,
   reconnecting,
+  waitingForNetwork,
 }
 
 /// Данные события WebSocket
@@ -52,8 +55,12 @@ class WebSocketEventData {
       case 'user_status':
         type = WebSocketEventType.userStatus;
         break;
+      case 'ping':
+      case 'pong':
+        type = WebSocketEventType.ping;
+        break;
       default:
-        type = WebSocketEventType.error;
+        type = WebSocketEventType.unknown;
     }
     
     return WebSocketEventData(
@@ -76,24 +83,133 @@ class WebSocketEventData {
       error: errorMessage,
     );
   }
+  
+  factory WebSocketEventData.unknown(dynamic rawData) {
+    return WebSocketEventData(
+      type: WebSocketEventType.unknown,
+      data: {'raw': rawData.toString()},
+    );
+  }
+  
+  @override
+  String toString() {
+    return 'WebSocketEventData{type: $type, data: $data${error != null ? ', error: $error' : ''}}';
+  }
+}
+
+/// Интерфейс для WebSocketService для возможности мокинга в тестах
+abstract class BaseWebSocketService {
+  void connect();
+  void disconnect();
+  void setCurrentUsername(String username);
+  void sendMessage({
+    required int chatId,
+    required String text,
+    int? replyToId,
+    int? forwardedFromId,
+    List<Map<String, String>>? attachments,
+  });
+  void sendTyping({required int chatId, required bool isTyping});
+  void readMessage({required int chatId, required int messageId});
+  void editMessage({
+    required int chatId,
+    required int messageId,
+    required String text,
+  });
+  Stream get stream;
+  dynamic get channel;
+}
+
+/// Адаптер для существующего WebSocketService
+class WebSocketServiceAdapter implements BaseWebSocketService {
+  final WebSocketService _service;
+  
+  WebSocketServiceAdapter(this._service);
+  
+  @override
+  void connect() => _service.connect();
+  
+  @override
+  void disconnect() => _service.disconnect();
+  
+  @override
+  void setCurrentUsername(String username) => _service.setCurrentUsername(username);
+  
+  @override
+  void sendMessage({
+    required int chatId,
+    required String text,
+    int? replyToId,
+    int? forwardedFromId,
+    List<Map<String, String>>? attachments,
+  }) => _service.sendMessage(
+    chatId: chatId,
+    text: text,
+    replyToId: replyToId,
+    forwardedFromId: forwardedFromId,
+    attachments: attachments,
+  );
+  
+  @override
+  void sendTyping({required int chatId, required bool isTyping}) =>
+    _service.sendTyping(chatId: chatId, isTyping: isTyping);
+  
+  @override
+  void readMessage({required int chatId, required int messageId}) =>
+    _service.readMessage(chatId: chatId, messageId: messageId);
+  
+  @override
+  void editMessage({
+    required int chatId,
+    required int messageId,
+    required String text,
+  }) => _service.editMessage(
+    chatId: chatId,
+    messageId: messageId,
+    text: text,
+  );
+  
+  @override
+  Stream get stream => _service.stream;
+  
+  @override
+  dynamic get channel => _service.channel;
+}
+
+/// Фабрика для создания экземпляров WebSocketService
+class WebSocketServiceFactory {
+  final SharedPrefsRepository _prefsRepository;
+  
+  WebSocketServiceFactory(this._prefsRepository);
+  
+  Future<BaseWebSocketService?> create() async {
+    final token = await _prefsRepository.getAccessToken();
+    if (token == null) return null;
+    
+    return WebSocketServiceAdapter(WebSocketService(jwtToken: token));
+  }
 }
 
 /// Сервис для работы с WebSocket в чате с поддержкой автоматического переподключения
 class ChatWebSocketService {
   final SharedPrefsRepository _prefsRepository;
-  WebSocketService? _webSocketService;
+  final WebSocketServiceFactory _serviceFactory;
+  BaseWebSocketService? _webSocketService;
   
   // Параметры для переподключения
   static const int _maxReconnectAttempts = 5;
   static const Duration _reconnectDelay = Duration(seconds: 3);
   static const Duration _pingInterval = Duration(seconds: 30);
+  static const Duration _pingTimeout = Duration(seconds: 10);
   
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
+  Timer? _pingTimeoutTimer;
   bool _isConnected = false;
   bool _isManuallyDisconnected = false;
   String? _currentUsername;
+  bool _waitingForPingResponse = false;
   
   // Контроллер для транслирования событий
   final StreamController<WebSocketEventData> _eventsController = 
@@ -109,7 +225,9 @@ class ChatWebSocketService {
   /// Конструктор
   ChatWebSocketService({
     required SharedPrefsRepository prefsRepository,
-  }) : _prefsRepository = prefsRepository;
+    WebSocketServiceFactory? serviceFactory,
+  }) : _prefsRepository = prefsRepository,
+       _serviceFactory = serviceFactory ?? WebSocketServiceFactory(prefsRepository);
 
   /// Установка имени текущего пользователя
   void setCurrentUsername(String username) {
@@ -118,19 +236,19 @@ class ChatWebSocketService {
   }
 
   /// Подключение к WebSocket серверу
-  Future<void> connect() async {
-    if (_isConnected) return;
+  Future<bool> connect() async {
+    if (_isConnected) return true;
     _isManuallyDisconnected = false;
     
     try {
       _updateConnectionState(ConnectionState.connecting);
       
-      final token = await _prefsRepository.getAccessToken();
-      if (token == null) {
-        throw Exception('Нет доступного токена доступа');
+      _webSocketService = await _serviceFactory.create();
+      
+      if (_webSocketService == null) {
+        throw Exception('Не удалось создать WebSocketService');
       }
       
-      _webSocketService = WebSocketService(jwtToken: token);
       _webSocketService!.connect();
       
       if (_currentUsername != null) {
@@ -147,8 +265,10 @@ class ChatWebSocketService {
       _reconnectAttempts = 0;
       _updateConnectionState(ConnectionState.connected);
       
+      return true;
     } catch (e) {
-      _handleConnectionError(e.toString());
+      _handleConnectionError('Ошибка подключения: ${e.toString()}');
+      return false;
     }
   }
 
@@ -165,11 +285,14 @@ class ChatWebSocketService {
     _webSocketService = null;
     _stopReconnectTimer();
     _stopPingTimer();
+    _stopPingTimeoutTimer();
     _isConnected = false;
   }
 
   /// Обновление состояния подключения
   void _updateConnectionState(ConnectionState state) {
+    if (_connectionState == state) return;
+    
     _connectionState = state;
     _eventsController.add(WebSocketEventData.connectionEvent(state));
   }
@@ -182,7 +305,14 @@ class ChatWebSocketService {
       _eventsController.add(
         WebSocketEventData.error('Превышено максимальное количество попыток переподключения')
       );
-      _updateConnectionState(ConnectionState.disconnected);
+      _updateConnectionState(ConnectionState.waitingForNetwork);
+      
+      // После макс. количества попыток ждем дольше
+      _stopReconnectTimer();
+      _reconnectTimer = Timer(Duration(seconds: 60), () {
+        _reconnectAttempts = 0;
+        connect();
+      });
       return;
     }
     
@@ -214,6 +344,25 @@ class ChatWebSocketService {
     _pingTimer?.cancel();
     _pingTimer = null;
   }
+  
+  /// Запуск таймера ожидания ответа на пинг
+  void _startPingTimeoutTimer() {
+    _stopPingTimeoutTimer();
+    _waitingForPingResponse = true;
+    _pingTimeoutTimer = Timer(_pingTimeout, () {
+      if (_waitingForPingResponse) {
+        // Не получили ответ на пинг вовремя, соединение вероятно потеряно
+        _handleConnectionError('Таймаут пинга: сервер не отвечает');
+      }
+    });
+  }
+  
+  /// Остановка таймера ожидания ответа на пинг
+  void _stopPingTimeoutTimer() {
+    _pingTimeoutTimer?.cancel();
+    _pingTimeoutTimer = null;
+    _waitingForPingResponse = false;
+  }
 
   /// Отправка пинга для поддержания соединения
   void _sendPing() {
@@ -227,6 +376,7 @@ class ChatWebSocketService {
         });
         
         _webSocketService!.channel.sink.add(ping);
+        _startPingTimeoutTimer();
       }
     } catch (e) {
       _handleConnectionError('Ошибка отправки пинга: $e');
@@ -239,12 +389,31 @@ class ChatWebSocketService {
       (data) {
         try {
           if (data is String) {
-            final jsonData = jsonDecode(data) as Map<String, dynamic>;
-            final event = WebSocketEventData.fromJson(jsonData);
-            _eventsController.add(event);
+            try {
+              final jsonData = jsonDecode(data) as Map<String, dynamic>;
+              final event = WebSocketEventData.fromJson(jsonData);
+              
+              // Обработка пинга - сбрасываем таймер ожидания
+              if (event.type == WebSocketEventType.ping) {
+                _stopPingTimeoutTimer();
+              }
+              
+              _eventsController.add(event);
+            } catch (e) {
+              _eventsController.add(
+                WebSocketEventData.error('Ошибка разбора JSON: $e')
+              );
+              // Добавляем неразобранные данные как неизвестный тип
+              _eventsController.add(WebSocketEventData.unknown(data));
+            }
+          } else if (data != null) {
+            // Данные не в формате строки
+            _eventsController.add(WebSocketEventData.unknown(data));
           }
         } catch (e) {
-          _eventsController.add(WebSocketEventData.error('Ошибка обработки события: $e'));
+          _eventsController.add(
+            WebSocketEventData.error('Ошибка обработки события: $e')
+          );
         }
       },
       onError: (error) {
@@ -285,13 +454,17 @@ class ChatWebSocketService {
       return;
     }
     
-    _webSocketService?.sendMessage(
-      chatId: chatId,
-      text: text,
-      replyToId: replyToId,
-      forwardedFromId: forwardedFromId,
-      attachments: attachments,
-    );
+    try {
+      _webSocketService?.sendMessage(
+        chatId: chatId,
+        text: text,
+        replyToId: replyToId,
+        forwardedFromId: forwardedFromId,
+        attachments: attachments,
+      );
+    } catch (e) {
+      _handleConnectionError('Ошибка отправки сообщения: $e');
+    }
   }
 
   /// Отправка статуса печати
@@ -307,10 +480,18 @@ class ChatWebSocketService {
       return;
     }
     
-    _webSocketService?.sendTyping(
-      chatId: chatId,
-      isTyping: isTyping,
-    );
+    try {
+      _webSocketService?.sendTyping(
+        chatId: chatId,
+        isTyping: isTyping,
+      );
+    } catch (e) {
+      // При ошибке отправки статуса печати не обрываем соединение,
+      // это некритичная ошибка
+      _eventsController.add(
+        WebSocketEventData.error('Ошибка отправки статуса печати: $e')
+      );
+    }
   }
 
   /// Отметка сообщения как прочитанное
@@ -326,10 +507,18 @@ class ChatWebSocketService {
       return;
     }
     
-    _webSocketService?.readMessage(
-      chatId: chatId,
-      messageId: messageId,
-    );
+    try {
+      _webSocketService?.readMessage(
+        chatId: chatId,
+        messageId: messageId,
+      );
+    } catch (e) {
+      // При ошибке отметки прочтения не обрываем соединение,
+      // это некритичная ошибка
+      _eventsController.add(
+        WebSocketEventData.error('Ошибка отметки сообщения как прочитанное: $e')
+      );
+    }
   }
 
   /// Редактирование сообщения
@@ -347,11 +536,15 @@ class ChatWebSocketService {
       return;
     }
     
-    _webSocketService?.editMessage(
-      chatId: chatId,
-      messageId: messageId,
-      text: text,
-    );
+    try {
+      _webSocketService?.editMessage(
+        chatId: chatId,
+        messageId: messageId,
+        text: text,
+      );
+    } catch (e) {
+      _handleConnectionError('Ошибка редактирования сообщения: $e');
+    }
   }
 
   /// Переподключение и выполнение функции
@@ -363,12 +556,19 @@ class ChatWebSocketService {
       return;
     }
     
-    connect().then((_) {
-      if (_isConnected) {
+    connect().then((success) {
+      if (success && _isConnected) {
         action();
+      } else {
+        _eventsController.add(
+          WebSocketEventData.error('Не удалось выполнить действие: соединение не установлено')
+        );
       }
     });
   }
+
+  /// Проверка состояния соединения
+  bool isConnected() => _isConnected;
 
   /// Освобождение ресурсов
   void dispose() {
