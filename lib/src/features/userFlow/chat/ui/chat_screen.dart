@@ -266,8 +266,36 @@ class _ChatScreenState extends State<ChatScreen> {
               // Слушатель действий с сообщениями (замена DeleteMessageBloc и EditBloc)
               BlocListener<MessageActionsBloc, MessageActionState>(
                 listener: (context, state) {
+                  // Отображение состояния загрузки
+                  if (state is MessageActionLoading) {
+                    // Можно показать индикатор загрузки для разных типов действий
+                    String actionText = '';
+                    switch (state.actionType) {
+                      case MessageActionType.delete:
+                        actionText = 'Удаление сообщения...';
+                        break;
+                      case MessageActionType.edit:
+                        actionText = 'Сохранение изменений...';
+                        break;
+                      case MessageActionType.pin:
+                        actionText = 'Закрепление сообщения...';
+                        break;
+                      case MessageActionType.unpin:
+                        actionText = 'Открепление сообщения...';
+                        break;
+                      case MessageActionType.loadPin:
+                        actionText = 'Загрузка закрепленного сообщения...';
+                        break;
+                    }
+                    // Опционально: показать индикатор загрузки
+                    if (actionText.isNotEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(actionText)),
+                      );
+                    }
+                  }
                   // Обработка удаления сообщений
-                  if (state is MessageActionSuccess && state.actionType == MessageActionType.delete) {
+                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.delete) {
                     // После успешного удаления обновляем список сообщений в ChatMessagesBloc
                     final currentState = _chatMessagesBloc.state;
                     if (currentState is ChatMessagesLoaded) {
@@ -285,14 +313,49 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SnackBar(content: Text('Сообщение удалено')),
                       );
                     }
-                  } else if (state is MessageActionFailure && state.actionType == MessageActionType.delete) {
+                  } 
+                  // Обработка ошибки удаления
+                  else if (state is MessageActionFailure && state.actionType == MessageActionType.delete) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text('Ошибка при удалении: ${state.message}')),
                     );
                   }
-                  
-                  // Обработка редактирования сообщений
+                  // Обработка успеха закрепления
+                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.pin) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Сообщение закреплено')),
+                    );
+                  }
+                  // Обработка ошибки закрепления
+                  else if (state is MessageActionFailure && state.actionType == MessageActionType.pin) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Ошибка при закреплении: ${state.message}')),
+                    );
+                  }
+                  // Обработка успеха открепления
+                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.unpin) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Сообщение откреплено')),
+                    );
+                  }
+                  // Обработка ошибки открепления
+                  else if (state is MessageActionFailure && state.actionType == MessageActionType.unpin) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Ошибка при откреплении: ${state.message}')),
+                    );
+                  }
+                  // Обработка успеха загрузки закрепленного сообщения
+                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.loadPin) {
+                    print('Закрепленное сообщение успешно загружено');
+                  }
+                  // Обработка ошибки загрузки закрепленного сообщения
+                  else if (state is MessageActionFailure && state.actionType == MessageActionType.loadPin) {
+                    print('Ошибка при загрузке закрепленного сообщения: ${state.message}');
+                  }
+                  // Обработка состояния редактирования
                   else if (state is MessageEditInProgress) {
                     print('Начато редактирование сообщения: ${state.messageId}');
                     setState(() {
@@ -305,18 +368,40 @@ class _ChatScreenState extends State<ChatScreen> {
                       );
                       _messageController.text = state.originalText;
                     });
-                  } else if (state is MessageEditSuccess) {
+                  } 
+                  // Обработка успеха редактирования
+                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.edit) {
                     print('Редактирование сообщения успешно завершено');
                     setState(() {
                       _editingMessage = null;
                       _messageController.clear();
                     });
-                  } else if (state is MessageEditFailure) {
-                    print('Ошибка при редактировании сообщения: ${state.error}');
+                    
+                    // Обновляем сообщение в списке
+                    final currentState = _chatMessagesBloc.state;
+                    if (currentState is ChatMessagesLoaded && state.newText != null) {
+                      final updatedMessages = currentState.messages.map((msg) {
+                        if (msg.id == state.messageId) {
+                          return msg.copyWith(text: state.newText!);
+                        }
+                        return msg;
+                      }).toList();
+                      
+                      _chatMessagesBloc.emit(currentState.copyWith(
+                        messages: updatedMessages,
+                      ));
+                    }
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Сообщение отредактировано')),
+                    );
+                  } 
+                  // Обработка ошибки редактирования
+                  else if (state is MessageActionFailure && state.actionType == MessageActionType.edit) {
+                    print('Ошибка при редактировании сообщения: ${state.message}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(
-                              'Ошибка при редактировании: ${state.error}')),
+                          content: Text('Ошибка при редактировании: ${state.message}')),
                     );
                   }
                 },
@@ -328,6 +413,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     BlocBuilder<MessageActionsBloc, MessageActionState>(
                       builder: (context, state) {
+                        // Если есть закрепленное сообщение, показываем его
                         if (state is MessagePinActive) {
                           return Container(
                             padding: const EdgeInsets.all(8.0),
@@ -358,6 +444,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           );
                         }
+                        // Если состояние MessagePinEmpty или любое другое, не показываем ничего
                         return const SizedBox.shrink();
                       },
                     ),
