@@ -107,12 +107,13 @@ Future<void> setup() async {
     () => RemoteChatDataSource(
       dioClient: getIt<DioClient>(),
       prefs: getIt<SharedPreferences>(),
+      webSocketService: getIt<WebSocketService>(),
     ),
     instanceName: 'remote',
   );
   
   getIt.registerLazySingleton<ChatDataSource>(
-    () => LocalChatDataSource(getIt<ChatDatabase>()),
+    () => LocalChatDataSource(database: getIt<ChatDatabase>()),
     instanceName: 'local',
   );
   
@@ -121,6 +122,7 @@ Future<void> setup() async {
     () => ChatRepository(
       remoteDataSource: getIt<ChatDataSource>(instanceName: 'remote'),
       localDataSource: getIt<ChatDataSource>(instanceName: 'local'),
+      webSocketService: getIt<WebSocketService>(),
     ),
   );
 
@@ -143,10 +145,10 @@ Future<void> setup() async {
     ),
   );
 
-  getIt.registerLazySingleton<ChatMessagesBloc>(
+  getIt.registerFactory<ChatMessagesBloc>(
     () => ChatMessagesBloc(
       chatRepository: getIt<ChatRepository>(),
-      prefsRepository: getIt<SharedPrefsRepository>(),
+      prefsRepository: getIt<PreferencesRepository>(),
       userRepository: getIt<UserRepository>(),
     ),
   );

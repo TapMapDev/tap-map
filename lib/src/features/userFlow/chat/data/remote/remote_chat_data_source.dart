@@ -12,12 +12,15 @@ class RemoteChatDataSource implements ChatDataSource {
   final DioClient _dioClient;
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
+  WebSocketService? _webSocketService;
 
   RemoteChatDataSource({
     required DioClient dioClient,
     required SharedPreferences prefs,
+    WebSocketService? webSocketService,
   })  : _dioClient = dioClient,
-        _prefs = prefs;
+        _prefs = prefs,
+        _webSocketService = webSocketService;
 
   @override
   Future<List<ChatModel>> getChats() async {
@@ -147,10 +150,62 @@ class RemoteChatDataSource implements ChatDataSource {
     int? forwardedFromId,
     List<Map<String, String>>? attachments,
   }) async {
-    // В данной реализации метод не используется напрямую,
-    // т.к. отправка сообщений идет через WebSocket
-    // Создаем заглушку для совместимости с интерфейсом
-    throw UnimplementedError('Метод не реализован, используйте WebSocket для отправки сообщений');
+    try {
+      // Проверяем, инициализирован ли WebSocketService
+      if (_webSocketService == null) {
+        throw Exception('WebSocketService не инициализирован');
+      }
+      
+      // Отправляем сообщение через WebSocket
+      _webSocketService!.sendMessage(
+        chatId: chatId,
+        text: text,
+        replyToId: replyToId,
+        forwardedFromId: forwardedFromId,
+        attachments: attachments,
+      );
+
+      // Получаем текущего пользователя для создания локального сообщения
+      final username = _webSocketService!.currentUsername;
+      if (username == null) {
+        throw Exception('Имя пользователя не установлено');
+      }
+
+      // Создаем локальное представление сообщения с временным ID
+      final temporaryId = DateTime.now().millisecondsSinceEpoch;
+      final message = MessageModel(
+        id: temporaryId,
+        text: text,
+        chatId: chatId,
+        replyToId: replyToId,
+        forwardedFromId: forwardedFromId,
+        createdAt: DateTime.now(),
+        senderUsername: username,
+        isRead: false,
+        type: _getMessageType(attachments),
+        attachments: attachments ?? [],
+      );
+      
+      return message;
+    } catch (e) {
+      throw Exception('Ошибка при отправке сообщения: $e');
+    }
+  }
+  
+  // Вспомогательный метод для определения типа сообщения на основе вложений
+  MessageType _getMessageType(List<Map<String, String>>? attachments) {
+    if (attachments == null || attachments.isEmpty) {
+      return MessageType.text;
+    }
+
+    final contentType = attachments.first['content_type']?.toLowerCase() ?? '';
+    if (contentType.startsWith('video/')) {
+      return MessageType.video;
+    } else if (contentType.startsWith('image/')) {
+      return MessageType.image;
+    } else {
+      return MessageType.file;
+    }
   }
 
   @override

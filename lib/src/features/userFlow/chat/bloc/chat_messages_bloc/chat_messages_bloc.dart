@@ -3,20 +3,19 @@ import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/core/websocket/websocket_event.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/auth/data/preferences_repository.dart';
+import 'package:tap_map/src/features/userFlow/auth/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/send_message_use_case.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 
 class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   final ChatRepository _chatRepository;
-  final SharedPrefsRepository _prefsRepository;
+  final PreferencesRepository _prefsRepository;
   final UserRepository _userRepository;
   WebSocketService? _webSocketService;
   StreamSubscription? _wsSubscription;
@@ -24,11 +23,10 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   WebSocketService? get webSocketService => _webSocketService;
 
   String? _currentUsername;
-  SendMessageUseCase? _sendMessageUseCase;
 
   ChatMessagesBloc({
     required ChatRepository chatRepository,
-    required SharedPrefsRepository prefsRepository,
+    required PreferencesRepository prefsRepository,
     required UserRepository userRepository,
   })  : _chatRepository = chatRepository,
         _prefsRepository = prefsRepository,
@@ -111,11 +109,6 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
       _webSocketService!.connect();
       _webSocketService!.setCurrentUsername(_currentUsername!);
 
-      _sendMessageUseCase = SendMessageUseCase(
-        webSocketService: _webSocketService!,
-        currentUsername: _currentUsername!,
-      );
-
       final webSocketEvent = WebSocketEvent(_webSocketService!);
       _wsSubscription = _webSocketService!.stream.listen(
         (data) {
@@ -148,19 +141,27 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) async {
     try {
-      if (_webSocketService == null) {
-        emit(const ChatMessagesError('Not connected to chat'));
-        return;
-      }
-
       final currentState = state;
       if (currentState is ChatMessagesLoaded) {
-        _webSocketService!.sendMessage(
+        // Используем ChatRepository вместо прямого вызова WebSocketService
+        final newMessage = await _chatRepository.sendMessage(
           chatId: event.chatId,
           text: event.text,
           replyToId: event.replyToId,
           forwardedFromId: event.forwardedFromId,
+          attachments: event.attachments,
         );
+        
+        // Обновляем список сообщений в UI, чтобы показать новое сообщение немедленно
+        final updatedMessages = List<MessageModel>.from(currentState.messages)
+          ..add(newMessage);
+        
+        emit(ChatMessagesLoaded(
+          chatId: currentState.chatId,
+          chat: currentState.chat,
+          messages: updatedMessages,
+          pinnedMessageId: currentState.pinnedMessageId,
+        ));
       }
     } catch (e) {
       emit(ChatMessagesError(e.toString()));

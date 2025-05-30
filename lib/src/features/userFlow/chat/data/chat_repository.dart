@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
@@ -8,12 +9,15 @@ import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 class ChatRepository {
   final ChatDataSource _remoteDataSource;
   final ChatDataSource _localDataSource;
+  final WebSocketService? _webSocketService;
   
   ChatRepository({
     required ChatDataSource remoteDataSource,
     required ChatDataSource localDataSource,
+    WebSocketService? webSocketService,
   })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+        _localDataSource = localDataSource,
+        _webSocketService = webSocketService;
         
   /// Получить список всех чатов с кэшированием
   Future<List<ChatModel>> fetchChats() async {
@@ -208,6 +212,46 @@ class ChatRepository {
   Future<String> uploadFile(String filePath) async {
     // Загрузка файла может происходить только через удаленный источник
     return await _remoteDataSource.uploadFile(filePath);
+  }
+  
+  /// Отправить сообщение
+  Future<MessageModel> sendMessage({
+    required int chatId,
+    required String text,
+    int? replyToId,
+    int? forwardedFromId,
+    List<Map<String, String>>? attachments,
+  }) async {
+    try {
+      // Отправляем сообщение через удаленный источник данных (WebSocket)
+      final message = await _remoteDataSource.sendMessage(
+        chatId: chatId,
+        text: text,
+        replyToId: replyToId,
+        forwardedFromId: forwardedFromId,
+        attachments: attachments,
+      );
+      
+      // Сохраняем сообщение локально для немедленного отображения
+      await _localDataSource.cacheMessage(chatId, message);
+      
+      return message;
+    } catch (e) {
+      // Если произошла ошибка при отправке через сеть,
+      // все равно создаем локальное сообщение
+      try {
+        final message = await _localDataSource.sendMessage(
+          chatId: chatId,
+          text: text,
+          replyToId: replyToId,
+          forwardedFromId: forwardedFromId,
+          attachments: attachments,
+        );
+        return message;
+      } catch (localError) {
+        throw Exception('Ошибка при отправке сообщения: $e, локальная ошибка: $localError');
+      }
+    }
   }
   
   /// Кэшировать медиафайл

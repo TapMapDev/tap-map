@@ -219,49 +219,32 @@ class LocalChatDataSource implements ChatDataSource {
           forwardedFromId: Value(message.forwardedFromId),
           attachmentsJson: Value(_encodeAttachments(message.attachments)), // Обновлено с attachments на attachmentsJson
           messageType: Value(message.type.toString().split('.').last), // Обновлено с type на messageType
-          isPinned: Value(message.isPinned),
           isRead: Value(message.isRead),
-          isMe: Value(message.isMe),
         ),
+        mode: InsertMode.insertOrReplace,
       );
-      
-      // Кэшируем вложения, если есть
-      if (message.attachments.isNotEmpty) {
-        for (final attachment in message.attachments) {
-          await _database.insertAttachment(
-            MessageAttachmentsCompanion(
-              messageId: Value(message.id),
-              url: Value(attachment['url'] ?? ''),
-              contentType: Value(attachment['content_type'] ?? ''),
-              createdAt: Value(DateTime.now()),
-            ),
-          );
-        }
-      }
     }
-    
-    // Обновляем информацию о чате, если есть сообщения
-    if (messages.isNotEmpty) {
-      final latestMessage = messages.reduce(
-        (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
-      );
-      
-      final chat = await _database.getChatById(chatId);
-      if (chat != null) {
-        await _database.insertChat(
-          ChatsCompanion(
-            chatId: Value(chatId),
-            chatName: Value(chat.chatName),
-            lastMessageText: Value(latestMessage.text),
-            lastMessageSenderUsername: Value(latestMessage.senderUsername),
-            lastMessageCreatedAt: Value(latestMessage.createdAt),
-            unreadCount: Value(chat.unreadCount),
-            pinnedMessageId: Value(chat.pinnedMessageId),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
-      }
-    }
+  }
+  
+  @override
+  Future<void> cacheMessage(int chatId, MessageModel message) async {
+    await _database.insertMessage(
+      MessagesCompanion(
+        messageId: Value(message.id),
+        chatId: Value(chatId),
+        messageText: Value(message.text),
+        senderUsername: Value(message.senderUsername),
+        senderUserId: Value(message.senderUserId),
+        createdAt: Value(message.createdAt),
+        editedAt: Value(message.editedAt),
+        replyToId: Value(message.replyToId),
+        forwardedFromId: Value(message.forwardedFromId),
+        attachmentsJson: Value(_encodeAttachments(message.attachments)),
+        messageType: Value(message.type.toString().split('.').last),
+        isRead: Value(message.isRead),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
   }
   
   @override
