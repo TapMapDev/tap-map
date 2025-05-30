@@ -173,6 +173,36 @@ class ChatRepository {
       return await _localDataSource.getPinnedMessageId(chatId);
     }
   }
+
+  /// Получить закрепленное сообщение
+  Future<MessageModel?> getPinnedMessage(int chatId) async {
+    try {
+      final pinnedMessageId = await getPinnedMessageId(chatId);
+      if (pinnedMessageId == null) {
+        return null;
+      }
+      
+      // Пытаемся найти сообщение в кэше
+      try {
+        final messages = await _localDataSource.getMessagesForChat(chatId);
+        final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
+        return pinnedMessage;
+      } catch (e) {
+        // Если в кэше нет, пробуем получить с сервера
+        final messages = await _remoteDataSource.getMessagesForChat(chatId);
+        try {
+          final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
+          return pinnedMessage;
+        } catch (e) {
+          // Сообщение не найдено
+          return null;
+        }
+      }
+    } catch (e) {
+      // Ошибка при получении ID или сообщения
+      return null;
+    }
+  }
   
   /// Загрузить файл
   Future<String> uploadFile(String filePath) async {

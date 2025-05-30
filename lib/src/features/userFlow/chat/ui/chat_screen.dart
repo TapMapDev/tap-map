@@ -698,7 +698,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 context.read<PinBloc>().add(PinMessage(
                       chatId: widget.chatId,
                       messageId: message.id,
-                      message: message,
                     ));
               },
             ),

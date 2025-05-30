@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 import 'message_actions_event.dart';
 import 'message_actions_state.dart';
@@ -10,11 +10,11 @@ import 'message_actions_state.dart';
 /// (закрепление, открепление, удаление, редактирование)
 class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
   final ChatRepository _chatRepository;
-  WebSocketService? _webSocketService;
+  ChatWebSocketService? _webSocketService;
 
   MessageActionsBloc({
     required ChatRepository chatRepository,
-    WebSocketService? webSocketService,
+    ChatWebSocketService? webSocketService,
   })  : _chatRepository = chatRepository,
         _webSocketService = webSocketService,
         super(MessageActionInitial()) {
@@ -28,8 +28,8 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
     on<CancelEditAction>(_onCancelEdit);
   }
 
-  /// Устанавливает WebSocketService после инициализации блока
-  void setWebSocketService(WebSocketService? webSocketService) {
+  /// Устанавливает ChatWebSocketService после инициализации блока
+  void setWebSocketService(ChatWebSocketService? webSocketService) {
     _webSocketService = webSocketService;
   }
 
@@ -185,20 +185,17 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
       
       if (isEditedViaWebSocket) {
         // Редактирование через WebSocket
-        _webSocketService!.sendMessage(
-          type: 'edit_message',
-          data: {
-            'chatId': event.chatId,
-            'messageId': event.messageId,
-            'text': event.text,
-          },
+        _webSocketService!.editMessage(
+          chatId: event.chatId,
+          messageId: event.messageId,
+          text: event.text,
         );
       } else {
         // Редактирование через API
         await _chatRepository.editMessage(
-          chatId: event.chatId,
-          messageId: event.messageId,
-          text: event.text,
+          event.chatId,
+          event.messageId, 
+          event.text
         );
       }
 

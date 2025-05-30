@@ -179,7 +179,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<MessageActionsBloc>(
     () => MessageActionsBloc(
       chatRepository: getIt<ChatRepository>(),
-      webSocketService: null, // Будет установлен позже
+      webSocketService: getIt<ChatWebSocketService>(),
     ),
   );
 
