@@ -8,13 +8,12 @@ import 'package:go_router/go_router.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_state.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
@@ -38,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late final UserRepository _userRepository;
   late final ChatMessagesBloc _chatMessagesBloc;
   late final ConnectionBloc _connectionBloc;
+  late final MessageActionsBloc _messageActionsBloc;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   String? _currentUsername;
@@ -57,6 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _userRepository = GetIt.instance<UserRepository>();
     _chatMessagesBloc = context.read<ChatMessagesBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
+    _messageActionsBloc = context.read<MessageActionsBloc>();
     _initChat();
     _chatMessagesBloc.add(const ConnectToChatMessagesEvent());
     _chatMessagesBloc.add(FetchChatMessagesEvent(widget.chatId));
@@ -64,6 +65,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initChat() async {
     await _loadCurrentUser();
+    // Загружаем закрепленное сообщение при инициализации
+    _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
   }
 
   Future<void> _loadCurrentUser() async {
@@ -113,7 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (_selectedMediaFile != null || _messageController.text.trim().isNotEmpty) {
       if (_editingMessage != null) {
-        context.read<EditBloc>().add(EditMessageRequest(
+        context.read<MessageActionsBloc>().add(EditMessageAction(
               chatId: widget.chatId,
               messageId: _editingMessage!.id,
               text: _messageController.text.trim(),
@@ -253,9 +256,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
                 },
               ),
-              BlocListener<DeleteMessageBloc, DeleteMessageState>(
+              // Слушатель действий с сообщениями (замена DeleteMessageBloc и EditBloc)
+              BlocListener<MessageActionsBloc, MessageActionState>(
                 listener: (context, state) {
-                  if (state is DeleteMessageSuccess) {
+                  // Обработка удаления сообщений
+                  if (state is MessageActionSuccess && state.actionType == MessageActionType.delete) {
                     // После успешного удаления обновляем список сообщений в ChatMessagesBloc
                     final currentState = _chatMessagesBloc.state;
                     if (currentState is ChatMessagesLoaded) {
@@ -273,23 +278,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SnackBar(content: Text('Сообщение удалено')),
                       );
                     }
-                  } else if (state is DeleteMessageFailure) {
+                  } else if (state is MessageActionFailure && state.actionType == MessageActionType.delete) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка при удалении: ${state.error}')),
+                          content: Text('Ошибка при удалении: ${state.message}')),
                     );
                   }
-                },
-              ),
-              BlocListener<EditBloc, EditState>(
-                listener: (context, state) {
-                  print('EditBloc state changed: $state');
-                  print('Current editing message: $_editingMessage');
-                  if (state is EditInProgress) {
-                    print(
-                        'Setting editing message with ID: ${state.messageId}');
+                  
+                  // Обработка редактирования сообщений
+                  else if (state is MessageEditInProgress) {
+                    print('Начато редактирование сообщения: ${state.messageId}');
                     setState(() {
-                      print('Inside setState, before setting _editingMessage');
                       _editingMessage = MessageModel(
                         id: state.messageId,
                         text: state.originalText,
@@ -298,18 +297,15 @@ class _ChatScreenState extends State<ChatScreen> {
                         chatId: widget.chatId,
                       );
                       _messageController.text = state.originalText;
-                      print(
-                          'Inside setState, after setting _editingMessage: $_editingMessage');
                     });
-                    print('After setState, editing message: $_editingMessage');
-                  } else if (state is EditSuccess) {
-                    print('Edit success, clearing editing state');
+                  } else if (state is MessageEditSuccess) {
+                    print('Редактирование сообщения успешно завершено');
                     setState(() {
                       _editingMessage = null;
                       _messageController.clear();
                     });
-                  } else if (state is EditFailure) {
-                    print('Edit failed: ${state.error}');
+                  } else if (state is MessageEditFailure) {
+                    print('Ошибка при редактировании сообщения: ${state.error}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(
@@ -323,9 +319,9 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
-                    BlocBuilder<PinBloc, PinBlocState>(
+                    BlocBuilder<MessageActionsBloc, MessageActionState>(
                       builder: (context, state) {
-                        if (state is MessagePinned) {
+                        if (state is MessagePinActive) {
                           return Container(
                             padding: const EdgeInsets.all(8.0),
                             color: Colors.amber.withOpacity(0.2),
@@ -345,7 +341,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
-                                    context.read<PinBloc>().add(UnpinMessage(
+                                    context.read<MessageActionsBloc>().add(UnpinMessageAction(
                                           chatId: widget.chatId,
                                           messageId: state.pinnedMessage.id,
                                         ));
@@ -611,7 +607,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                       editingMessage: _editingMessage,
                       onCancelEdit: () {
-                        context.read<EditBloc>().add(const CancelEdit());
+                        context.read<MessageActionsBloc>().add(const CancelEditAction());
                         setState(() {
                           _editingMessage = null;
                           _messageController.clear();
@@ -663,11 +659,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 print('Message text: ${message.text}');
                 Navigator.pop(context);
                 print('Navigator popped');
-                context.read<EditBloc>().add(StartEditing(
+                context.read<MessageActionsBloc>().add(StartEditingAction(
                       messageId: message.id,
                       originalText: message.text,
                     ));
-                print('StartEditing event added to EditBloc');
+                print('StartEditing event added to MessageActionsBloc');
               },
             ),
             ListTile(
@@ -675,7 +671,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Удалить только у себя'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<DeleteMessageBloc>().add(DeleteMessageRequest(
+                context.read<MessageActionsBloc>().add(DeleteMessageRequest(
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_me',
@@ -687,7 +683,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Удалить', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
-                context.read<DeleteMessageBloc>().add(DeleteMessageRequest(
+                context.read<MessageActionsBloc>().add(DeleteMessageRequest(
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_all',
@@ -699,7 +695,7 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Закрепить сообщение'),
               onTap: () {
                 Navigator.pop(context);
-                context.read<PinBloc>().add(PinMessage(
+                context.read<MessageActionsBloc>().add(PinMessageAction(
                       chatId: widget.chatId,
                       messageId: message.id,
                     ));
