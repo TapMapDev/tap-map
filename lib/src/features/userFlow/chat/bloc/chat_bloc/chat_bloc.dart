@@ -22,11 +22,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _chatRepository;
   final SharedPrefsRepository _prefsRepository;
   final UserRepository _userRepository;
-  WebSocketService? _webSocketService;
-  StreamSubscription? _wsSubscription;
-
-  // Добавляем геттер для доступа к WebSocketService
-  WebSocketService? get webSocketService => _webSocketService;
 
   String? _currentUsername;
 
@@ -37,8 +32,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         _prefsRepository = prefsRepository,
         _userRepository = GetIt.instance<UserRepository>(),
         super(ChatInitial()) {
-    on<FetchChats>(_onFetchChats);
-    on<FetchChatById>(_onFetchChatById);
+    on<FetchChatsEvent>(_onFetchChats);
+    on<FetchChatEvent>(_onFetchChat);
     on<SendMessage>(_onSendMessage);
     on<NewMessageEvent>(_onNewMessage);
     on<ChatErrorEvent>(_onChatError);
@@ -46,122 +41,54 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<DisconnectFromChat>(_onDisconnectFromChat);
     on<UploadFile>(_onUploadFile);
     on<SendTyping>(_onSendTyping);
+    on<MarkChatAsReadEvent>(_onMarkChatAsRead);
+    on<DeleteMessageEvent>(_onDeleteMessage);
+    on<EditMessageEvent>(_onEditMessage);
+    on<PinMessageEvent>(_onPinMessage);
+    on<UnpinMessageEvent>(_onUnpinMessage);
+    on<GetPinnedMessageEvent>(_onGetPinnedMessage);
   }
 
-  Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
+  Future<void> _onFetchChats(
+    FetchChatsEvent event,
+    Emitter<ChatState> emit,
+  ) async {
     try {
       emit(ChatLoading());
+      
       final chats = await _chatRepository.fetchChats();
-      emit(ChatsLoaded(chats));
+      
+      emit(ChatsLoaded(chats: chats));
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
 
-  Future<void> _onFetchChatById(
-    FetchChatById event,
+  Future<void> _onFetchChat(
+    FetchChatEvent event,
     Emitter<ChatState> emit,
   ) async {
     try {
       emit(ChatLoading());
-      final data = await _chatRepository.fetchChatWithMessages(event.chatId);
-      final chat = data['chat'] as ChatModel;
-      final messages = data['messages'] as List<MessageModel>;
-
-      // Получаем ID закрепленного сообщения из локального хранилища
-      final pinnedMessageId =
-          await _chatRepository.getPinnedMessageId(event.chatId);
-
-      // Если есть закрепленное сообщение, находим его в списке
-      MessageModel? pinnedMessage;
-      if (pinnedMessageId != null) {
-        pinnedMessage = messages.firstWhere(
-          (m) => m.id == pinnedMessageId,
-          orElse: () {
-            return MessageModel.empty();
-          },
-        );
-      }
-
-      // Обновляем статус прочтения для непрочитанных сообщений
-      final updatedMessages = messages.map((message) {
-        if (!message.isRead && message.senderUsername != _currentUsername) {
-          final updated = message.copyWith(isRead: true);
-
-          _webSocketService?.readMessage(
-            chatId: message.chatId,
-            messageId: message.id,
-          );
-
-          return updated;
-        }
-        return message;
-      }).toList();
-
-      final currentState = state;
-      if (currentState is ChatLoaded) {
-        emit(currentState.copyWith(
-          chat: chat,
-          messages: updatedMessages,
-          isRead: true,
-          replyTo: currentState.replyTo,
-          forwardFrom: currentState.forwardFrom,
-        ));
-      } else {
-        emit(ChatLoaded(
-          chat: chat,
-          messages: updatedMessages,
-          isRead: true,
-        ));
-      }
-    } catch (e) {
-      emit(ChatError(e.toString()));
-    }
-  }
-
-  Future<void> _onConnectToChat(
-    ConnectToChat event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      final token = await _prefsRepository.getAccessToken();
-      if (token == null) {
-        emit(const ChatError('No access token available'));
+      
+      final result = await _chatRepository.fetchChatWithMessages(event.chatId);
+      final chat = result['chat'] as ChatModel?;
+      final messages = result['messages'] as List<MessageModel>;
+      final pinnedMessageId = result['pinnedMessageId'] as int?;
+      
+      if (chat == null) {
+        emit(const ChatError('Чат не найден'));
         return;
       }
-
-      final user = await _userRepository.getCurrentUser();
-      _currentUsername = user.username;
-
-      _webSocketService = WebSocketService(jwtToken: token);
-      _webSocketService!.connect();
-      _webSocketService!.setCurrentUsername(_currentUsername!);
-
-      final webSocketEvent = WebSocketEvent(_webSocketService!);
-      _wsSubscription = _webSocketService!.stream.listen(
-        (data) {
-          webSocketEvent.handleEvent(data);
-          add(NewMessageEvent(data));
-        },
-        onError: (error) {
-          add(ChatErrorEvent(error.toString()));
-        },
-      );
-
-      emit(ChatConnected());
+      
+      emit(ChatLoaded(
+        chat: chat,
+        messages: messages,
+        pinnedMessageId: pinnedMessageId,
+      ));
     } catch (e) {
       emit(ChatError(e.toString()));
     }
-  }
-
-  void _onDisconnectFromChat(
-    DisconnectFromChat event,
-    Emitter<ChatState> emit,
-  ) {
-    _wsSubscription?.cancel();
-    _webSocketService?.disconnect();
-    _webSocketService = null;
-    emit(ChatDisconnected());
   }
 
   Future<void> _onSendMessage(
@@ -260,7 +187,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           if (newMessage.senderUsername != _currentUsername) {
             print(
                 '📨 ChatBloc: Sending read receipt for message ${newMessage.id}');
-            _webSocketService?.readMessage(
+            await _chatRepository.markMessageAsRead(
               chatId: newMessage.chatId,
               messageId: newMessage.id,
             );
@@ -288,18 +215,40 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 
-  void _onChatError(ChatErrorEvent event, Emitter<ChatState> emit) {
+  Future<void> _onChatError(ChatErrorEvent event, Emitter<ChatState> emit) {
     emit(ChatError(event.message));
   }
 
-  @override
-  Future<void> close() {
-    _wsSubscription?.cancel();
-    _webSocketService?.disconnect();
-    return super.close();
+  Future<void> _onConnectToChat(
+    ConnectToChat event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      final token = await _prefsRepository.getAccessToken();
+      if (token == null) {
+        emit(const ChatError('No access token available'));
+        return;
+      }
+
+      final user = await _userRepository.getCurrentUser();
+      _currentUsername = user.username;
+
+      await _chatRepository.connectToChat(token);
+      emit(ChatConnected());
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
   }
 
-  void _onUploadFile(UploadFile event, Emitter<ChatState> emit) async {
+  void _onDisconnectFromChat(
+    DisconnectFromChat event,
+    Emitter<ChatState> emit,
+  ) {
+    _chatRepository.disconnectFromChat();
+    emit(ChatDisconnected());
+  }
+
+  Future<void> _onUploadFile(UploadFile event, Emitter<ChatState> emit) async {
     try {
       final currentState = state;
       if (currentState is! ChatLoaded) {
@@ -309,25 +258,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final fileUrl = await _chatRepository.uploadFile(event.file.path);
 
       // Отправляем сообщение с файлом
-      if (_webSocketService != null) {
-        _webSocketService!.sendMessage(
-          chatId: currentState.chat.chatId,
-          text: event.caption ?? '',
-          attachments: [
-            {
-              'url': fileUrl,
-              'content_type': event.file.path.toLowerCase().endsWith('.mp4') ||
-                      event.file.path.toLowerCase().endsWith('.mov') ||
-                      event.file.path.toLowerCase().endsWith('.avi') ||
-                      event.file.path.toLowerCase().endsWith('.webm')
-                  ? 'video/mp4'
-                  : 'image/jpeg',
-            }
-          ],
-        );
-      } else {
-        throw Exception('Not connected to chat');
-      }
+      final newMessage = await _chatRepository.sendMessage(
+        chatId: currentState.chat.chatId,
+        text: event.caption ?? '',
+        attachments: [
+          {
+            'url': fileUrl,
+            'content_type': event.file.path.toLowerCase().endsWith('.mp4') ||
+                    event.file.path.toLowerCase().endsWith('.mov') ||
+                    event.file.path.toLowerCase().endsWith('.avi') ||
+                    event.file.path.toLowerCase().endsWith('.webm')
+                ? 'video/mp4'
+                : 'image/jpeg',
+          }
+        ],
+      );
+
+      // Обновляем список сообщений в UI
+      final updatedMessages = List<MessageModel>.from(currentState.messages)
+        ..add(newMessage);
+
+      emit(currentState.copyWith(
+        messages: updatedMessages,
+      ));
     } catch (e) {
       print('❌ Error uploading file: $e');
       emit(ChatError(e.toString()));
@@ -338,10 +291,155 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       print(
           '⌨️ Socket: Отправка события typing - chatId: ${event.chatId}, isTyping: ${event.isTyping}');
-      _webSocketService?.sendTyping(
+      _chatRepository.sendTyping(
         chatId: event.chatId,
         isTyping: event.isTyping,
       );
     } catch (_) {}
+  }
+
+  Future<void> _onMarkChatAsRead(
+    MarkChatAsReadEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _chatRepository.markChatAsRead(event.chatId);
+      
+      // Обновляем состояние, если необходимо
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        emit(currentState.copyWith(isRead: true));
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteMessage(
+    DeleteMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _chatRepository.deleteMessage(
+        event.chatId, 
+        event.messageId, 
+        event.action,
+      );
+      
+      // Обновляем состояние
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        final updatedMessages = currentState.messages
+            .where((msg) => msg.id != event.messageId)
+            .toList();
+        
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  Future<void> _onEditMessage(
+    EditMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _chatRepository.editMessage(
+        event.chatId, 
+        event.messageId, 
+        event.text,
+      );
+      
+      // Обновляем состояние
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        final updatedMessages = currentState.messages.map((msg) {
+          if (msg.id == event.messageId) {
+            return msg.copyWith(
+              text: event.text,
+              edited: true,
+            );
+          }
+          return msg;
+        }).toList();
+        
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  Future<void> _onPinMessage(
+    PinMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _chatRepository.pinMessage(
+        chatId: event.chatId, 
+        messageId: event.messageId,
+      );
+      
+      // Обновляем состояние
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        emit(currentState.copyWith(pinnedMessageId: event.messageId));
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  Future<void> _onUnpinMessage(
+    UnpinMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      await _chatRepository.unpinMessage(
+        chatId: event.chatId, 
+        messageId: event.messageId,
+      );
+      
+      // Обновляем состояние
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        emit(currentState.copyWith(pinnedMessageId: null));
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  Future<void> _onGetPinnedMessage(
+    GetPinnedMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        final pinnedMessageId = await _chatRepository.getPinnedMessageId(event.chatId);
+        
+        if (pinnedMessageId != null) {
+          final pinnedMessage = await _chatRepository.getPinnedMessage(
+            event.chatId, 
+            pinnedMessageId,
+          );
+          
+          emit(currentState.copyWith(
+            pinnedMessageId: pinnedMessageId,
+            pinnedMessage: pinnedMessage,
+          ));
+        }
+      }
+    } catch (e) {
+      emit(ChatError(e.toString()));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _chatRepository.disconnectFromChat();
+    return super.close();
   }
 }

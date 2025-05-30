@@ -7,33 +7,36 @@ import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
 /// Новая реализация репозитория чатов с поддержкой кэширования
 class ChatRepository {
-  final ChatDataSource _remoteDataSource;
-  final ChatDataSource _localDataSource;
-  final WebSocketService? _webSocketService;
-  
+  final RemoteChatDataSource _remoteChatDataSource;
+  final ChatDataSource _localChatDataSource;
+  final ChatWebSocketService _webSocketService;
+  final UserRepository _userRepository;
+
   ChatRepository({
-    required ChatDataSource remoteDataSource,
-    required ChatDataSource localDataSource,
-    WebSocketService? webSocketService,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource,
-        _webSocketService = webSocketService;
-        
+    required RemoteChatDataSource remoteChatDataSource,
+    required ChatDataSource localChatDataSource,
+    required ChatWebSocketService webSocketService,
+    required UserRepository userRepository,
+  })  : _remoteChatDataSource = remoteChatDataSource,
+        _localChatDataSource = localChatDataSource,
+        _webSocketService = webSocketService,
+        _userRepository = userRepository;
+
   /// Получить список всех чатов с кэшированием
   Future<List<ChatModel>> fetchChats() async {
     try {
       // Пытаемся получить данные с сервера
-      final remotechats = await _remoteDataSource.getChats();
+      final remotechats = await _remoteChatDataSource.getChats();
       
       // Кэшируем полученные чаты
       for (final chat in remotechats) {
-        await _localDataSource.cacheMessages(chat.chatId, []);
+        await _localChatDataSource.cacheMessages(chat.chatId, []);
       }
       
       return remotechats;
     } catch (e) {
       // В случае ошибки возвращаем данные из кэша
-      return await _localDataSource.getChats();
+      return await _localChatDataSource.getChats();
     }
   }
   
@@ -41,16 +44,16 @@ class ChatRepository {
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     try {
       // Пытаемся получить данные с сервера
-      final chat = await _remoteDataSource.getChatById(chatId);
-      final messages = await _remoteDataSource.getMessagesForChat(chatId);
+      final chat = await _remoteChatDataSource.getChatById(chatId);
+      final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
       
       // Кэшируем полученные данные
       if (chat != null) {
-        await _localDataSource.cacheMessages(chatId, messages);
+        await _localChatDataSource.cacheMessages(chatId, messages);
       }
       
       // Получаем ID закрепленного сообщения
-      final pinnedMessageId = await _remoteDataSource.getPinnedMessageId(chatId);
+      final pinnedMessageId = await _remoteChatDataSource.getPinnedMessageId(chatId);
       
       return {
         'chat': chat,
@@ -59,9 +62,9 @@ class ChatRepository {
       };
     } catch (e) {
       // В случае ошибки возвращаем данные из кэша
-      final chat = await _localDataSource.getChatById(chatId);
-      final messages = await _localDataSource.getCachedMessagesForChat(chatId);
-      final pinnedMessageId = await _localDataSource.getPinnedMessageId(chatId);
+      final chat = await _localChatDataSource.getChatById(chatId);
+      final messages = await _localChatDataSource.getCachedMessagesForChat(chatId);
+      final pinnedMessageId = await _localChatDataSource.getPinnedMessageId(chatId);
       
       if (chat == null) {
         throw Exception('Не удалось получить данные чата: $e');
@@ -77,7 +80,7 @@ class ChatRepository {
   
   /// Создать новый чат
   Future<int> createChat({required String type, required int participantId}) async {
-    return await _remoteDataSource.createChat(
+    return await _remoteChatDataSource.createChat(
       type: type,
       participantId: participantId,
     );
@@ -87,12 +90,12 @@ class ChatRepository {
   Future<void> markChatAsRead(int chatId) async {
     try {
       // Отмечаем на сервере
-      await _remoteDataSource.markChatAsRead(chatId);
+      await _remoteChatDataSource.markChatAsRead(chatId);
       // И в локальном кэше
-      await _localDataSource.markChatAsRead(chatId);
+      await _localChatDataSource.markChatAsRead(chatId);
     } catch (e) {
       // В случае ошибки отмечаем только в локальном кэше
-      await _localDataSource.markChatAsRead(chatId);
+      await _localChatDataSource.markChatAsRead(chatId);
       rethrow;
     }
   }
@@ -101,13 +104,13 @@ class ChatRepository {
   Future<List<MessageModel>> getChatHistory(int chatId) async {
     try {
       // Пытаемся получить с сервера
-      final messages = await _remoteDataSource.getMessagesForChat(chatId);
+      final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
       // Кэшируем
-      await _localDataSource.cacheMessages(chatId, messages);
+      await _localChatDataSource.cacheMessages(chatId, messages);
       return messages;
     } catch (e) {
       // В случае ошибки возвращаем из кэша
-      return await _localDataSource.getCachedMessagesForChat(chatId);
+      return await _localChatDataSource.getCachedMessagesForChat(chatId);
     }
   }
   
@@ -115,13 +118,13 @@ class ChatRepository {
   Future<void> deleteMessage(int chatId, int messageId, String action) async {
     try {
       // Удаляем на сервере
-      await _remoteDataSource.deleteMessage(chatId, messageId, action);
+      await _remoteChatDataSource.deleteMessage(chatId, messageId, action);
       // И в локальном кэше
-      await _localDataSource.deleteMessage(chatId, messageId, action);
+      await _localChatDataSource.deleteMessage(chatId, messageId, action);
     } catch (e) {
       // Если только локально (для себя)
       if (action == 'for_me') {
-        await _localDataSource.deleteMessage(chatId, messageId, action);
+        await _localChatDataSource.deleteMessage(chatId, messageId, action);
       }
       rethrow;
     }
@@ -131,9 +134,9 @@ class ChatRepository {
   Future<void> editMessage(int chatId, int messageId, String text) async {
     try {
       // Редактируем на сервере
-      await _remoteDataSource.editMessage(chatId, messageId, text);
+      await _remoteChatDataSource.editMessage(chatId, messageId, text);
       // И в локальном кэше
-      await _localDataSource.editMessage(chatId, messageId, text);
+      await _localChatDataSource.editMessage(chatId, messageId, text);
     } catch (e) {
       rethrow;
     }
@@ -146,9 +149,9 @@ class ChatRepository {
   }) async {
     try {
       // Закрепляем на сервере
-      await _remoteDataSource.pinMessage(chatId: chatId, messageId: messageId);
+      await _remoteChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
-      await _localDataSource.pinMessage(chatId: chatId, messageId: messageId);
+      await _localChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
     } catch (e) {
       rethrow;
     }
@@ -161,9 +164,9 @@ class ChatRepository {
   }) async {
     try {
       // Открепляем на сервере
-      await _remoteDataSource.unpinMessage(chatId: chatId, messageId: messageId);
+      await _remoteChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
-      await _localDataSource.unpinMessage(chatId: chatId, messageId: messageId);
+      await _localChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
     } catch (e) {
       rethrow;
     }
@@ -172,9 +175,9 @@ class ChatRepository {
   /// Получить ID закрепленного сообщения
   Future<int?> getPinnedMessageId(int chatId) async {
     try {
-      return await _remoteDataSource.getPinnedMessageId(chatId);
+      return await _remoteChatDataSource.getPinnedMessageId(chatId);
     } catch (e) {
-      return await _localDataSource.getPinnedMessageId(chatId);
+      return await _localChatDataSource.getPinnedMessageId(chatId);
     }
   }
 
@@ -188,12 +191,12 @@ class ChatRepository {
       
       // Пытаемся найти сообщение в кэше
       try {
-        final messages = await _localDataSource.getMessagesForChat(chatId);
+        final messages = await _localChatDataSource.getMessagesForChat(chatId);
         final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
         return pinnedMessage;
       } catch (e) {
         // Если в кэше нет, пробуем получить с сервера
-        final messages = await _remoteDataSource.getMessagesForChat(chatId);
+        final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
         try {
           final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
           return pinnedMessage;
@@ -211,7 +214,7 @@ class ChatRepository {
   /// Загрузить файл
   Future<String> uploadFile(String filePath) async {
     // Загрузка файла может происходить только через удаленный источник
-    return await _remoteDataSource.uploadFile(filePath);
+    return await _remoteChatDataSource.uploadFile(filePath);
   }
   
   /// Отправить сообщение
@@ -224,7 +227,7 @@ class ChatRepository {
   }) async {
     try {
       // Отправляем сообщение через удаленный источник данных (WebSocket)
-      final message = await _remoteDataSource.sendMessage(
+      final message = await _remoteChatDataSource.sendMessage(
         chatId: chatId,
         text: text,
         replyToId: replyToId,
@@ -233,14 +236,14 @@ class ChatRepository {
       );
       
       // Сохраняем сообщение локально для немедленного отображения
-      await _localDataSource.cacheMessage(chatId, message);
+      await _localChatDataSource.cacheMessage(chatId, message);
       
       return message;
     } catch (e) {
       // Если произошла ошибка при отправке через сеть,
       // все равно создаем локальное сообщение
       try {
-        final message = await _localDataSource.sendMessage(
+        final message = await _localChatDataSource.sendMessage(
           chatId: chatId,
           text: text,
           replyToId: replyToId,
@@ -258,7 +261,7 @@ class ChatRepository {
   Future<void> cacheMediaFile(String url, String contentType) async {
     try {
       // Проверяем, есть ли уже файл в кэше
-      final existingPath = await _localDataSource.getMediaFilePath(url);
+      final existingPath = await _localChatDataSource.getMediaFilePath(url);
       if (existingPath != null) {
         return; // Файл уже в кэше
       }
@@ -274,7 +277,7 @@ class ChatRepository {
       final localPath = '${cacheDir.path}/$fileName';
       
       // Кэшируем информацию о файле
-      await _localDataSource.cacheMediaFile(url, localPath, contentType);
+      await _localChatDataSource.cacheMediaFile(url, localPath, contentType);
     } catch (e) {
       // Игнорируем ошибки кэширования
       print('Ошибка кэширования медиафайла: $e');
@@ -283,17 +286,17 @@ class ChatRepository {
   
   /// Получить путь к кэшированному медиафайлу
   Future<String?> getMediaFilePath(String url) async {
-    return await _localDataSource.getMediaFilePath(url);
+    return await _localChatDataSource.getMediaFilePath(url);
   }
   
   /// Наблюдать за списком чатов (стрим)
   Stream<List<ChatModel>> watchChats() {
-    return _localDataSource.watchChats();
+    return _localChatDataSource.watchChats();
   }
   
   /// Наблюдать за сообщениями чата (стрим)
   Stream<List<MessageModel>> watchMessages(int chatId) {
-    return _localDataSource.watchMessages(chatId);
+    return _localChatDataSource.watchMessages(chatId);
   }
   
   // Вспомогательные методы
@@ -318,5 +321,74 @@ class ChatRepository {
     if (contentType.startsWith('video/mp4')) return '.mp4';
     if (contentType.startsWith('video/quicktime')) return '.mov';
     return '';
+  }
+
+  /// Подключиться к чату через WebSocket
+  Future<bool> connectToChat() async {
+    try {
+      final success = await _webSocketService.connect();
+      
+      // Получаем и устанавливаем имя текущего пользователя
+      final user = await _userRepository.getCurrentUser();
+      if (user.username != null) {
+        _webSocketService.setCurrentUsername(user.username!);
+      }
+      
+      return success;
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка подключения к чату: $e');
+      return false;
+    }
+  }
+
+  /// Отключиться от чата
+  void disconnectFromChat() {
+    _webSocketService.disconnect();
+  }
+
+  /// Отправить статус "Печатает"
+  void sendTyping({required int chatId, required bool isTyping}) {
+    _webSocketService.sendTyping(chatId: chatId, isTyping: isTyping);
+  }
+
+  /// Отметить сообщение как прочитанное
+  void markMessageAsRead({required int chatId, required int messageId}) {
+    _webSocketService.readMessage(chatId: chatId, messageId: messageId);
+  }
+
+  /// Получить поток событий WebSocket
+  Stream<WebSocketEventData> get webSocketEvents => _webSocketService.events;
+
+  /// Обработать входящее сообщение из WebSocket и обогатить его данными о пользователе
+  Future<MessageModel?> processWebSocketMessage(Map<String, dynamic> messageData) async {
+    try {
+      final senderId = messageData['sender_id'] as int?;
+      if (senderId == null) {
+        print('❌ ChatRepository: No sender_id in message data');
+        return null;
+      }
+
+      final user = await _userRepository.getUserById(senderId);
+      if (user.username == null) {
+        print('❌ ChatRepository: No username for sender_id: $senderId');
+        return null;
+      }
+
+      final newMessage = MessageModel.fromJson({
+        ...messageData,
+        'sender_username': user.username,
+      });
+
+      print('📨 ChatRepository: Processed message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
+      
+      // Кэшируем сообщение
+      final chatId = newMessage.chatId;
+      await _localChatDataSource.cacheMessage(chatId, newMessage);
+      
+      return newMessage;
+    } catch (e) {
+      print('❌ ChatRepository: Error processing WebSocket message: $e');
+      return null;
+    }
   }
 }

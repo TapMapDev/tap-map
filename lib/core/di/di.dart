@@ -103,13 +103,12 @@ Future<void> setup() async {
   );
   
   // Регистрируем источники данных для чатов
-  getIt.registerLazySingleton<ChatDataSource>(
+  getIt.registerLazySingleton<RemoteChatDataSource>(
     () => RemoteChatDataSource(
       dioClient: getIt<DioClient>(),
       prefs: getIt<SharedPreferences>(),
       webSocketService: getIt<WebSocketService>(),
     ),
-    instanceName: 'remote',
   );
   
   getIt.registerLazySingleton<ChatDataSource>(
@@ -117,12 +116,13 @@ Future<void> setup() async {
     instanceName: 'local',
   );
   
-  // Регистрируем новый ChatRepository
+  // Register chat repositories
   getIt.registerLazySingleton<ChatRepository>(
     () => ChatRepository(
-      remoteDataSource: getIt<ChatDataSource>(instanceName: 'remote'),
-      localDataSource: getIt<ChatDataSource>(instanceName: 'local'),
-      webSocketService: getIt<WebSocketService>(),
+      remoteChatDataSource: getIt<RemoteChatDataSource>(),
+      localChatDataSource: getIt<ChatDataSource>(),
+      webSocketService: getIt<ChatWebSocketService>(),
+      userRepository: getIt<UserRepository>(),
     ),
   );
 

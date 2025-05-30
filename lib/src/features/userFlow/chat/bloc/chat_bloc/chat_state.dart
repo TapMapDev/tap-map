@@ -1,5 +1,9 @@
 part of 'chat_bloc.dart';
 
+import 'package:equatable/equatable.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+
 abstract class ChatState extends Equatable {
   const ChatState();
 
@@ -11,6 +15,75 @@ class ChatInitial extends ChatState {}
 
 class ChatLoading extends ChatState {}
 
+class ChatConnected extends ChatState {}
+
+class ChatDisconnected extends ChatState {}
+
+class ChatsLoaded extends ChatState {
+  final List<ChatModel> chats;
+
+  const ChatsLoaded({required this.chats});
+
+  @override
+  List<Object?> get props => [chats];
+}
+
+class ChatLoaded extends ChatState {
+  final ChatModel chat;
+  final List<MessageModel> messages;
+  final bool isRead;
+  final MessageModel? replyTo;
+  final MessageModel? forwardFrom;
+  final int? pinnedMessageId;
+  final MessageModel? pinnedMessage;
+  final bool isTyping;
+
+  const ChatLoaded({
+    required this.chat,
+    required this.messages,
+    this.isRead = false,
+    this.replyTo,
+    this.forwardFrom,
+    this.pinnedMessageId,
+    this.pinnedMessage,
+    this.isTyping = false,
+  });
+
+  ChatLoaded copyWith({
+    ChatModel? chat,
+    List<MessageModel>? messages,
+    bool? isRead,
+    MessageModel? replyTo,
+    MessageModel? forwardFrom,
+    int? pinnedMessageId,
+    MessageModel? pinnedMessage,
+    bool? isTyping,
+  }) {
+    return ChatLoaded(
+      chat: chat ?? this.chat,
+      messages: messages ?? this.messages,
+      isRead: isRead ?? this.isRead,
+      replyTo: replyTo ?? this.replyTo,
+      forwardFrom: forwardFrom ?? this.forwardFrom,
+      pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
+      isTyping: isTyping ?? this.isTyping,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        chat,
+        messages,
+        isRead,
+        replyTo,
+        forwardFrom,
+        pinnedMessageId,
+        pinnedMessage,
+        isTyping,
+      ];
+}
+
 class ChatError extends ChatState {
   final String message;
 
@@ -18,60 +91,6 @@ class ChatError extends ChatState {
 
   @override
   List<Object?> get props => [message];
-}
-
-class ChatsLoaded extends ChatState {
-  final List<ChatModel> chats;
-
-  const ChatsLoaded(this.chats);
-
-  @override
-  List<Object?> get props => [chats];
-}
-
-class ChatLoaded extends ChatState with EquatableMixin {
-  final ChatModel chat;
-  final List<MessageModel> messages;
-  final MessageModel? replyTo;
-  final MessageModel? forwardFrom;
-  final bool isRead;
-  final Set<String> typingUsers;
-
-  ChatLoaded({
-    required this.chat,
-    required this.messages,
-    this.replyTo,
-    this.forwardFrom,
-    this.isRead = false,
-    this.typingUsers = const {},
-  });
-
-  @override
-  List<Object?> get props => [
-        chat,
-        messages,
-        replyTo,
-        forwardFrom,
-        isRead,
-        typingUsers,
-      ];
-
-  ChatLoaded copyWith({
-    ChatModel? chat,
-    List<MessageModel>? messages,
-    MessageModel? replyTo,
-    MessageModel? forwardFrom,
-    bool? isRead,
-    Set<String>? typingUsers,
-  }) {
-    return ChatLoaded(
-      chat: chat ?? this.chat,
-      messages: messages ?? this.messages,
-      forwardFrom: forwardFrom ?? this.forwardFrom,
-      isRead: isRead ?? this.isRead,
-      typingUsers: typingUsers ?? this.typingUsers,
-    );
-  }
 }
 
 class MessageSent extends ChatState {
@@ -119,10 +138,6 @@ class MessageRead extends ChatState {
   @override
   List<Object?> get props => [messageId, userId];
 }
-
-class ChatConnected extends ChatState {}
-
-class ChatDisconnected extends ChatState {}
 
 class FileUploaded extends ChatState {
   final String filePath;

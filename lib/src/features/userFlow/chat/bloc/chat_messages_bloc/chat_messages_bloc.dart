@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/auth/data/preferences_repository.dart';
 import 'package:tap_map/src/features/userFlow/auth/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_event.dart';
@@ -12,24 +11,19 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   final ChatRepository _chatRepository;
-  final PreferencesRepository _prefsRepository;
   final UserRepository _userRepository;
-  WebSocketService? _webSocketService;
-  StreamSubscription? _wsSubscription;
-
-  WebSocketService? get webSocketService => _webSocketService;
-
-  String? _currentUsername;
+  
+  // Подписка на события WebSocket
+  StreamSubscription<WebSocketEventData>? _wsSubscription;
 
   ChatMessagesBloc({
     required ChatRepository chatRepository,
-    required PreferencesRepository prefsRepository,
     required UserRepository userRepository,
   })  : _chatRepository = chatRepository,
-        _prefsRepository = prefsRepository,
         _userRepository = userRepository,
         super(ChatMessagesInitial()) {
     on<FetchChatMessagesEvent>(_onFetchChatMessages);
@@ -47,44 +41,22 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   ) async {
     try {
       emit(ChatMessagesLoading());
-      final data = await _chatRepository.fetchChatWithMessages(event.chatId);
-      final chat = data['chat'] as ChatModel;
-      final messages = data['messages'] as List<MessageModel>;
 
-      // Получаем ID закрепленного сообщения из локального хранилища
-      final pinnedMessageId =
-          await _chatRepository.getPinnedMessageId(event.chatId);
+      final result = await _chatRepository.fetchChatWithMessages(event.chatId);
+      final chat = result['chat'] as ChatModel?;
+      final messages = result['messages'] as List<MessageModel>;
+      final pinnedMessageId = result['pinnedMessageId'] as int?;
 
-      // Если есть закрепленное сообщение, находим его в списке
-      MessageModel? pinnedMessage;
-      if (pinnedMessageId != null) {
-        pinnedMessage = messages.firstWhere(
-          (m) => m.id == pinnedMessageId,
-          orElse: () {
-            return MessageModel.empty();
-          },
-        );
+      if (chat == null) {
+        emit(const ChatMessagesError('Чат не найден'));
+        return;
       }
 
-      // Обновляем статус прочтения для непрочитанных сообщений
-      final updatedMessages = messages.map((message) {
-        if (!message.isRead && message.senderUsername != _currentUsername) {
-          final updated = message.copyWith(isRead: true);
-
-          _webSocketService?.readMessage(
-            chatId: message.chatId,
-            messageId: message.id,
-          );
-
-          return updated;
-        }
-        return message;
-      }).toList();
-
       emit(ChatMessagesLoaded(
+        chatId: event.chatId,
         chat: chat,
-        messages: updatedMessages,
-        isRead: true,
+        messages: messages,
+        pinnedMessageId: pinnedMessageId,
       ));
     } catch (e) {
       emit(ChatMessagesError(e.toString()));
@@ -96,29 +68,16 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) async {
     try {
-      final token = await _prefsRepository.getAccessToken();
-      if (token == null) {
-        emit(const ChatMessagesError('No access token available'));
+      // Подключаемся к WebSocket через репозиторий
+      final success = await _chatRepository.connectToChat();
+      
+      if (!success) {
+        emit(const ChatMessagesError('Не удалось подключиться к чату'));
         return;
       }
-
-      final user = await _userRepository.getCurrentUser();
-      _currentUsername = user.username;
-
-      _webSocketService = WebSocketService(jwtToken: token);
-      _webSocketService!.connect();
-      _webSocketService!.setCurrentUsername(_currentUsername!);
-
-      final webSocketEvent = WebSocketEvent(_webSocketService!);
-      _wsSubscription = _webSocketService!.stream.listen(
-        (data) {
-          webSocketEvent.handleEvent(data);
-          add(NewWebSocketMessageEvent(data));
-        },
-        onError: (error) {
-          add(ChatMessagesErrorEvent(error.toString()));
-        },
-      );
+      
+      // Подписываемся на события WebSocket
+      _wsSubscription = _chatRepository.webSocketEvents.listen(_handleWebSocketEvent);
 
       emit(ChatMessagesConnected());
     } catch (e) {
@@ -131,8 +90,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) {
     _wsSubscription?.cancel();
-    _webSocketService?.disconnect();
-    _webSocketService = null;
+    _chatRepository.disconnectFromChat();
     emit(ChatMessagesDisconnected());
   }
 
@@ -143,7 +101,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     try {
       final currentState = state;
       if (currentState is ChatMessagesLoaded) {
-        // Используем ChatRepository вместо прямого вызова WebSocketService
+        // Отправляем сообщение через репозиторий
         final newMessage = await _chatRepository.sendMessage(
           chatId: event.chatId,
           text: event.text,
@@ -152,7 +110,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
           attachments: event.attachments,
         );
         
-        // Обновляем список сообщений в UI, чтобы показать новое сообщение немедленно
+        // Обновляем список сообщений в UI
         final updatedMessages = List<MessageModel>.from(currentState.messages)
           ..add(newMessage);
         
@@ -168,6 +126,16 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     }
   }
 
+  // Обработчик событий WebSocket
+  void _handleWebSocketEvent(WebSocketEventData event) {
+    if (event.type == WebSocketEventType.message) {
+      add(NewWebSocketMessageEvent(event.data));
+    } else if (event.type == WebSocketEventType.error) {
+      add(ChatMessagesErrorEvent(event.error ?? 'Ошибка WebSocket'));
+    }
+    // Другие типы событий можно обрабатывать по мере необходимости
+  }
+
   Future<void> _onNewWebSocketMessage(
       NewWebSocketMessageEvent event, Emitter<ChatMessagesState> emit) async {
     try {
@@ -177,81 +145,42 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
         return;
       }
 
-      // Если сообщение пришло как строка, пробуем распарсить JSON
-      dynamic messageData = event.message;
-      if (messageData is String) {
-        try {
-          messageData = jsonDecode(messageData);
-          print('📝 Socket: Decoded message: $messageData');
-        } catch (e) {
-          print('❌ Socket: Failed to decode message: $e');
+      final eventType = event.message['event'] as String?;
+      final type = event.message['type'] as String?;
+      
+      if (type == 'message' || type == 'new_message' || eventType == 'message') {
+        // Обрабатываем сообщение через репозиторий
+        final newMessage = await _chatRepository.processWebSocketMessage(event.message);
+        
+        if (newMessage == null) {
+          print('❌ ChatMessagesBloc: Failed to process WebSocket message');
           return;
         }
-      }
-
-      // Проверяем тип сообщения
-      if (messageData is! Map<String, dynamic> ||
-          !messageData.containsKey('type')) {
-        print('❌ Socket: Invalid message format: $messageData');
-        return;
-      }
-
-      final type = messageData['type'];
-      print('📝 Socket: Тип события: $type');
-
-      if (type == 'message' || type == 'new_message') {
-        final senderId = messageData['sender_id'] as int?;
-        if (senderId == null) {
-          print('❌ ChatMessagesBloc: No sender_id in message data');
+        
+        // Проверяем, существует ли уже сообщение с таким ID
+        final messageExists = currentState.messages.any((msg) => msg.id == newMessage.id);
+        if (messageExists) {
+          print('📝 Socket: Сообщение уже существует, пропускаем');
           return;
         }
-
-        try {
-          final user = await _userRepository.getUserById(senderId);
-          if (user.username == null) {
-            print('❌ ChatMessagesBloc: No username for sender_id: $senderId');
-            return;
-          }
-
-          final newMessage = MessageModel.fromJson({
-            ...messageData,
-            'sender_username': user.username,
-          });
-
-          print(
-              '📨 ChatMessagesBloc: Processing new message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
-
-          // Проверяем, существует ли уже сообщение с таким ID
-          final messageExists =
-              currentState.messages.any((msg) => msg.id == newMessage.id);
-          if (messageExists) {
-            print('📝 Socket: Сообщение уже существует, пропускаем');
-            return;
-          }
-
-          // Если это новое сообщение от другого пользователя, отправляем статус прочтения
-          if (newMessage.senderUsername != _currentUsername) {
-            print(
-                '📨 ChatMessagesBloc: Sending read receipt for message ${newMessage.id}');
-            _webSocketService?.readMessage(
-              chatId: newMessage.chatId,
-              messageId: newMessage.id,
-            );
-          }
-
-          final updatedMessages = List<MessageModel>.from(currentState.messages)
-            ..insert(0, newMessage);
-
-          print(
-              '📨 ChatMessagesBloc: Emitting new state with ${updatedMessages.length} messages');
-          emit(currentState.copyWith(
-            messages: updatedMessages,
-            isRead: true,
-          ));
-        } catch (e) {
-          print('❌ ChatMessagesBloc: Error getting user info: $e');
+        
+        // Если это новое сообщение от другого пользователя, отправляем статус прочтения
+        final currentUser = await _userRepository.getCurrentUser();
+        if (newMessage.senderUsername != currentUser.username) {
+          _chatRepository.markMessageAsRead(
+            chatId: newMessage.chatId,
+            messageId: newMessage.id,
+          );
         }
-        return;
+        
+        // Обновляем UI
+        final updatedMessages = List<MessageModel>.from(currentState.messages)
+          ..insert(0, newMessage);
+        
+        emit(currentState.copyWith(
+          messages: updatedMessages,
+          isRead: true,
+        ));
       }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
@@ -268,12 +197,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) {
     try {
-      if (_webSocketService == null) {
-        emit(const ChatMessagesError('Not connected to chat'));
-        return;
-      }
-
-      _webSocketService!.sendTyping(
+      _chatRepository.sendTyping(
         chatId: event.chatId,
         isTyping: event.isTyping,
       );
@@ -285,7 +209,6 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   @override
   Future<void> close() {
     _wsSubscription?.cancel();
-    _webSocketService?.disconnect();
     return super.close();
   }
 }
