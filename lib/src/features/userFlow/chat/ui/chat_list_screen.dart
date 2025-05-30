@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
 import '../bloc/chats_list_bloc/chats_list_bloc.dart';
@@ -116,9 +118,12 @@ class _ChatListItem extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              chatId: chat.chatId,
-              chatName: chat.chatName,
+            builder: (context) => BlocProvider(
+              create: (context) => GetIt.instance<ChatMessagesBloc>(),
+              child: ChatScreen(
+                chatId: chat.chatId,
+                chatName: chat.chatName,
+              ),
             ),
           ),
         );
