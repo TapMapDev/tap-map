@@ -99,6 +99,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() {
+    // Проверяем на пустое сообщение
+    if (_messageController.text.trim().isEmpty) {
+      return;
+    }
+    
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
     if (connectionState != chat.ConnectionState.connected) {
@@ -106,77 +111,72 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    final messageText = _messageController.text.trim();
-    if (messageText.isEmpty && _selectedMediaFile == null) {
-      return;
-    }
-
-    // Получаем текущее состояние блока ответов
-    final replyState = _replyBloc.state;
-    
-    if (_editingMessage != null) {
-      // Редактирование существующего сообщения
-      final originalText = _editingMessage!.text;
-      if (originalText != messageText) {
+    if (_selectedMediaFile != null || _messageController.text.trim().isNotEmpty) {
+      if (_editingMessage != null) {
         _messageActionsBloc.add(EditMessageAction(
-          chatId: widget.chatId,
-          messageId: _editingMessage!.id,
-          newText: messageText,
-        ));
-      }
-      _editingMessage = null;
-      _messageController.clear();
-      // При завершении редактирования очищаем ответ, если он был
-      _replyBloc.add(const ClearReplyTo());
-    } else {
-      if (_selectedMediaFile != null || messageText.isNotEmpty) {
-        if (_selectedMediaFile != null) {
-          // Обработка загрузки файлов будет добавлена в следующих итерациях
-          setState(() {
-            _selectedMediaFile = null;
-          });
-        } else {
-          int? replyToId;
-          if (replyState is ReplyActive) {
-            replyToId = replyState.message.id;
-          }
-
-          _chatMessagesBloc.add(
-            SendMessageEvent(
               chatId: widget.chatId,
-              text: messageText,
-              replyToId: replyToId,
-              forwardedFromId: _forwardFrom?.id,
-            ),
-          );
+              messageId: _editingMessage!.id,
+              text: _messageController.text.trim(),
+              context: context,
+            ));
+      } else if (_selectedMediaFile != null) {
+        // Обработка загрузки файлов будет добавлена в следующих итерациях
+        setState(() {
+          _selectedMediaFile = null;
+        });
+      } else {
+        final replyState = _replyBloc.state;
 
-          if (replyToId != null) {
-            _replyBloc.add(const ClearReplyTo());
-          }
-
-          if (_forwardFrom != null) {
-            setState(() {
-              _forwardFrom = null;
-            });
-          }
+        int? replyToId;
+        if (replyState is ReplyActive) {
+          replyToId = replyState.message.id;
         }
 
-        _messageController.clear();
-        _scrollToBottom();
+        _chatMessagesBloc.add(
+          SendMessageEvent(
+            chatId: widget.chatId,
+            text: _messageController.text.trim(),
+            replyToId: replyToId,
+            forwardedFromId: _forwardFrom?.id,
+          ),
+        );
+
+        if (replyToId != null) {
+          _replyBloc.add(const ClearReplyTo());
+        }
+
+        if (_forwardFrom != null) {
+          setState(() {
+            _forwardFrom = null;
+          });
+        }
       }
+
+      _messageController.clear();
+      _scrollToBottom();
     }
   }
 
-  String _getConnectionMessage(chat.ConnectionState connectionState) {
-    switch (connectionState) {
-      case chat.ConnectionState.disconnected:
-        return 'Соединение потеряно';
-      case chat.ConnectionState.error:
-        return 'Ошибка соединения';
+  void _showConnectionErrorSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            'Невозможно отправить сообщение: ${_getConnectionMessage(_connectionBloc.state.state)}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  String _getConnectionMessage(chat.ConnectionState state) {
+    switch (state) {
       case chat.ConnectionState.connecting:
-        return 'Соединение устанавливается';
+        return 'устанавливается соединение';
+      case chat.ConnectionState.disconnected:
+        return 'нет соединения';
+      case chat.ConnectionState.connected:
+        return 'соединение установлено';
       default:
-        return 'Неизвестная ошибка';
+        return 'неизвестное состояние';
     }
   }
 
