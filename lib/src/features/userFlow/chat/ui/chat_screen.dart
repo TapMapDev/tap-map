@@ -103,7 +103,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (connectionState != chat.ConnectionState.connected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Невозможно отправить сообщение: ${_getConnectionMessage(connectionState)}'),
+          content: Text(
+              'Невозможно отправить сообщение: ${_getConnectionMessage(connectionState)}'),
           backgroundColor: Colors.red,
         ),
       );
