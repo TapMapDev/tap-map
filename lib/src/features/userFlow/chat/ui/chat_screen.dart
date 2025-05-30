@@ -39,6 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatMessagesBloc _chatMessagesBloc;
   late final ConnectionBloc _connectionBloc;
   late final MessageActionsBloc _messageActionsBloc;
+  late final ReplyBloc _replyBloc;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   String? _currentUsername;
@@ -59,6 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatMessagesBloc = context.read<ChatMessagesBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
+    _replyBloc = context.read<ReplyBloc>();
     _initChat();
     _chatMessagesBloc.add(const ConnectToChatMessagesEvent());
     _chatMessagesBloc.add(FetchChatMessagesEvent(widget.chatId));
@@ -97,67 +99,71 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() {
-    // Проверяем на пустое сообщение
-    if (_messageController.text.trim().isEmpty) {
-      return;
-    }
-    
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
     if (connectionState != chat.ConnectionState.connected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Невозможно отправить сообщение: ${_getConnectionMessage(connectionState)}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showConnectionErrorSnackBar();
       return;
     }
 
-    if (_selectedMediaFile != null || _messageController.text.trim().isNotEmpty) {
-      if (_editingMessage != null) {
-        context.read<MessageActionsBloc>().add(EditMessageAction(
-              chatId: widget.chatId,
-              messageId: _editingMessage!.id,
-              text: _messageController.text.trim(),
-              context: context,
-            ));
-      } else if (_selectedMediaFile != null) {
-        // Обработка загрузки файлов будет добавлена в следующих итерациях
-        setState(() {
-          _selectedMediaFile = null;
-        });
-      } else {
-        final replyState = context.read<ReplyBloc>().state;
+    final messageText = _messageController.text.trim();
+    if (messageText.isEmpty && _selectedMediaFile == null) {
+      return;
+    }
 
-        int? replyToId;
-        if (replyState is ReplyActive) {
-          replyToId = replyState.message.id;
-        }
-
-        _chatMessagesBloc.add(
-          SendMessageEvent(
-            chatId: widget.chatId,
-            text: _messageController.text.trim(),
-            replyToId: replyToId,
-            forwardedFromId: _forwardFrom?.id,
-          ),
-        );
-
-        if (replyToId != null) {
-          context.read<ReplyBloc>().add(const ClearReplyTo());
-        }
-
-        if (_forwardFrom != null) {
-          setState(() {
-            _forwardFrom = null;
-          });
-        }
+    // Получаем текущее состояние блока ответов
+    final replyState = _replyBloc.state;
+    
+    if (_editingMessage != null) {
+      // Редактирование существующего сообщения
+      final originalText = _editingMessage!.text;
+      if (originalText != messageText) {
+        _messageActionsBloc.add(EditMessageAction(
+          chatId: widget.chatId,
+          messageId: _editingMessage!.id,
+          newText: messageText,
+        ));
       }
-
+      _editingMessage = null;
       _messageController.clear();
-      _scrollToBottom();
+      // При завершении редактирования очищаем ответ, если он был
+      _replyBloc.add(const ClearReplyTo());
+    } else {
+      if (_selectedMediaFile != null || messageText.isNotEmpty) {
+        if (_selectedMediaFile != null) {
+          // Обработка загрузки файлов будет добавлена в следующих итерациях
+          setState(() {
+            _selectedMediaFile = null;
+          });
+        } else {
+          int? replyToId;
+          if (replyState is ReplyActive) {
+            replyToId = replyState.message.id;
+          }
+
+          _chatMessagesBloc.add(
+            SendMessageEvent(
+              chatId: widget.chatId,
+              text: messageText,
+              replyToId: replyToId,
+              forwardedFromId: _forwardFrom?.id,
+            ),
+          );
+
+          if (replyToId != null) {
+            _replyBloc.add(const ClearReplyTo());
+          }
+
+          if (_forwardFrom != null) {
+            setState(() {
+              _forwardFrom = null;
+            });
+          }
+        }
+
+        _messageController.clear();
+        _scrollToBottom();
+      }
     }
   }
 
@@ -469,9 +475,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
-                                    context
-                                        .read<ReplyBloc>()
-                                        .add(const ClearReplyTo());
+                                    _replyBloc.add(const ClearReplyTo());
                                   },
                                 ),
                               ],
@@ -640,7 +644,7 @@ class _ChatScreenState extends State<ChatScreen> {
             title: const Text('Ответить'),
             onTap: () {
               Navigator.pop(context);
-              context.read<ReplyBloc>().add(SetReplyTo(message));
+              _replyBloc.add(SetReplyTo(message));
             },
           ),
           ListTile(
