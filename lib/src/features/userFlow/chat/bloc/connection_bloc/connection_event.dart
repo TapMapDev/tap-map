@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as ws;
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 /// События для ConnectionBloc
 abstract class ConnectionEvent extends Equatable {
@@ -22,7 +22,7 @@ class DisconnectEvent extends ConnectionEvent {
 /// Событие для обновления статуса соединения
 class ConnectionStatusEvent extends ConnectionEvent {
   /// Текущее состояние соединения
-  final ws.ConnectionState connectionState;
+  final ConnectionState connectionState;
 
   /// Сообщение об ошибке, если есть
   final String? errorMessage;
