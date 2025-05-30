@@ -12,6 +12,9 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_me
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
@@ -19,6 +22,8 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/widgets/connection_status_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -32,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatMessagesBloc _chatMessagesBloc;
+  late final ConnectionBloc _connectionBloc;
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   String? _currentUsername;
@@ -50,6 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatMessagesBloc = context.read<ChatMessagesBloc>();
+    _connectionBloc = context.read<ConnectionBloc>();
     _initChat();
     _chatMessagesBloc.add(const ConnectToChatMessagesEvent());
     _chatMessagesBloc.add(FetchChatMessagesEvent(widget.chatId));
@@ -87,6 +94,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() {
     final text = _messageController.text.trim();
+    
+    // Проверяем состояние соединения перед отправкой
+    final connectionState = _connectionBloc.state.state;
+    if (connectionState != ConnectionState.connected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Невозможно отправить сообщение: ${_getConnectionMessage(connectionState)}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (_selectedMediaFile != null || text.isNotEmpty) {
       if (_editingMessage != null) {
@@ -134,6 +153,19 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  String _getConnectionMessage(ConnectionState connectionState) {
+    switch (connectionState) {
+      case ConnectionState.disconnected:
+        return 'Соединение потеряно';
+      case ConnectionState.error:
+        return 'Ошибка соединения';
+      case ConnectionState.connecting:
+        return 'Соединение устанавливается';
+      default:
+        return 'Неизвестная ошибка';
+    }
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
@@ -170,9 +202,53 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
+            actions: [
+              // Индикатор статуса соединения
+              BlocBuilder<ConnectionBloc, ConnectionBlocState>(
+                builder: (context, state) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ConnectionStatusIndicator(
+                      connectionState: state.state,
+                      reconnectAttempt: state.reconnectAttempt,
+                      maxReconnectAttempts: state.maxReconnectAttempts,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           body: MultiBlocListener(
             listeners: [
+              // Слушатель состояния соединения
+              BlocListener<ConnectionBloc, ConnectionBlocState>(
+                listener: (context, state) {
+                  // Показываем уведомления только при изменении состояния
+                  if (state.state == ConnectionState.disconnected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Соединение потеряно'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  } else if (state.state == ConnectionState.error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  } else if (state.state == ConnectionState.connected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Соединение восстановлено'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              ),
               BlocListener<DeleteMessageBloc, DeleteMessageState>(
                 listener: (context, state) {
                   if (state is DeleteMessageSuccess) {
