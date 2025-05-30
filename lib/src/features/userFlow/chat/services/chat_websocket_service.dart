@@ -73,7 +73,9 @@ class WebSocketEventData {
   factory WebSocketEventData.connectionEvent(ConnectionState state) {
     return WebSocketEventData(
       type: WebSocketEventType.connection,
-      data: {'state': state.toString()},
+      data: {
+        'connectionState': state,
+      },
     );
   }
 
@@ -439,6 +441,8 @@ class ChatWebSocketService {
   void _handleConnectionError(String error) {
     _isConnected = false;
     _eventsController.add(WebSocketEventData.error(error));
+    // Устанавливаем состояние ошибки перед попыткой переподключения
+    _updateConnectionState(ConnectionState.error);
     _attemptReconnect();
   }
 
