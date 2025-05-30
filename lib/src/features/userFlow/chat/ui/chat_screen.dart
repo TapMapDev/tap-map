@@ -22,7 +22,7 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
 import 'package:tap_map/src/features/userFlow/chat/widgets/connection_status_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -93,11 +93,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() {
-    final text = _messageController.text.trim();
+    // Проверяем на пустое сообщение
+    if (_messageController.text.trim().isEmpty) {
+      return;
+    }
     
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
-    if (connectionState != ConnectionState.connected) {
+    if (connectionState != chat.ConnectionState.connected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Невозможно отправить сообщение: ${_getConnectionMessage(connectionState)}'),
@@ -107,12 +110,12 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    if (_selectedMediaFile != null || text.isNotEmpty) {
+    if (_selectedMediaFile != null || _messageController.text.trim().isNotEmpty) {
       if (_editingMessage != null) {
         context.read<EditBloc>().add(EditMessageRequest(
               chatId: widget.chatId,
               messageId: _editingMessage!.id,
-              text: text,
+              text: _messageController.text.trim(),
               context: context,
             ));
       } else if (_selectedMediaFile != null) {
@@ -131,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _chatMessagesBloc.add(
           SendMessageEvent(
             chatId: widget.chatId,
-            text: text,
+            text: _messageController.text.trim(),
             replyToId: replyToId,
             forwardedFromId: _forwardFrom?.id,
           ),
@@ -153,13 +156,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  String _getConnectionMessage(ConnectionState connectionState) {
+  String _getConnectionMessage(chat.ConnectionState connectionState) {
     switch (connectionState) {
-      case ConnectionState.disconnected:
+      case chat.ConnectionState.disconnected:
         return 'Соединение потеряно';
-      case ConnectionState.error:
+      case chat.ConnectionState.error:
         return 'Ошибка соединения';
-      case ConnectionState.connecting:
+      case chat.ConnectionState.connecting:
         return 'Соединение устанавливается';
       default:
         return 'Неизвестная ошибка';
@@ -224,14 +227,14 @@ class _ChatScreenState extends State<ChatScreen> {
               BlocListener<ConnectionBloc, ConnectionBlocState>(
                 listener: (context, state) {
                   // Показываем уведомления только при изменении состояния
-                  if (state.state == ConnectionState.disconnected) {
+                  if (state.state == chat.ConnectionState.disconnected) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Соединение потеряно'),
                         backgroundColor: Colors.orange,
                       ),
                     );
-                  } else if (state.state == ConnectionState.error) {
+                  } else if (state.state == chat.ConnectionState.error) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
@@ -239,7 +242,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         duration: const Duration(seconds: 5),
                       ),
                     );
-                  } else if (state.state == ConnectionState.connected) {
+                  } else if (state.state == chat.ConnectionState.connected) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Соединение восстановлено'),

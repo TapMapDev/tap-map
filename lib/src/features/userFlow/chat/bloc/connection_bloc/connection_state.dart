@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
 
 /// Состояние блока соединения
 class ConnectionBlocState extends Equatable {
   /// Текущее состояние соединения
-  final ConnectionState state;
+  final chat.ConnectionState state;
   
   /// Сообщение об ошибке или дополнительная информация
   final String? message;
@@ -24,22 +24,22 @@ class ConnectionBlocState extends Equatable {
 
   /// Начальное состояние
   factory ConnectionBlocState.initial() => const ConnectionBlocState(
-    state: ConnectionState.disconnected,
+    state: chat.ConnectionState.disconnected,
   );
 
   /// Состояние подключения
   factory ConnectionBlocState.connecting() => const ConnectionBlocState(
-    state: ConnectionState.connecting,
+    state: chat.ConnectionState.connecting,
   );
 
   /// Состояние успешного подключения
   factory ConnectionBlocState.connected() => const ConnectionBlocState(
-    state: ConnectionState.connected,
+    state: chat.ConnectionState.connected,
   );
 
   /// Состояние отключения с опциональным сообщением
   factory ConnectionBlocState.disconnected({String? message}) => ConnectionBlocState(
-    state: ConnectionState.disconnected,
+    state: chat.ConnectionState.disconnected,
     message: message,
   );
 
@@ -48,25 +48,25 @@ class ConnectionBlocState extends Equatable {
     required int attempt,
     required int maxAttempts,
   }) => ConnectionBlocState(
-    state: ConnectionState.reconnecting,
+    state: chat.ConnectionState.reconnecting,
     reconnectAttempt: attempt,
     maxReconnectAttempts: maxAttempts,
   );
 
   /// Состояние ожидания восстановления сети
   factory ConnectionBlocState.waitingForNetwork() => const ConnectionBlocState(
-    state: ConnectionState.waitingForNetwork,
+    state: chat.ConnectionState.waitingForNetwork,
   );
 
   /// Состояние ошибки с сообщением
   factory ConnectionBlocState.error(String message) => ConnectionBlocState(
-    state: ConnectionState.error,
+    state: chat.ConnectionState.error,
     message: message,
   );
 
   /// Создание нового состояния с обновленными параметрами
   ConnectionBlocState copyWith({
-    ConnectionState? state,
+    chat.ConnectionState? state,
     String? message,
     int? reconnectAttempt,
     int? maxReconnectAttempts,

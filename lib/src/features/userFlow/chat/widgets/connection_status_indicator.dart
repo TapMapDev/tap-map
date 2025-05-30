@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
 
 /// Виджет для отображения статуса соединения в UI
 class ConnectionStatusIndicator extends StatelessWidget {
-  final ConnectionState connectionState;
+  final chat.ConnectionState connectionState;
   final int? reconnectAttempt;
   final int? maxReconnectAttempts;
 
@@ -46,50 +46,50 @@ class ConnectionStatusIndicator extends StatelessWidget {
 
   Color _getBackgroundColor() {
     switch (connectionState) {
-      case ConnectionState.connected:
+      case chat.ConnectionState.connected:
         return Colors.green;
-      case ConnectionState.connecting:
-      case ConnectionState.reconnecting:
+      case chat.ConnectionState.connecting:
+      case chat.ConnectionState.reconnecting:
         return Colors.orange;
-      case ConnectionState.disconnected:
-      case ConnectionState.waitingForNetwork:
+      case chat.ConnectionState.disconnected:
+      case chat.ConnectionState.waitingForNetwork:
         return Colors.grey;
-      case ConnectionState.error:
+      case chat.ConnectionState.error:
         return Colors.red;
     }
   }
 
   IconData _getIcon() {
     switch (connectionState) {
-      case ConnectionState.connected:
+      case chat.ConnectionState.connected:
         return Icons.wifi;
-      case ConnectionState.connecting:
-      case ConnectionState.reconnecting:
+      case chat.ConnectionState.connecting:
+      case chat.ConnectionState.reconnecting:
         return Icons.sync;
-      case ConnectionState.disconnected:
-      case ConnectionState.waitingForNetwork:
+      case chat.ConnectionState.disconnected:
+      case chat.ConnectionState.waitingForNetwork:
         return Icons.wifi_off;
-      case ConnectionState.error:
+      case chat.ConnectionState.error:
         return Icons.error_outline;
     }
   }
 
   String _getStatusText() {
     switch (connectionState) {
-      case ConnectionState.connected:
+      case chat.ConnectionState.connected:
         return 'Подключено';
-      case ConnectionState.connecting:
+      case chat.ConnectionState.connecting:
         return 'Подключение...';
-      case ConnectionState.disconnected:
+      case chat.ConnectionState.disconnected:
         return 'Отключено';
-      case ConnectionState.reconnecting:
+      case chat.ConnectionState.reconnecting:
         if (reconnectAttempt != null && maxReconnectAttempts != null) {
           return 'Переподключение ($reconnectAttempt/$maxReconnectAttempts)';
         }
         return 'Переподключение...';
-      case ConnectionState.waitingForNetwork:
+      case chat.ConnectionState.waitingForNetwork:
         return 'Ожидание сети';
-      case ConnectionState.error:
+      case chat.ConnectionState.error:
         return 'Ошибка соединения';
     }
   }
