@@ -29,7 +29,6 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.da
 import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 
-
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
