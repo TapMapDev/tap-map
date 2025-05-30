@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
-import '../bloc/chat_bloc/chat_bloc.dart';
+import '../bloc/chats_list_bloc/chats_list_bloc.dart';
+import '../bloc/chats_list_bloc/chats_list_event.dart';
+import '../bloc/chats_list_bloc/chats_list_state.dart';
 import '../models/chat_model.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -18,7 +20,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     // Загружаем список чатов при инициализации
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatBloc>().add(FetchChats());
+      context.read<ChatsListBloc>().add(const FetchChatsListEvent());
     });
   }
 
@@ -28,22 +30,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
       appBar: AppBar(
         title: const Text('Чаты'),
       ),
-      body: BlocConsumer<ChatBloc, ChatState>(
-        listener: (context, state) {
-          if (state is ChatDisconnected) {
-            context.read<ChatBloc>().add(FetchChats());
-          }
-        },
+      body: BlocBuilder<ChatsListBloc, ChatsListState>(
         builder: (context, state) {
-          if (state is ChatLoading) {
+          if (state is ChatsListLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is ChatError) {
+          if (state is ChatsListError) {
             return Center(child: Text(state.message));
           }
 
-          if (state is ChatsLoaded) {
+          if (state is ChatsListLoaded) {
             if (state.chats.isEmpty) {
               return const Center(child: Text('Нет доступных чатов'));
             }
@@ -59,7 +56,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget _buildChatList(List<ChatModel> chats) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ChatBloc>().add(FetchChats());
+        context.read<ChatsListBloc>().add(const RefreshChatsListEvent());
       },
       child: ListView.builder(
         itemCount: chats.length,

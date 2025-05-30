@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -8,11 +9,11 @@ import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/password_reset/ui/new_password_page.dart';
 import 'package:tap_map/src/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/src/features/registration/registration_page.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_list_screen.dart';
 import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 import 'package:tap_map/src/features/userFlow/map/major_map.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/search_page.dart';
-import 'package:tap_map/src/features/userFlow/user_profile/model/user_response_model.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/profile_share.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/ui/public_user_profile.dart';
@@ -161,7 +162,10 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: AppRoutes.listChat,
-              builder: (context, state) => const ChatListScreen(),
+              builder: (context, state) => BlocProvider(
+                create: (context) => GetIt.instance<ChatsListBloc>(),
+                child: const ChatListScreen(),
+              ),
             ),
           ],
         ),
