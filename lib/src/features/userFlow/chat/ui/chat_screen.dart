@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_state.dart';
@@ -36,7 +39,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
-  late final ChatMessagesBloc _chatMessagesBloc;
+  late final ChatBloc _chatBloc;
   late final ConnectionBloc _connectionBloc;
   late final MessageActionsBloc _messageActionsBloc;
   late final ReplyBloc _replyBloc;
@@ -57,13 +60,13 @@ class _ChatScreenState extends State<ChatScreen> {
         '🚀 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
-    _chatMessagesBloc = context.read<ChatMessagesBloc>();
+    _chatBloc = context.read<ChatBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
     _initChat();
-    _chatMessagesBloc.add(const ConnectToChatMessagesEvent());
-    _chatMessagesBloc.add(FetchChatMessagesEvent(widget.chatId));
+    _chatBloc.add(const ConnectToChatEvent());
+    _chatBloc.add(FetchChatEvent(widget.chatId));
   }
 
   Future<void> _initChat() async {
@@ -132,7 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
           replyToId = replyState.message.id;
         }
 
-        _chatMessagesBloc.add(
+        _chatBloc.add(
           SendMessageEvent(
             chatId: widget.chatId,
             text: _messageController.text.trim(),
@@ -184,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _chatMessagesBloc.add(const DisconnectFromChatMessagesEvent());
+    _chatBloc.add(const DisconnectFromChatEvent());
     super.dispose();
   }
 
@@ -296,15 +299,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
                   // Обработка удаления сообщений
                   else if (state is MessageActionSuccess && state.actionType == MessageActionType.delete) {
-                    // После успешного удаления обновляем список сообщений в ChatMessagesBloc
-                    final currentState = _chatMessagesBloc.state;
-                    if (currentState is ChatMessagesLoaded) {
+                    // После успешного удаления обновляем список сообщений в ChatBloc
+                    final currentState = _chatBloc.state;
+                    if (currentState is ChatLoaded) {
                       final updatedMessages = currentState.messages
                           .where((msg) => msg.id != state.messageId)
                           .toList();
 
                       // Эмитим новое состояние с обновленным списком сообщений
-                      _chatMessagesBloc.emit(currentState.copyWith(
+                      _chatBloc.emit(currentState.copyWith(
                         messages: updatedMessages,
                       ));
 
@@ -378,8 +381,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     });
                     
                     // Обновляем сообщение в списке
-                    final currentState = _chatMessagesBloc.state;
-                    if (currentState is ChatMessagesLoaded && state.newText != null) {
+                    final currentState = _chatBloc.state;
+                    if (currentState is ChatLoaded && state.newText != null) {
                       final updatedMessages = currentState.messages.map((msg) {
                         if (msg.id == state.messageId) {
                           return msg.copyWith(text: state.newText!);
@@ -387,7 +390,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         return msg;
                       }).toList();
                       
-                      _chatMessagesBloc.emit(currentState.copyWith(
+                      _chatBloc.emit(currentState.copyWith(
                         messages: updatedMessages,
                       ));
                     }
@@ -449,14 +452,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                     ),
                     Expanded(
-                      child: BlocBuilder<ChatMessagesBloc, ChatMessagesState>(
+                      child: BlocBuilder<ChatBloc, ChatState>(
                         builder: (context, state) {
-                          if (state is ChatMessagesLoading) {
+                          if (state is ChatLoading) {
                             return const Center(
                                 child: CircularProgressIndicator());
                           }
                           
-                          if (state is ChatMessagesError) {
+                          if (state is ChatError) {
                             return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -467,7 +470,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: () {
-                                      _chatMessagesBloc.add(FetchChatMessagesEvent(widget.chatId));
+                                      _chatBloc.add(FetchChatEvent(widget.chatId));
                                     },
                                     child: const Text('Повторить'),
                                   ),
@@ -476,7 +479,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           }
 
-                          if (state is ChatMessagesLoaded) {
+                          if (state is ChatLoaded) {
                             if (state.messages.isEmpty) {
                               return const Center(
                                 child: Text('Нет сообщений'),
@@ -510,9 +513,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         },
                       ),
                     ),
-                    BlocBuilder<ChatMessagesBloc, ChatMessagesState>(
+                    BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
-                        if (state is ChatMessagesLoaded &&
+                        if (state is ChatLoaded &&
                             state.typingUsers.isNotEmpty) {
                           final otherTypingUsers = state.typingUsers
                               .where((username) => username != _currentUsername)
@@ -659,13 +662,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       onChanged: (text) {
                         if (!_isTyping && text.isNotEmpty) {
                           _isTyping = true;
-                          _chatMessagesBloc.add(SendTypingEvent(
+                          _chatBloc.add(SendTypingEvent(
                             chatId: widget.chatId,
                             isTyping: true,
                           ));
                         } else if (_isTyping && text.isEmpty) {
                           _isTyping = false;
-                          _chatMessagesBloc.add(SendTypingEvent(
+                          _chatBloc.add(SendTypingEvent(
                             chatId: widget.chatId,
                             isTyping: false,
                           ));
@@ -800,7 +803,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _forwardMessageToChat(MessageModel message, int targetChatId) {
-    _chatMessagesBloc.add(SendMessageEvent(
+    _chatBloc.add(SendMessageEvent(
       chatId: targetChatId,
       text: message.text,
       forwardedFromId: message.id,

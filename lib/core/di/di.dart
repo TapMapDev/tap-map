@@ -34,6 +34,7 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories
 import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 
@@ -145,17 +146,15 @@ Future<void> setup() async {
     ),
   );
 
-  getIt.registerFactory<ChatMessagesBloc>(
-    () => ChatMessagesBloc(
+  getIt.registerFactory<ChatBloc>(
+    () => ChatBloc(
       chatRepository: getIt<ChatRepository>(),
-      prefsRepository: getIt<PreferencesRepository>(),
-      userRepository: getIt<UserRepository>(),
     ),
   );
 
   getIt.registerLazySingleton<ConnectionBloc>(
     () => ConnectionBloc(
-      webSocketService: getIt<ChatWebSocketService>(),
+      chatRepository: getIt<ChatRepository>(),
     ),
   );
 
