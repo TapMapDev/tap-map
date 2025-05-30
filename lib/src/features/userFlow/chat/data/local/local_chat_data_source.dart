@@ -266,8 +266,8 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<void> cacheMediaFile(String url, String localPath, String contentType) async {
-    final attachments = await _database.select(_database.messageAttachments)
-      .where((a) => a.url.equals(url))
+    final attachments = await (_database.messageAttachments.select()
+      ..where((a) => a.url.equals(url)))
       .get();
       
     if (attachments.isNotEmpty) {
@@ -279,8 +279,8 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<String?> getMediaFilePath(String url) async {
-    final attachments = await _database.select(_database.messageAttachments)
-      .where((a) => a.url.equals(url))
+    final attachments = await (_database.messageAttachments.select()
+      ..where((a) => a.url.equals(url)))
       .get();
       
     if (attachments.isNotEmpty && attachments.first.localPath != null) {
