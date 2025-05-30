@@ -3,30 +3,32 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 /// Блок для управления WebSocket-соединением и его состоянием
 class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
-  final ChatWebSocketService _webSocketService;
+  final ChatRepository _chatRepository;
   
   // Подписка на события WebSocket
   StreamSubscription<WebSocketEventData>? _subscription;
 
   /// Конструктор блока
   ConnectionBloc({
-    required ChatWebSocketService webSocketService,
-  }) : _webSocketService = webSocketService,
+    required ChatRepository chatRepository,
+  }) : _chatRepository = chatRepository,
        super(ConnectionBlocState.initial()) {
     on<ConnectEvent>(_onConnect);
     on<DisconnectEvent>(_onDisconnect);
     on<ConnectionStatusEvent>(_onConnectionStatus);
     on<ConnectionErrorEvent>(_onConnectionError);
     
-    // Подписываемся на события WebSocket
-    _subscription = _webSocketService.events.listen(_handleWebSocketEvent);
+    // Подписываемся на события WebSocket через репозиторий
+    _subscription = _chatRepository.webSocketEvents.listen(_handleWebSocketEvent);
     
     // Если уже подключено - обновляем состояние
-    if (_webSocketService.connectionState == ConnectionState.connected) {
+    final currentState = _chatRepository.currentConnectionState;
+    if (currentState == ConnectionState.connected) {
       add(ConnectionStatusEvent(connectionState: ConnectionState.connected));
     }
   }
@@ -36,14 +38,14 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
     ConnectEvent event,
     Emitter<ConnectionBlocState> emit,
   ) async {
-    if (_webSocketService.connectionState == ConnectionState.connected) {
+    if (_chatRepository.currentConnectionState == ConnectionState.connected) {
       emit(ConnectionBlocState.connected());
       return;
     }
     
     emit(ConnectionBlocState.connecting());
     
-    final result = await _webSocketService.connect();
+    final result = await _chatRepository.connectToChat();
     if (!result) {
       emit(ConnectionBlocState.error('Не удалось установить соединение'));
     }
@@ -54,7 +56,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
     DisconnectEvent event,
     Emitter<ConnectionBlocState> emit,
   ) {
-    _webSocketService.disconnect();
+    _chatRepository.disconnectFromChat();
     emit(ConnectionBlocState.initial());
   }
 
@@ -74,9 +76,10 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
         emit(ConnectionBlocState.disconnected(message: event.errorMessage));
         break;
       case ConnectionState.reconnecting:
+        final webSocketService = _chatRepository.webSocketService;
         emit(ConnectionBlocState.reconnecting(
-          attempt: _webSocketService.reconnectAttempt,
-          maxAttempts: _webSocketService.maxReconnectAttempts,
+          attempt: webSocketService.reconnectAttempt,
+          maxAttempts: webSocketService.maxReconnectAttempts,
         ));
         break;
       case ConnectionState.waitingForNetwork:
@@ -96,7 +99,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
     emit(ConnectionBlocState.error(event.message));
     
     // Не инициируем переподключение самостоятельно,
-    // так как ChatWebSocketService делает это автоматически
+    // так как ChatRepository и ChatWebSocketService делают это автоматически
   }
 
   /// Обработка событий от WebSocketService

@@ -299,6 +299,17 @@ class ChatRepository {
     return _localChatDataSource.watchMessages(chatId);
   }
   
+  // Геттеры для доступа к WebSocket
+  
+  /// Получить поток событий WebSocket
+  Stream<WebSocketEventData> get webSocketEvents => _webSocketService.events;
+  
+  /// Получить сервис WebSocket
+  ChatWebSocketService get webSocketService => _webSocketService;
+  
+  /// Получить текущее состояние соединения
+  ConnectionState get currentConnectionState => _webSocketService.connectionState;
+  
   // Вспомогательные методы
   
   Future<Directory> _getCacheDirectory() async {
@@ -355,9 +366,6 @@ class ChatRepository {
   void markMessageAsRead({required int chatId, required int messageId}) {
     _webSocketService.readMessage(chatId: chatId, messageId: messageId);
   }
-
-  /// Получить поток событий WebSocket
-  Stream<WebSocketEventData> get webSocketEvents => _webSocketService.events;
 
   /// Обработать входящее сообщение из WebSocket и обогатить его данными о пользователе
   Future<MessageModel?> processWebSocketMessage(Map<String, dynamic> messageData) async {

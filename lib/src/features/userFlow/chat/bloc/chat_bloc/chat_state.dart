@@ -1,9 +1,8 @@
-part of 'chat_bloc.dart';
-
 import 'package:equatable/equatable.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
+/// Состояния для объединенного ChatBloc
 abstract class ChatState extends Equatable {
   const ChatState();
 
@@ -11,136 +10,172 @@ abstract class ChatState extends Equatable {
   List<Object?> get props => [];
 }
 
-class ChatInitial extends ChatState {}
+//
+// НАЧАЛЬНОЕ СОСТОЯНИЕ
+//
 
-class ChatLoading extends ChatState {}
+/// Начальное состояние
+class ChatInitial extends ChatState {
+  const ChatInitial();
+}
 
-class ChatConnected extends ChatState {}
+//
+// СОСТОЯНИЯ СПИСКА ЧАТОВ
+//
 
-class ChatDisconnected extends ChatState {}
+/// Загрузка списка чатов
+class ChatsLoading extends ChatState {
+  const ChatsLoading();
+}
 
+/// Список чатов загружен
 class ChatsLoaded extends ChatState {
   final List<ChatModel> chats;
 
-  const ChatsLoaded({required this.chats});
+  const ChatsLoaded(this.chats);
 
   @override
   List<Object?> get props => [chats];
 }
 
+//
+// СОСТОЯНИЯ ЧАТА
+//
+
+/// Загрузка данных чата
+class ChatLoading extends ChatState {
+  final int chatId;
+  final List<MessageModel>? currentMessages; // Для сохранения текущих сообщений при обновлении
+  
+  const ChatLoading(this.chatId, {this.currentMessages});
+  
+  @override
+  List<Object?> get props => [chatId, currentMessages];
+}
+
+/// Чат загружен
 class ChatLoaded extends ChatState {
   final ChatModel chat;
   final List<MessageModel> messages;
-  final bool isRead;
-  final MessageModel? replyTo;
-  final MessageModel? forwardFrom;
-  final int? pinnedMessageId;
-  final MessageModel? pinnedMessage;
+  final bool isConnectionActive;
   final bool isTyping;
-
+  final MessageModel? replyToMessage;
+  final MessageModel? forwardFromMessage;
+  
   const ChatLoaded({
     required this.chat,
     required this.messages,
-    this.isRead = false,
-    this.replyTo,
-    this.forwardFrom,
-    this.pinnedMessageId,
-    this.pinnedMessage,
+    this.isConnectionActive = false,
     this.isTyping = false,
+    this.replyToMessage,
+    this.forwardFromMessage,
   });
-
+  
+  /// Создать новое состояние на основе текущего
   ChatLoaded copyWith({
     ChatModel? chat,
     List<MessageModel>? messages,
-    bool? isRead,
-    MessageModel? replyTo,
-    MessageModel? forwardFrom,
-    int? pinnedMessageId,
-    MessageModel? pinnedMessage,
+    bool? isConnectionActive,
     bool? isTyping,
+    MessageModel? replyToMessage,
+    bool clearReplyToMessage = false,
+    MessageModel? forwardFromMessage,
+    bool clearForwardFromMessage = false,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      isRead: isRead ?? this.isRead,
-      replyTo: replyTo ?? this.replyTo,
-      forwardFrom: forwardFrom ?? this.forwardFrom,
-      pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
-      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
+      isConnectionActive: isConnectionActive ?? this.isConnectionActive,
       isTyping: isTyping ?? this.isTyping,
+      replyToMessage: clearReplyToMessage ? null : replyToMessage ?? this.replyToMessage,
+      forwardFromMessage: clearForwardFromMessage ? null : forwardFromMessage ?? this.forwardFromMessage,
     );
   }
-
+  
   @override
-  List<Object?> get props => [
-        chat,
-        messages,
-        isRead,
-        replyTo,
-        forwardFrom,
-        pinnedMessageId,
-        pinnedMessage,
-        isTyping,
-      ];
+  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, replyToMessage, forwardFromMessage];
 }
 
+//
+// СОСТОЯНИЯ ДЕЙСТВИЙ
+//
+
+/// Отправка сообщения
+class ChatSendingMessage extends ChatState {
+  final int chatId;
+  final String messageText;
+  
+  const ChatSendingMessage({
+    required this.chatId,
+    required this.messageText,
+  });
+  
+  @override
+  List<Object?> get props => [chatId, messageText];
+}
+
+/// Отправка файла
+class ChatUploadingFile extends ChatState {
+  final int chatId;
+  final double progress;
+  
+  const ChatUploadingFile({
+    required this.chatId,
+    required this.progress,
+  });
+  
+  @override
+  List<Object?> get props => [chatId, progress];
+}
+
+/// Ошибка в чате
 class ChatError extends ChatState {
   final String message;
-
-  const ChatError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class MessageSent extends ChatState {
-  final MessageModel message;
-
-  const MessageSent(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class MessageReceived extends ChatState {
-  final dynamic message;
-
-  const MessageReceived({required this.message});
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class TypingStatus extends ChatState {
-  final int chatId;
-  final int userId;
-  final bool isTyping;
-
-  const TypingStatus({
-    required this.chatId,
-    required this.userId,
-    required this.isTyping,
+  final ChatState? previousState;
+  
+  const ChatError({
+    required this.message,
+    this.previousState,
   });
-
+  
   @override
-  List<Object?> get props => [chatId, userId, isTyping];
+  List<Object?> get props => [message, previousState];
 }
 
-class MessageRead extends ChatState {
-  final int messageId;
-  final int userId;
+//
+// СОСТОЯНИЯ СОЕДИНЕНИЯ
+//
 
-  const MessageRead({
-    required this.messageId,
-    required this.userId,
+/// Соединение устанавливается
+class ChatConnecting extends ChatState {
+  const ChatConnecting();
+}
+
+/// Соединение установлено
+class ChatConnected extends ChatState {
+  const ChatConnected();
+}
+
+/// Соединение разорвано
+class ChatDisconnected extends ChatState {
+  final String? reason;
+  
+  const ChatDisconnected({this.reason});
+  
+  @override
+  List<Object?> get props => [reason];
+}
+
+/// Переподключение
+class ChatReconnecting extends ChatState {
+  final int attemptNumber;
+  final int maxAttempts;
+  
+  const ChatReconnecting({
+    required this.attemptNumber,
+    required this.maxAttempts,
   });
-
+  
   @override
-  List<Object?> get props => [messageId, userId];
-}
-
-class FileUploaded extends ChatState {
-  final String filePath;
-
-  const FileUploaded(this.filePath);
+  List<Object?> get props => [attemptNumber, maxAttempts];
 }
