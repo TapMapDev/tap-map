@@ -38,6 +38,7 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_me
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chats_list_bloc/chats_list_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_messages_bloc/chat_messages_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -165,6 +166,12 @@ Future<void> setup() async {
       chatRepository: getIt<ChatRepository>(),
       prefsRepository: getIt<SharedPrefsRepository>(),
       userRepository: getIt<UserRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<ConnectionBloc>(
+    () => ConnectionBloc(
+      webSocketService: getIt<ChatWebSocketService>(),
     ),
   );
 
