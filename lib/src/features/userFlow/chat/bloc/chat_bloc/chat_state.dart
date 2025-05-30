@@ -61,6 +61,7 @@ class ChatLoaded extends ChatState {
   final bool isTyping;
   final MessageModel? replyToMessage;
   final MessageModel? forwardFromMessage;
+  final Set<String> typingUsers;
   
   const ChatLoaded({
     required this.chat,
@@ -69,6 +70,7 @@ class ChatLoaded extends ChatState {
     this.isTyping = false,
     this.replyToMessage,
     this.forwardFromMessage,
+    this.typingUsers = const {},
   });
   
   /// Создать новое состояние на основе текущего
@@ -81,6 +83,7 @@ class ChatLoaded extends ChatState {
     bool clearReplyToMessage = false,
     MessageModel? forwardFromMessage,
     bool clearForwardFromMessage = false,
+    Set<String>? typingUsers,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
@@ -89,11 +92,12 @@ class ChatLoaded extends ChatState {
       isTyping: isTyping ?? this.isTyping,
       replyToMessage: clearReplyToMessage ? null : replyToMessage ?? this.replyToMessage,
       forwardFromMessage: clearForwardFromMessage ? null : forwardFromMessage ?? this.forwardFromMessage,
+      typingUsers: typingUsers ?? this.typingUsers,
     );
   }
   
   @override
-  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, replyToMessage, forwardFromMessage];
+  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, replyToMessage, forwardFromMessage, typingUsers];
 }
 
 //

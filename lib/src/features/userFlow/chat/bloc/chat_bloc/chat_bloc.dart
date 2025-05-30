@@ -39,6 +39,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // События для работы с сообщениями
     on<UploadFileEvent>(_onUploadFile);
     on<MarkChatAsReadEvent>(_onMarkChatAsRead);
+    on<MarkMessageAsReadEvent>(_onMarkMessageAsRead);
     on<DeleteMessageEvent>(_onDeleteMessage);
     on<EditMessageEvent>(_onEditMessage);
     on<PinMessageEvent>(_onPinMessage);
@@ -353,6 +354,39 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }).toList();
       
       emit(currentState.copyWith(messages: updatedMessages));
+    }
+  }
+  
+  /// Обработка события пометки сообщения как прочитанного
+  Future<void> _onMarkMessageAsRead(
+    MarkMessageAsReadEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state is! ChatLoaded) return;
+    
+    final currentState = state as ChatLoaded;
+    
+    try {
+      // Отмечаем сообщение как прочитанное
+      await _chatRepository.markMessageAsRead(
+        chatId: event.chatId,
+        messageId: event.messageId,
+      );
+      
+      // Обновляем статус прочтения сообщения
+      final updatedMessages = currentState.messages.map((message) {
+        if (message.id == event.messageId) {
+          return message.copyWith(isRead: true);
+        }
+        return message;
+      }).toList();
+      
+      emit(currentState.copyWith(messages: updatedMessages));
+    } catch (e) {
+      emit(ChatError(
+        message: 'Ошибка пометки сообщения как прочитанного: $e',
+        previousState: currentState,
+      ));
     }
   }
   

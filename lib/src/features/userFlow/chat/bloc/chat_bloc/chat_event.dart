@@ -221,3 +221,17 @@ class SetForwardFromMessageEvent extends ChatEvent {
   @override
   List<Object?> get props => [message];
 }
+
+/// Отметить сообщение как прочитанное
+class MarkMessageAsReadEvent extends ChatEvent {
+  final int chatId;
+  final int messageId;
+
+  const MarkMessageAsReadEvent({
+    required this.chatId,
+    required this.messageId,
+  });
+
+  @override
+  List<Object?> get props => [chatId, messageId];
+}
