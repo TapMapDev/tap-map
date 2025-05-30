@@ -148,6 +148,7 @@ Future<void> setup() async {
   getIt.registerFactory<ChatBloc>(
     () => ChatBloc(
       chatRepository: getIt<ChatRepository>(),
+      chatWebSocketService: getIt<ChatWebSocketService>(),
     ),
   );
 
