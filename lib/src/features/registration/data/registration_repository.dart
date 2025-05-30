@@ -26,12 +26,13 @@ class RegistrationRepositoryImpl implements RegistrationRepository {
       required String password1,
       required String password2}) async {
     final response = await apiService.postData(
-        '/auth/registration/',
+        '/auth/users/',
         {
           'username': username,
           'email': email,
-          'password1': password1,
-          'password2': password2,
+          'password': password1,
+          'first_name': 'user',
+          'last_name': 'anon',
         },
         useAuth: false);
     final responseModel = RegistrationResponseModel.fromJson(
