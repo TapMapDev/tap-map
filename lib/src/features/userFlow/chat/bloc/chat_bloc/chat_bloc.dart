@@ -47,6 +47,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<GetPinnedMessageEvent>(_onGetPinnedMessage);
     on<SetReplyToMessageEvent>(_onSetReplyToMessage);
     on<SetForwardFromMessageEvent>(_onSetForwardFromMessage);
+    on<UpdateMessagesEvent>(_onUpdateMessages);
     
     // Подписываемся на события WebSocket
     _subscribeToWebSocket();
@@ -582,6 +583,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     final currentState = state as ChatLoaded;
     emit(currentState.copyWith(forwardFromMessage: event.message));
+  }
+  
+  /// Обработка события обновления сообщений
+  Future<void> _onUpdateMessages(
+    UpdateMessagesEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is ChatLoaded && currentState.chat.chatId == event.chatId) {
+      emit(currentState.copyWith(
+        messages: event.messages,
+      ));
+    }
   }
   
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/bubble_reference.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_content.dart';

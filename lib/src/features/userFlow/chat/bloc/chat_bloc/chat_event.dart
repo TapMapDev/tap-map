@@ -235,3 +235,17 @@ class MarkMessageAsReadEvent extends ChatEvent {
   @override
   List<Object?> get props => [chatId, messageId];
 }
+
+/// Обновить список сообщений
+class UpdateMessagesEvent extends ChatEvent {
+  final int chatId;
+  final List<MessageModel> messages;
+
+  const UpdateMessagesEvent({
+    required this.chatId,
+    required this.messages,
+  });
+
+  @override
+  List<Object?> get props => [chatId, messages];
+}

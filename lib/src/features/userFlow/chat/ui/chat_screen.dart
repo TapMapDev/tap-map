@@ -304,7 +304,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           .toList();
 
                       // Эмитим новое состояние с обновленным списком сообщений
-                      _chatBloc.emit(currentState.copyWith(
+                      _chatBloc.add(UpdateMessagesEvent(
+                        chatId: widget.chatId,
                         messages: updatedMessages,
                       ));
 
@@ -387,7 +388,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         return msg;
                       }).toList();
                       
-                      _chatBloc.emit(currentState.copyWith(
+                      _chatBloc.add(UpdateMessagesEvent(
+                        chatId: widget.chatId,
                         messages: updatedMessages,
                       ));
                     }
