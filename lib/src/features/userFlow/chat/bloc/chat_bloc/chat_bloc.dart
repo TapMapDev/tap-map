@@ -8,18 +8,18 @@ import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_event.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
-import '../../data/chat_repository_old.dart';
-import '../../models/chat_model.dart';
-import '../../models/message_model.dart';
 import '../../services/send_message_use_case.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  final ChatRepositoryOld _chatRepository;
+  final ChatRepository _chatRepository;
   final SharedPrefsRepository _prefsRepository;
   final UserRepository _userRepository;
   WebSocketService? _webSocketService;
@@ -32,7 +32,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   SendMessageUseCase? _sendMessageUseCase;
 
   ChatBloc({
-    required ChatRepositoryOld chatRepository,
+    required ChatRepository chatRepository,
     required SharedPrefsRepository prefsRepository,
   })  : _chatRepository = chatRepository,
         _prefsRepository = prefsRepository,

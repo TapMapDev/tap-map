@@ -1,14 +1,14 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 
 part 'delete_message_event.dart';
 part 'delete_message_state.dart';
 
 class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
-  final ChatRepositoryOld _chatRepository;
+  final ChatRepository _chatRepository;
 
-  DeleteMessageBloc({required ChatRepositoryOld chatRepository})
+  DeleteMessageBloc({required ChatRepository chatRepository})
       : _chatRepository = chatRepository,
         super(DeleteMessageInitial()) {
     on<DeleteMessageRequest>(_onDeleteMessageRequest);

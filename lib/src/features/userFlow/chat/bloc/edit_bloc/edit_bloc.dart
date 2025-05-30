@@ -2,18 +2,18 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 
 part 'edit_event.dart';
 part 'edit_state.dart';
 
 class EditBloc extends Bloc<EditEvent, EditState> {
-  final ChatRepositoryOld _chatRepository;
+  final ChatRepository _chatRepository;
   WebSocketService? _webSocketService;
 
   EditBloc({
-    required ChatRepositoryOld chatRepository,
+    required ChatRepository chatRepository,
     WebSocketService? webSocketService,
   })  : _chatRepository = chatRepository,
         _webSocketService = webSocketService,

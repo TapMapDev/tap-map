@@ -10,7 +10,7 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/delete_message/delete_me
 import 'package:tap_map/src/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/chat_bubble.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
@@ -27,7 +27,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late final ChatRepositoryOld _chatRepository;
+  late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatBloc _chatBloc;
   final _messageController = TextEditingController();
@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     print(
         '🚀 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
-    _chatRepository = GetIt.instance<ChatRepositoryOld>();
+    _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _initChat();

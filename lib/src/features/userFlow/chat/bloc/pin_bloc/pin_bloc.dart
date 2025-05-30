@@ -1,16 +1,16 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_repository_old.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
 part 'pin_event.dart';
 part 'pin_state.dart';
 
 class PinBloc extends Bloc<PinBlocEvent, PinBlocState> {
-  final ChatRepositoryOld _chatRepository;
+  final ChatRepository _chatRepository;
 
   PinBloc({
-    required ChatRepositoryOld chatRepository,
+    required ChatRepository chatRepository,
   })  : _chatRepository = chatRepository,
         super(PinBlocInitial()) {
     on<PinMessage>(_onPinMessage);
