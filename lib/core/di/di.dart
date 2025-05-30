@@ -183,14 +183,13 @@ Future<void> setup() async {
     ),
   );
 
-  getIt.registerFactory<PinBloc>(
-      () => PinBloc(chatRepository: getIt<ChatRepository>()));
-
-  getIt.registerFactory<DeleteMessageBloc>(
-      () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
-
-  getIt.registerFactory<EditBloc>(
-      () => EditBloc(chatRepository: getIt<ChatRepository>()));
+  // TODO: Удалить эти блоки после полного тестирования MessageActionsBloc
+  // getIt.registerFactory<PinBloc>(
+  //     () => PinBloc(chatRepository: getIt<ChatRepository>()));
+  // getIt.registerFactory<DeleteMessageBloc>(
+  //     () => DeleteMessageBloc(chatRepository: getIt<ChatRepository>()));
+  // getIt.registerFactory<EditBloc>(
+  //     () => EditBloc(chatRepository: getIt<ChatRepository>()));
 
   // Инициализация Mapbox
   MapboxOptions.setAccessToken(MapConfig.accessToken);
