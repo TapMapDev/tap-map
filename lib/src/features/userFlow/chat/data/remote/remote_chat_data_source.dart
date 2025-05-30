@@ -3,22 +3,22 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 /// Реализация удаленного источника данных для чатов
 class RemoteChatDataSource implements ChatDataSource {
   final DioClient _dioClient;
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
-  WebSocketService? _webSocketService;
+  ChatWebSocketService? _webSocketService;
 
   RemoteChatDataSource({
     required DioClient dioClient,
     required SharedPreferences prefs,
-    WebSocketService? webSocketService,
+    ChatWebSocketService? webSocketService,
   })  : _dioClient = dioClient,
         _prefs = prefs,
         _webSocketService = webSocketService;
@@ -152,9 +152,9 @@ class RemoteChatDataSource implements ChatDataSource {
     List<Map<String, String>>? attachments,
   }) async {
     try {
-      // Проверяем, инициализирован ли WebSocketService
+      // Проверяем, инициализирован ли ChatWebSocketService
       if (_webSocketService == null) {
-        throw Exception('WebSocketService не инициализирован');
+        throw Exception('ChatWebSocketService не инициализирован');
       }
       
       // Отправляем сообщение через WebSocket
@@ -166,8 +166,8 @@ class RemoteChatDataSource implements ChatDataSource {
         attachments: attachments,
       );
 
-      // Получаем текущего пользователя для создания локального сообщения
-      final username = _webSocketService!.currentUsername;
+      // Получаем имя пользователя из SharedPreferences
+      final String? username = _prefs.getString('username');
       if (username == null) {
         throw Exception('Имя пользователя не установлено');
       }

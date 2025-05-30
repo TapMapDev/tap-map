@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
@@ -19,8 +18,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// Текущий активный чат
   int? _currentChatId;
   
-  /// Публичный доступ к WebSocketService для других блоков
-  WebSocketService get webSocketService => _chatWebSocketService;
+  /// Публичный доступ к ChatWebSocketService для других блоков
+  ChatWebSocketService get webSocketService => _chatWebSocketService;
   
   /// Конструктор блока
   ChatBloc({

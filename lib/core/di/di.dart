@@ -64,7 +64,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<Talker>(() => Talker());
 
   getIt.registerLazySingleton<SharedPrefsRepository>(
-      () => SharedPrefsRepository());
+      () => SharedPrefsRepository(sharedPreferences: getIt<SharedPreferences>()));
 
   getIt.registerLazySingleton<MapStyleRepository>(
       () => MapStyleRepositoryImpl(apiService: getIt<ApiService>()));
@@ -107,7 +107,7 @@ Future<void> setup() async {
     () => RemoteChatDataSource(
       dioClient: getIt<DioClient>(),
       prefs: getIt<SharedPreferences>(),
-      webSocketService: getIt<WebSocketService>(),
+      webSocketService: getIt<ChatWebSocketService>(),
     ),
   );
   
@@ -126,11 +126,6 @@ Future<void> setup() async {
     ),
   );
 
-  // WebSocket Service
-  getIt.registerFactoryParam<WebSocketService, String, void>(
-    (jwtToken, _) => WebSocketService(jwtToken: jwtToken),
-  );
-  
   // Улучшенный WebSocket сервис для чата с автоматическим переподключением
   getIt.registerLazySingleton<ChatWebSocketService>(
     () => ChatWebSocketService(
@@ -161,7 +156,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<MessageActionsBloc>(
     () => MessageActionsBloc(
       chatRepository: getIt<ChatRepository>(),
-      webSocketService: getIt<ChatWebSocketService>(),
+      chatWebSocketService: getIt<ChatWebSocketService>(),
     ),
   );
 

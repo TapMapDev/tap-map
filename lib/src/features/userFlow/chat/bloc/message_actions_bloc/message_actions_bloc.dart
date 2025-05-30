@@ -10,13 +10,13 @@ import 'message_actions_state.dart';
 /// (закрепление, открепление, удаление, редактирование)
 class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
   final ChatRepository _chatRepository;
-  ChatWebSocketService? _webSocketService;
+  final ChatWebSocketService _chatWebSocketService;
 
   MessageActionsBloc({
     required ChatRepository chatRepository,
-    ChatWebSocketService? webSocketService,
+    required ChatWebSocketService chatWebSocketService,
   })  : _chatRepository = chatRepository,
-        _webSocketService = webSocketService,
+        _chatWebSocketService = chatWebSocketService,
         super(MessageActionInitial()) {
     // Регистрация обработчиков событий
     on<PinMessageAction>(_onPinMessage);
@@ -26,11 +26,6 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
     on<StartEditingAction>(_onStartEditing);
     on<EditMessageAction>(_onEditMessage);
     on<CancelEditAction>(_onCancelEdit);
-  }
-
-  /// Устанавливает ChatWebSocketService после инициализации блока
-  void setWebSocketService(ChatWebSocketService? webSocketService) {
-    _webSocketService = webSocketService;
   }
 
   /// Обработка закрепления сообщения
@@ -181,11 +176,11 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
     try {
       emit(const MessageActionLoading(MessageActionType.edit));
 
-      final isEditedViaWebSocket = _webSocketService != null;
+      final isEditedViaWebSocket = _chatWebSocketService != null;
       
       if (isEditedViaWebSocket) {
         // Редактирование через WebSocket
-        _webSocketService!.editMessage(
+        _chatWebSocketService.editMessage(
           chatId: event.chatId,
           messageId: event.messageId,
           text: event.text,

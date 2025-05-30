@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/remote/remote_chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
