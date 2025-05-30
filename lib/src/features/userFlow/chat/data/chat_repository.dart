@@ -5,11 +5,11 @@ import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
 /// Новая реализация репозитория чатов с поддержкой кэширования
-class ChatRepositoryImpl {
+class ChatRepository {
   final ChatDataSource _remoteDataSource;
   final ChatDataSource _localDataSource;
   
-  ChatRepositoryImpl({
+  ChatRepository({
     required ChatDataSource remoteDataSource,
     required ChatDataSource localDataSource,
   })  : _remoteDataSource = remoteDataSource,
