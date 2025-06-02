@@ -74,26 +74,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initChat() async {
     await _loadCurrentUser();
 
-    print('📱 ChatScreen: Проверяем состояние соединения WebSocket...');
-    // Используем ConnectionBloc для проверки состояния соединения
-    final connectionState = context.read<ConnectionBloc>().state;
-    final isConnected = connectionState.state == chat.ConnectionState.connected;
-    print(
-        '📱 ChatScreen: Текущее состояние WebSocket: ${isConnected ? 'подключено' : 'не подключено'}');
-    print(
-        '📱 ChatScreen: Текущее состояние ConnectionBloc: ${connectionState.state}');
-
     // Загружаем закрепленное сообщение сразу
     print(
         '📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
     _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
-
-    // Проверяем состояние соединения ещё раз после инициализации
-    final connectionStateAfterInit = context.read<ConnectionBloc>().state;
-    final isConnectedAfterInit =
-        connectionStateAfterInit.state == chat.ConnectionState.connected;
-    print(
-        '📱 ChatScreen: Состояние WebSocket после инициализации: ${isConnectedAfterInit ? 'подключено' : 'не подключено'}');
   }
 
   Future<void> _loadCurrentUser() async {
