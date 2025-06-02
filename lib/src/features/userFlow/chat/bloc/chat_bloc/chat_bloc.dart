@@ -77,7 +77,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     emit(const ChatsLoading());
     try {
-      final chats = await _chatRepository.getChats();
+      final chats = await _chatRepository.fetchChats();
       emit(ChatsLoaded(chats));
     } catch (e) {
       emit(ChatError(message: 'Ошибка загрузки чатов: $e'));
