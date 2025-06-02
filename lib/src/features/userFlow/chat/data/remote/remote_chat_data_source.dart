@@ -94,12 +94,21 @@ class RemoteChatDataSource implements ChatDataSource {
   @override
   Future<void> markChatAsRead(int chatId) async {
     try {
-      final response = await _dioClient.post(
-        '/chats/$chatId/mark_read/',
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Не удалось отметить чат как прочитанный: ${response.statusCode}');
+      // Получаем сообщения чата
+      final messages = await getMessagesForChat(chatId);
+      
+      if (_webSocketService == null) {
+        throw Exception('ChatWebSocketService не инициализирован');
+      }
+      
+      // Отмечаем каждое непрочитанное сообщение через WebSocket
+      for (final message in messages) {
+        if (!message.isRead) {
+          _webSocketService!.readMessage(
+            chatId: chatId,
+            messageId: message.id,
+          );
+        }
       }
     } catch (e) {
       throw Exception('Не удалось отметить чат как прочитанный: $e');
@@ -197,6 +206,19 @@ class RemoteChatDataSource implements ChatDataSource {
     }
   }
   
+  @override
+  Future<void> markMessageAsRead({required int chatId, required int messageId}) async {
+    if (_webSocketService == null) {
+      throw Exception('ChatWebSocketService не инициализирован');
+    }
+    
+    // Отправляем через WebSocket
+    _webSocketService!.readMessage(
+      chatId: chatId,
+      messageId: messageId,
+    );
+  }
+
   // Вспомогательный метод для определения типа сообщения на основе вложений
   MessageType _getMessageType(List<Map<String, String>>? attachments) {
     if (attachments == null || attachments.isEmpty) {
