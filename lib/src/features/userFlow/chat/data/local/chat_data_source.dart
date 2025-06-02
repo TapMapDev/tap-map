@@ -53,9 +53,15 @@ abstract class ChatDataSource {
   
   /// Получить все локально кэшированные сообщения для чата
   Future<List<MessageModel>> getCachedMessagesForChat(int chatId);
-  
+
   /// Кэшировать список сообщений
   Future<void> cacheMessages(int chatId, List<MessageModel> messages);
+
+  /// Кэшировать информацию о чате
+  Future<void> cacheChat(ChatModel chat);
+
+  /// Кэшировать список чатов
+  Future<void> cacheChats(List<ChatModel> chats);
   
   /// Кэшировать одно сообщение
   Future<void> cacheMessage(int chatId, MessageModel message);

@@ -367,10 +367,20 @@ class RemoteChatDataSource implements ChatDataSource {
   Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
     // Ничего не делаем, т.к. удаленный источник не кэширует
   }
-  
+
   @override
   Future<void> cacheMessage(int chatId, MessageModel message) async {
     // Ничего не делаем, т.к. удаленный источник не кэширует
+  }
+
+  @override
+  Future<void> cacheChat(ChatModel chat) async {
+    // Удаленный источник не кэширует данные
+  }
+
+  @override
+  Future<void> cacheChats(List<ChatModel> chats) async {
+    // Удаленный источник не кэширует данные
   }
   
   @override

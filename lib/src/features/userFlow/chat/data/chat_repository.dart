@@ -28,14 +28,12 @@ class ChatRepository {
   Future<List<ChatModel>> fetchChats() async {
     try {
       // Пытаемся получить данные с сервера
-      final remotechats = await _remoteChatDataSource.getChats();
-      
+      final remoteChats = await _remoteChatDataSource.getChats();
+
       // Кэшируем полученные чаты
-      for (final chat in remotechats) {
-        await _localChatDataSource.cacheMessages(chat.chatId, []);
-      }
-      
-      return remotechats;
+      await _localChatDataSource.cacheChats(remoteChats);
+
+      return remoteChats;
     } catch (e) {
       // В случае ошибки возвращаем данные из кэша
       return await _localChatDataSource.getChats();
@@ -44,19 +42,47 @@ class ChatRepository {
   
   /// Получить чат и его сообщения с кэшированием
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
+    // Сначала пробуем получить локальные данные
+    final localChat = await _localChatDataSource.getChatById(chatId);
+    final localMessages = await _localChatDataSource.getCachedMessagesForChat(chatId);
+    final localPinnedId = await _localChatDataSource.getPinnedMessageId(chatId);
+
+    if (localChat != null && localMessages.isNotEmpty) {
+      // Асинхронно обновляем данные с сервера
+      () async {
+        try {
+          final remoteChat = await _remoteChatDataSource.getChatById(chatId);
+          final remoteMessages = await _remoteChatDataSource.getMessagesForChat(chatId);
+          final pinnedId = await _remoteChatDataSource.getPinnedMessageId(chatId);
+
+          if (remoteChat != null) {
+            await _localChatDataSource.cacheChat(remoteChat.copyWith(pinnedMessageId: pinnedId));
+            await _localChatDataSource.cacheMessages(chatId, remoteMessages);
+          }
+        } catch (_) {}
+      }();
+
+      return {
+        'chat': localChat,
+        'messages': localMessages,
+        'pinnedMessageId': localPinnedId,
+      };
+    }
+
     try {
       // Пытаемся получить данные с сервера
       final chat = await _remoteChatDataSource.getChatById(chatId);
       final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
-      
-      // Кэшируем полученные данные
-      if (chat != null) {
-        await _localChatDataSource.cacheMessages(chatId, messages);
-      }
-      
+
       // Получаем ID закрепленного сообщения
       final pinnedMessageId = await _remoteChatDataSource.getPinnedMessageId(chatId);
-      
+
+      // Кэшируем полученные данные
+      if (chat != null) {
+        await _localChatDataSource.cacheChat(chat.copyWith(pinnedMessageId: pinnedMessageId));
+        await _localChatDataSource.cacheMessages(chatId, messages);
+      }
+
       return {
         'chat': chat,
         'messages': messages,
@@ -64,19 +90,15 @@ class ChatRepository {
       };
     } catch (e) {
       // В случае ошибки возвращаем данные из кэша
-      final chat = await _localChatDataSource.getChatById(chatId);
-      final messages = await _localChatDataSource.getCachedMessagesForChat(chatId);
-      final pinnedMessageId = await _localChatDataSource.getPinnedMessageId(chatId);
-      
-      if (chat == null) {
-        throw Exception('Не удалось получить данные чата: $e');
+      if (localChat != null) {
+        return {
+          'chat': localChat,
+          'messages': localMessages,
+          'pinnedMessageId': localPinnedId,
+        };
       }
-      
-      return {
-        'chat': chat,
-        'messages': messages,
-        'pinnedMessageId': pinnedMessageId,
-      };
+
+      throw Exception('Не удалось получить данные чата: $e');
     }
   }
   
