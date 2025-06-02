@@ -301,7 +301,7 @@ class RemoteChatDataSource implements ChatDataSource {
       }
       
       // Если нет в кэше, делаем запрос на сервер
-      final response = await _dioClient.client.get('/chats/$chatId/');
+      final response = await _dioClient.client.get('/chat/$chatId/');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final pinnedMessageId = data['pinned_message_id'] as int?;
