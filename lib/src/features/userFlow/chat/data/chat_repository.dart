@@ -291,20 +291,8 @@ class ChatRepository {
       
       return message;
     } catch (e) {
-      // Если произошла ошибка при отправке через сеть,
-      // все равно создаем локальное сообщение
-      try {
-        final message = await _localChatDataSource.sendMessage(
-          chatId: chatId,
-          text: text,
-          replyToId: replyToId,
-          forwardedFromId: forwardedFromId,
-          attachments: attachments,
-        );
-        return message;
-      } catch (localError) {
-        throw Exception('Ошибка при отправке сообщения: $e, локальная ошибка: $localError');
-      }
+      print('❌ ChatRepository: Ошибка при отправке сообщения: $e');
+      throw Exception('Ошибка при отправке сообщения: $e');
     }
   }
   
