@@ -158,11 +158,6 @@ class MessageContent extends StatelessWidget {
 
   void _openFile(BuildContext context, String url) {
     // TODO: Implement file opening functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening file: ${url.split('/').last}'),
-      ),
-    );
   }
 
   void _showFullScreenImage(BuildContext context, String imageUrl) {
