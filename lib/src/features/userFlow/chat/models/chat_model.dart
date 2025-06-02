@@ -19,6 +19,18 @@ class ChatModel extends Equatable {
     this.pinnedMessageId,
   });
 
+  Map<String, dynamic> toJson() {
+    return {
+      'chat_id': chatId,
+      'chat_name': chatName,
+      'last_message_text': lastMessageText,
+      'last_message_sender_username': lastMessageSenderUsername,
+      'last_message_created_at': lastMessageCreatedAt?.toIso8601String(),
+      'unread_count': unreadCount,
+      'pinned_message_id': pinnedMessageId,
+    };
+  }
+
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
       chatId: json['id'] as int? ?? json['chat_id'] as int? ?? 0,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
@@ -9,6 +10,7 @@ class ChatRepository {
   final DioClient _dioClient;
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
+  static const String _cacheKeyPrefix = 'chat_cache_';
 
   ChatRepository({
     required DioClient dioClient,
@@ -34,6 +36,12 @@ class ChatRepository {
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     try {
       print('📡 Fetching chat data for chatId: $chatId');
+
+      final cached = _loadChatCache(chatId);
+      if (cached != null) {
+        print('💾 Loaded chat $chatId from cache');
+      }
+
       final chatResponse = await _dioClient.get('/chat/$chatId/');
       print('📡 Chat response data: ${chatResponse.data}');
 
@@ -51,9 +59,12 @@ class ChatRepository {
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
         print('📱 Parsed ${messages.length} messages');
 
+        await _saveChatCache(chatId, chat, messages);
+
         return {
           'chat': chat,
           'messages': messages,
+          'cached': cached,
         };
       }
       throw Exception('Failed to fetch chat data: ${chatResponse.statusCode}');
@@ -233,6 +244,28 @@ class ChatRepository {
   Future<int?> getPinnedMessageId(int chatId) async {
     return _prefs.getInt('$_pinnedMessageKey$chatId');
   }
+
+  Future<void> _saveChatCache(
+      int chatId, ChatModel chat, List<MessageModel> messages) async {
+    final data = jsonEncode({
+      'chat': chat.toJson(),
+      'messages': messages.map((m) => m.toJson()).toList(),
+    });
+    await _prefs.setString('$_cacheKeyPrefix$chatId', data);
+  }
+
+  Map<String, dynamic>? _loadChatCache(int chatId) {
+    final jsonString = _prefs.getString('$_cacheKeyPrefix$chatId');
+    if (jsonString == null) return null;
+    final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+    final chat = ChatModel.fromJson(decoded['chat'] as Map<String, dynamic>);
+    final messages = (decoded['messages'] as List<dynamic>)
+        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return {'chat': chat, 'messages': messages};
+  }
+
+  Map<String, dynamic>? getCachedChat(int chatId) => _loadChatCache(chatId);
 
   Future<String> uploadFile(String filePath) async {
     try {

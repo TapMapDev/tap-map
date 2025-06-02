@@ -65,6 +65,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     try {
       emit(ChatLoading());
+
+      final cachedData = _chatRepository.getCachedChat(event.chatId);
+      if (cachedData != null) {
+        final cachedChat = cachedData['chat'] as ChatModel;
+        final cachedMessages = cachedData['messages'] as List<MessageModel>;
+        emit(ChatLoaded(chat: cachedChat, messages: cachedMessages, isRead: true));
+      }
+
       final data = await _chatRepository.fetchChatWithMessages(event.chatId);
       final chat = data['chat'] as ChatModel;
       final messages = data['messages'] as List<MessageModel>;
