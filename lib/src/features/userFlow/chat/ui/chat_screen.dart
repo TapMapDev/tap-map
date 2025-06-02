@@ -69,8 +69,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _initChat();
 
-    // Подключаемся и загружаем данные без дополнительной задержки
-    context.read<ConnectionBloc>().add(const ConnectEvent());
+    // Загружаем данные чата без попытки подключения к WebSocket
     _chatBloc.add(FetchChatEvent(widget.chatId));
   }
 
@@ -297,11 +296,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     _wasDisconnected = true;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                            'Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 5),
-                      ),
+                          content:
+                              Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 5),
+                        ),
                     );
                   } else if (state.state == chat.ConnectionState.connected && _wasDisconnected) {
                     _wasDisconnected = false;
