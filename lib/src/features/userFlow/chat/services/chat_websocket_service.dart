@@ -154,7 +154,7 @@ class ChatWebSocketService {
     try {
       _updateConnectionState(ConnectionState.connecting);
       
-      final jwtToken = await _prefsRepository.getJwtToken();
+      final jwtToken = await _prefsRepository.getAccessToken();
       
       if (jwtToken == null || jwtToken.isEmpty) {
         _handleConnectionError('JWT token is empty or null');
