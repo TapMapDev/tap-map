@@ -63,7 +63,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<Talker>(() => Talker());
 
   getIt.registerLazySingleton<SharedPrefsRepository>(
-      () => SharedPrefsRepository(sharedPreferences: getIt<SharedPreferences>()));
+      () => SharedPrefsRepository());
 
   getIt.registerLazySingleton<MapStyleRepository>(
       () => MapStyleRepositoryImpl(apiService: getIt<ApiService>()));
@@ -118,7 +118,7 @@ Future<void> setup() async {
   );
   
   getIt.registerLazySingleton<ChatDataSource>(
-    () => LocalChatDataSource(database: getIt<ChatDatabase>()),
+    () => LocalChatDataSource(getIt<ChatDatabase>()),
     instanceName: 'local',
   );
   
