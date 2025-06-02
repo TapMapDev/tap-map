@@ -128,6 +128,9 @@ class ChatWebSocketService {
 
   /// Получение потока событий
   Stream<WebSocketEventData> get events => _eventsController.stream;
+  
+  /// Получение текущего имени пользователя
+  String? get currentUsername => _currentUsername;
 
   /// Текущее состояние подключения
   ConnectionState _connectionState = ConnectionState.disconnected;
