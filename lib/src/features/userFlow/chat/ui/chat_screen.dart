@@ -22,7 +22,8 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart'
+    as chat;
 import 'package:tap_map/src/features/userFlow/chat/widgets/connection_status_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -54,26 +55,22 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     print('📱 ChatScreen: initState для чата ${widget.chatId}');
-    
+
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
-    
-    print('📱 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
-    
+
+    print(
+        '📱 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
+
     _initChat();
-    
-    // Добавляем небольшую задержку перед отправкой событий, чтобы дать время на инициализацию
-    Future.delayed(const Duration(milliseconds: 500), () {
-      print('📱 ChatScreen: Отправляем события после задержки для чата ${widget.chatId}');
-      // Сначала запускаем подключение через ConnectionBloc
-      context.read<ConnectionBloc>().add(const ConnectEvent());
-      // Потом загружаем данные чата
-      _chatBloc.add(FetchChatEvent(widget.chatId));
-    });
+
+    // Подключаемся и загружаем данные без дополнительной задержки
+    context.read<ConnectionBloc>().add(const ConnectEvent());
+    _chatBloc.add(FetchChatEvent(widget.chatId));
   }
 
   Future<void> _initChat() async {
@@ -83,19 +80,22 @@ class _ChatScreenState extends State<ChatScreen> {
     // Используем ConnectionBloc для проверки состояния соединения
     final connectionState = context.read<ConnectionBloc>().state;
     final isConnected = connectionState.state == chat.ConnectionState.connected;
-    print('📱 ChatScreen: Текущее состояние WebSocket: ${isConnected ? 'подключено' : 'не подключено'}');
-    print('📱 ChatScreen: Текущее состояние ConnectionBloc: ${connectionState.state}');
-    
-    // Восстанавливаем загрузку закрепленного сообщения с небольшой задержкой
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      print('📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
-      _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
-      
-      // Повторно проверяем состояние соединения после задержки
-      final connectionStateAfterDelay = context.read<ConnectionBloc>().state;
-      final isConnectedAfterDelay = connectionStateAfterDelay.state == chat.ConnectionState.connected;
-      print('📱 ChatScreen: Состояние WebSocket после задержки: ${isConnectedAfterDelay ? 'подключено' : 'не подключено'}');
-    });
+    print(
+        '📱 ChatScreen: Текущее состояние WebSocket: ${isConnected ? 'подключено' : 'не подключено'}');
+    print(
+        '📱 ChatScreen: Текущее состояние ConnectionBloc: ${connectionState.state}');
+
+    // Загружаем закрепленное сообщение сразу
+    print(
+        '📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
+    _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
+
+    // Проверяем состояние соединения ещё раз после инициализации
+    final connectionStateAfterInit = context.read<ConnectionBloc>().state;
+    final isConnectedAfterInit =
+        connectionStateAfterInit.state == chat.ConnectionState.connected;
+    print(
+        '📱 ChatScreen: Состояние WebSocket после инициализации: ${isConnectedAfterInit ? 'подключено' : 'не подключено'}');
   }
 
   Future<void> _loadCurrentUser() async {
@@ -107,15 +107,17 @@ class _ChatScreenState extends State<ChatScreen> {
         _currentUsername = user.username;
         _currentUserId = user.id;
       });
-      
+
       // Устанавливаем имя пользователя в WebSocketService сразу после загрузки
       if (user.username != null) {
         _chatRepository.webSocketService.setCurrentUsername(user.username!);
-        print('👤 ChatScreen: Установлено имя пользователя в WebSocketService: ${user.username}');
+        print(
+            '👤 ChatScreen: Установлено имя пользователя в WebSocketService: ${user.username}');
       } else {
-        print('👤 ChatScreen: ВНИМАНИЕ! Не удалось установить имя пользователя в WebSocketService, так как оно не определено');
+        print(
+            '👤 ChatScreen: ВНИМАНИЕ! Не удалось установить имя пользователя в WebSocketService, так как оно не определено');
       }
-      
+
       print(
           '👤 ChatScreen: Current user set - username: $_currentUsername, id: $_currentUserId');
     } catch (e) {
@@ -138,10 +140,11 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messageController.text.trim().isEmpty) {
       return;
     }
-    
+
     // Логируем текущее имя пользователя
-    print('🌐 ChatScreen: Отправка сообщения от пользователя: $_currentUsername, ID: $_currentUserId');
-    
+    print(
+        '🌐 ChatScreen: Отправка сообщения от пользователя: $_currentUsername, ID: $_currentUserId');
+
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
     if (connectionState != chat.ConnectionState.connected) {
@@ -149,14 +152,15 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    if (_selectedMediaFile != null || _messageController.text.trim().isNotEmpty) {
+    if (_selectedMediaFile != null ||
+        _messageController.text.trim().isNotEmpty) {
       if (_editingMessage != null) {
         _messageActionsBloc.add(EditMessageAction(
-              chatId: widget.chatId,
-              messageId: _editingMessage!.id,
-              text: _messageController.text.trim(),
-              context: context,
-            ));
+          chatId: widget.chatId,
+          messageId: _editingMessage!.id,
+          text: _messageController.text.trim(),
+          context: context,
+        ));
       } else if (_selectedMediaFile != null) {
         // Обработка загрузки файлов будет добавлена в следующих итерациях
         setState(() {
@@ -290,10 +294,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   } else if (state.state == chat.ConnectionState.error) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 5),
-                        ),
+                        content: Text(
+                            'Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 5),
+                      ),
                     );
                   } else if (state.state == chat.ConnectionState.connected) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -337,7 +342,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
                   }
                   // Обработка удаления сообщений
-                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.delete) {
+                  else if (state is MessageActionSuccess &&
+                      state.actionType == MessageActionType.delete) {
                     // После успешного удаления обновляем список сообщений в ChatBloc
                     final currentState = _chatBloc.state;
                     if (currentState is ChatLoaded) {
@@ -356,51 +362,63 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SnackBar(content: Text('Сообщение удалено')),
                       );
                     }
-                  } 
+                  }
                   // Обработка ошибки удаления
-                  else if (state is MessageActionFailure && state.actionType == MessageActionType.delete) {
+                  else if (state is MessageActionFailure &&
+                      state.actionType == MessageActionType.delete) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка при удалении: ${state.message}')),
+                          content:
+                              Text('Ошибка при удалении: ${state.message}')),
                     );
                   }
                   // Обработка успеха закрепления
-                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.pin) {
+                  else if (state is MessageActionSuccess &&
+                      state.actionType == MessageActionType.pin) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Сообщение закреплено')),
                     );
                   }
                   // Обработка ошибки закрепления
-                  else if (state is MessageActionFailure && state.actionType == MessageActionType.pin) {
+                  else if (state is MessageActionFailure &&
+                      state.actionType == MessageActionType.pin) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка при закреплении: ${state.message}')),
+                          content:
+                              Text('Ошибка при закреплении: ${state.message}')),
                     );
                   }
                   // Обработка успеха открепления
-                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.unpin) {
+                  else if (state is MessageActionSuccess &&
+                      state.actionType == MessageActionType.unpin) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Сообщение откреплено')),
                     );
                   }
                   // Обработка ошибки открепления
-                  else if (state is MessageActionFailure && state.actionType == MessageActionType.unpin) {
+                  else if (state is MessageActionFailure &&
+                      state.actionType == MessageActionType.unpin) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка при откреплении: ${state.message}')),
+                          content:
+                              Text('Ошибка при откреплении: ${state.message}')),
                     );
                   }
                   // Обработка успеха загрузки закрепленного сообщения
-                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.loadPin) {
+                  else if (state is MessageActionSuccess &&
+                      state.actionType == MessageActionType.loadPin) {
                     print('Закрепленное сообщение успешно загружено');
                   }
                   // Обработка ошибки загрузки закрепленного сообщения
-                  else if (state is MessageActionFailure && state.actionType == MessageActionType.loadPin) {
-                    print('Ошибка при загрузке закрепленного сообщения: ${state.message}');
+                  else if (state is MessageActionFailure &&
+                      state.actionType == MessageActionType.loadPin) {
+                    print(
+                        'Ошибка при загрузке закрепленного сообщения: ${state.message}');
                   }
                   // Обработка состояния редактирования
                   else if (state is MessageEditInProgress) {
-                    print('Начато редактирование сообщения: ${state.messageId}');
+                    print(
+                        'Начато редактирование сообщения: ${state.messageId}');
                     setState(() {
                       _editingMessage = MessageModel(
                         id: state.messageId,
@@ -411,15 +429,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       );
                       _messageController.text = state.originalText;
                     });
-                  } 
+                  }
                   // Обработка успеха редактирования
-                  else if (state is MessageActionSuccess && state.actionType == MessageActionType.edit) {
+                  else if (state is MessageActionSuccess &&
+                      state.actionType == MessageActionType.edit) {
                     print('Редактирование сообщения успешно завершено');
                     setState(() {
                       _editingMessage = null;
                       _messageController.clear();
                     });
-                    
+
                     // Обновляем сообщение в списке
                     final currentState = _chatBloc.state;
                     if (currentState is ChatLoaded && state.newText != null) {
@@ -429,23 +448,27 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
                         return msg;
                       }).toList();
-                      
+
                       _chatBloc.add(UpdateMessagesEvent(
                         chatId: widget.chatId,
                         messages: updatedMessages,
                       ));
                     }
-                    
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Сообщение отредактировано')),
+                      const SnackBar(
+                          content: Text('Сообщение отредактировано')),
                     );
-                  } 
+                  }
                   // Обработка ошибки редактирования
-                  else if (state is MessageActionFailure && state.actionType == MessageActionType.edit) {
-                    print('Ошибка при редактировании сообщения: ${state.message}');
+                  else if (state is MessageActionFailure &&
+                      state.actionType == MessageActionType.edit) {
+                    print(
+                        'Ошибка при редактировании сообщения: ${state.message}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Ошибка при редактировании: ${state.message}')),
+                          content: Text(
+                              'Ошибка при редактировании: ${state.message}')),
                     );
                   }
                 },
@@ -496,9 +519,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
                                     _messageActionsBloc.add(UnpinMessageAction(
-                                          chatId: widget.chatId,
-                                          messageId: state.pinnedMessage.id,
-                                        ));
+                                      chatId: widget.chatId,
+                                      messageId: state.pinnedMessage.id,
+                                    ));
                                   },
                                 ),
                               ],
@@ -516,19 +539,21 @@ class _ChatScreenState extends State<ChatScreen> {
                             return const Center(
                                 child: CircularProgressIndicator());
                           }
-                          
+
                           if (state is ChatError) {
                             return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                                  const Icon(Icons.error_outline,
+                                      size: 48, color: Colors.red),
                                   const SizedBox(height: 16),
                                   Text('Ошибка: ${state.message}'),
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: () {
-                                      _chatBloc.add(FetchChatEvent(widget.chatId));
+                                      _chatBloc
+                                          .add(FetchChatEvent(widget.chatId));
                                     },
                                     child: const Text('Повторить'),
                                   ),
@@ -828,9 +853,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 Navigator.pop(context);
                 print('Navigator popped');
                 _messageActionsBloc.add(StartEditingAction(
-                      messageId: message.id,
-                      originalText: message.text,
-                    ));
+                  messageId: message.id,
+                  originalText: message.text,
+                ));
                 print('StartEditing event added to MessageActionsBloc');
               },
             ),
@@ -840,10 +865,10 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _messageActionsBloc.add(DeleteMessageAction(
-                      chatId: widget.chatId,
-                      messageId: message.id,
-                      action: 'for_me',
-                    ));
+                  chatId: widget.chatId,
+                  messageId: message.id,
+                  action: 'for_me',
+                ));
               },
             ),
             ListTile(
@@ -852,10 +877,10 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _messageActionsBloc.add(DeleteMessageAction(
-                      chatId: widget.chatId,
-                      messageId: message.id,
-                      action: 'for_all',
-                    ));
+                  chatId: widget.chatId,
+                  messageId: message.id,
+                  action: 'for_all',
+                ));
               },
             ),
             ListTile(
@@ -864,9 +889,9 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _messageActionsBloc.add(PinMessageAction(
-                      chatId: widget.chatId,
-                      messageId: message.id,
-                    ));
+                  chatId: widget.chatId,
+                  messageId: message.id,
+                ));
               },
             ),
           ],
