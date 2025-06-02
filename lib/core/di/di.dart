@@ -10,7 +10,6 @@ import 'package:tap_map/core/network/dio_client.dart';
 import 'package:tap_map/core/services/deep_link_service.dart';
 import 'package:tap_map/core/services/notification_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/main.dart';
 import 'package:tap_map/router/app_router.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
@@ -93,13 +92,20 @@ Future<void> setup() async {
       apiService: getIt<ApiService>(),
     ),
   );
-  getIt.registerFactory<PointDetailBloc>(
+  getIt.registerLazySingleton<PointDetailBloc>(
     () => PointDetailBloc(getIt<PointRepository>()),
   );
   
   // Регистрируем базу данных для чатов
   getIt.registerLazySingleton<ChatDatabase>(
     () => ChatDatabase.connect(),
+  );
+  
+  // Улучшенный WebSocket сервис для чата с автоматическим переподключением
+  getIt.registerLazySingleton<ChatWebSocketService>(
+    () => ChatWebSocketService(
+      prefsRepository: getIt<SharedPrefsRepository>(),
+    ),
   );
   
   // Регистрируем источники данных для чатов
@@ -123,13 +129,6 @@ Future<void> setup() async {
       localChatDataSource: getIt<ChatDataSource>(),
       webSocketService: getIt<ChatWebSocketService>(),
       userRepository: getIt<UserRepository>(),
-    ),
-  );
-
-  // Улучшенный WebSocket сервис для чата с автоматическим переподключением
-  getIt.registerLazySingleton<ChatWebSocketService>(
-    () => ChatWebSocketService(
-      prefsRepository: getIt<SharedPrefsRepository>(),
     ),
   );
 
