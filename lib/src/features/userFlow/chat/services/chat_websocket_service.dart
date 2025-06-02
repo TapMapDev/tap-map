@@ -62,6 +62,7 @@ class WebSocketEventData {
         break;
       default:
         type = WebSocketEventType.unknown;
+        print('🌐 WebSocket: Получено неизвестное событие типа: $eventType, данные: ${json.toString().substring(0, min(100, json.toString().length))}...');
     }
 
     return WebSocketEventData(
@@ -145,6 +146,9 @@ class ChatWebSocketService {
   /// Установка имени текущего пользователя
   void setCurrentUsername(String username) {
     _currentUsername = username;
+    // Сохраняем имя пользователя в SharedPreferences
+    _prefsRepository.setString('chat_username', username);
+    print('🌐 WebSocket: Имя пользователя установлено и сохранено: $username');
   }
 
   /// Подключение к WebSocket серверу
@@ -155,6 +159,14 @@ class ChatWebSocketService {
     try {
       print('🌐 WebSocket: Начинаем подключение...');
       _updateConnectionState(ConnectionState.connecting);
+      
+      // Пытаемся восстановить имя пользователя из SharedPreferences, если оно не задано
+      if (_currentUsername == null) {
+        _currentUsername = await _prefsRepository.getString('chat_username');
+        if (_currentUsername != null) {
+          print('🌐 WebSocket: Восстановлено имя пользователя из хранилища: $_currentUsername');
+        }
+      }
       
       final jwtToken = await _prefsRepository.getAccessToken();
       
@@ -409,6 +421,12 @@ class ChatWebSocketService {
     int? forwardedFromId,
     List<Map<String, String>>? attachments,
   }) {
+    // Проверяем, установлено ли имя пользователя
+    if (_currentUsername == null) {
+      print('❌ WebSocket: Ошибка при отправке сообщения - имя пользователя не установлено');
+      throw Exception('Имя пользователя не установлено');
+    }
+    
     _reconnectAndExecute(() {
       final message = {
         'type': 'create_message',
@@ -420,6 +438,7 @@ class ChatWebSocketService {
           'attachments': attachments,
       };
       
+      print('📤 WebSocket: Отправка сообщения от $_currentUsername в чат $chatId');
       _channel!.sink.add(jsonEncode(message));
     });
   }

@@ -271,6 +271,12 @@ class ChatRepository {
     List<Map<String, String>>? attachments,
   }) async {
     try {
+      // Проверяем, инициализирован ли WebSocketService
+      if (_webSocketService.currentUsername == null) {
+        print('❌ ChatRepository: Имя пользователя не установлено в WebSocketService');
+        throw Exception('Имя пользователя не установлено в WebSocketService');
+      }
+      
       // Отправляем сообщение через удаленный источник данных (WebSocket)
       final message = await _remoteChatDataSource.sendMessage(
         chatId: chatId,

@@ -107,6 +107,15 @@ class _ChatScreenState extends State<ChatScreen> {
         _currentUsername = user.username;
         _currentUserId = user.id;
       });
+      
+      // Устанавливаем имя пользователя в WebSocketService сразу после загрузки
+      if (user.username != null) {
+        _chatRepository.webSocketService.setCurrentUsername(user.username!);
+        print('👤 ChatScreen: Установлено имя пользователя в WebSocketService: ${user.username}');
+      } else {
+        print('👤 ChatScreen: ВНИМАНИЕ! Не удалось установить имя пользователя в WebSocketService, так как оно не определено');
+      }
+      
       print(
           '👤 ChatScreen: Current user set - username: $_currentUsername, id: $_currentUserId');
     } catch (e) {
@@ -129,6 +138,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messageController.text.trim().isEmpty) {
       return;
     }
+    
+    // Логируем текущее имя пользователя
+    print('🌐 ChatScreen: Отправка сообщения от пользователя: $_currentUsername, ID: $_currentUserId');
+    
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
     if (connectionState != chat.ConnectionState.connected) {
