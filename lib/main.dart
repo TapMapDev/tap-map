@@ -28,6 +28,7 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.da
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -40,15 +41,35 @@ void main() async {
   await setup();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage msg) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final ConnectionBloc _connectionBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectionBloc = getIt.get<ConnectionBloc>();
+    _connectionBloc.add(const ConnectEvent());
+  }
+
+  @override
+  void dispose() {
+    _connectionBloc.add(const DisconnectEvent());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
