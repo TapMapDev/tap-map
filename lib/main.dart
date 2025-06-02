@@ -27,6 +27,7 @@ import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
