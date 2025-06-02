@@ -94,6 +94,9 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) => ReplyBloc(),
           ),
+          BlocProvider(
+            create: (context) => getIt.get<ConnectionBloc>(),
+          ),
         ],
         child: MaterialApp.router(
           routerConfig: appRouter,

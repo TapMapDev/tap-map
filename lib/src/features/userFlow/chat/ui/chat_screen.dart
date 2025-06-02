@@ -58,7 +58,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
-    _connectionBloc = GetIt.instance<ConnectionBloc>();
+    _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
     _initChat();
