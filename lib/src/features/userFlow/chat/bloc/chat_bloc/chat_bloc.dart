@@ -148,13 +148,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final pinnedMessageId = await _chatRepository.getPinnedMessageId(event.chatId);
         if (pinnedMessageId != null) {
           // Ищем закрепленное сообщение среди загруженных сообщений
-          pinnedMessage = messages.firstWhere(
-            (message) => message.id == pinnedMessageId,
-            orElse: () => null,
-          );
-          
-          // Если не нашли в загруженных сообщениях, пробуем загрузить напрямую
-          if (pinnedMessage == null) {
+          final foundMessage = messages.where((message) => message.id == pinnedMessageId).toList();
+          if (foundMessage.isNotEmpty) {
+            pinnedMessage = foundMessage.first;
+          } else {
+            // Если не нашли в загруженных сообщениях, пробуем загрузить напрямую
             pinnedMessage = await _chatRepository.getMessageById(event.chatId, pinnedMessageId);
           }
         }
