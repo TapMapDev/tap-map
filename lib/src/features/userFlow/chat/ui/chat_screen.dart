@@ -68,10 +68,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initChat() async {
     await _loadCurrentUser();
 
-    // Загружаем закрепленное сообщение сразу
-    print(
-        '📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
-    _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
+    // Удаляем загрузку закрепленного сообщения
+    // print(
+    //     '📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
+    // _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
   }
 
   Future<void> _loadCurrentUser() async {
