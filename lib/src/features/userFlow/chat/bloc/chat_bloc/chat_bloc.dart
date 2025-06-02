@@ -288,7 +288,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     SendTypingEvent event,
     Emitter<ChatState> emit,
   ) {
-    _chatRepository.sendTypingStatus(
+    _chatRepository.sendTyping(
       chatId: event.chatId,
       isTyping: event.isTyping,
     );
@@ -375,7 +375,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     try {
       // Отмечаем сообщение как прочитанное
-      await _chatRepository.markMessageAsRead(
+      _chatRepository.markMessageAsRead(
         chatId: event.chatId,
         messageId: event.messageId,
       );
