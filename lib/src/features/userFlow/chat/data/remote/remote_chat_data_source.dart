@@ -291,7 +291,36 @@ class RemoteChatDataSource implements ChatDataSource {
 
   @override
   Future<int?> getPinnedMessageId(int chatId) async {
-    return _prefs.getInt('$_pinnedMessageKey$chatId');
+    try {
+      print('📌 RemoteChatDataSource: Запрос закрепленного сообщения для чата $chatId');
+      // Сначала проверяем в локальных настройках
+      final cachedId = _prefs.getInt('$_pinnedMessageKey$chatId');
+      if (cachedId != null) {
+        print('📌 RemoteChatDataSource: Найден закрепленный ID в кэше: $cachedId');
+        return cachedId;
+      }
+      
+      // Если нет в кэше, делаем запрос на сервер
+      final response = await _dioClient.client.get('/chats/$chatId/');
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final pinnedMessageId = data['pinned_message_id'] as int?;
+        
+        if (pinnedMessageId != null) {
+          print('📌 RemoteChatDataSource: Получен закрепленный ID с сервера: $pinnedMessageId');
+          // Сохраняем в кэш для будущих запросов
+          await _prefs.setInt('$_pinnedMessageKey$chatId', pinnedMessageId);
+        } else {
+          print('📌 RemoteChatDataSource: Нет закрепленного сообщения для чата $chatId');
+        }
+        
+        return pinnedMessageId;
+      }
+      return null;
+    } catch (e) {
+      print('📌 RemoteChatDataSource: Ошибка при получении закрепленного ID: $e');
+      return null;
+    }
   }
 
   @override

@@ -62,10 +62,37 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// Подписка на события WebSocket
   void _subscribeToWebSocket() {
     _webSocketSubscription = _chatWebSocketService.events.listen((event) {
+      print('🌐 ChatBloc: Получено событие WebSocket: ${event.type}');
+      
       if (event.type == WebSocketEventType.message && event.data != null) {
         add(NewWebSocketMessageEvent(event.data));
       } else if (event.type == WebSocketEventType.error) {
         add(ChatErrorEvent(event.error ?? 'Ошибка WebSocket'));
+      } else if (event.type == WebSocketEventType.connection) {
+        // Обрабатываем изменения состояния подключения
+        final connectionState = event.data?['state'];
+        print('🌐 ChatBloc: Изменение состояния соединения: $connectionState');
+        
+        if (connectionState != null) {
+          if (connectionState.toString().contains('connected')) {
+            // Если подключение установлено успешно
+            if (state is ChatLoaded) {
+              final chatLoaded = state as ChatLoaded;
+              emit(chatLoaded.copyWith(isConnectionActive: true));
+            } else {
+              emit(const ChatConnected());
+            }
+          } else if (connectionState.toString().contains('disconnected') || 
+                    connectionState.toString().contains('error')) {
+            // Если соединение разорвано или произошла ошибка
+            if (state is ChatLoaded) {
+              final chatLoaded = state as ChatLoaded;
+              emit(chatLoaded.copyWith(isConnectionActive: false));
+            } else {
+              emit(const ChatDisconnected(reason: 'Соединение разорвано'));
+            }
+          }
+        }
       }
     });
   }
@@ -138,6 +165,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     final currentState = state as ChatLoaded;
     
+    // Проверяем соединение и пытаемся подключиться, если нет соединения
+    if (!currentState.isConnectionActive) {
+      print('🌐 ChatBloc: Попытка переподключения перед отправкой сообщения...');
+      final success = await _chatRepository.connectToChat();
+      if (!success) {
+        emit(currentState.copyWith());
+        add(ChatErrorEvent('Невозможно отправить сообщение пока нет соединения'));
+        return;
+      }
+    }
+    
     // Временно отображаем состояние отправки
     emit(ChatSendingMessage(
       chatId: event.chatId,
@@ -145,6 +183,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ));
     
     try {
+      print('🌐 ChatBloc: Отправка сообщения...');
       final message = await _chatRepository.sendMessage(
         chatId: event.chatId,
         text: event.text,
@@ -155,19 +194,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       
       // Получаем обновленные сообщения и состояние чата
       if (message != null) {
+        print('🌐 ChatBloc: Сообщение успешно отправлено');
         final updatedMessages = [...currentState.messages, message];
         
         emit(currentState.copyWith(
           messages: updatedMessages,
           clearReplyToMessage: true,
           clearForwardFromMessage: true,
+          isConnectionActive: true, // Явно устанавливаем флаг соединения
         ));
       } else {
         // Возвращаем предыдущее состояние если сообщение не было отправлено
+        print('🌐 ChatBloc: Не удалось отправить сообщение');
         emit(currentState);
         add(ChatErrorEvent('Не удалось отправить сообщение'));
       }
     } catch (e) {
+      print('🌐 ChatBloc: Ошибка отправки сообщения: $e');
       emit(currentState);
       add(ChatErrorEvent('Ошибка отправки сообщения: $e'));
     }
@@ -250,21 +293,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ConnectToChatEvent event,
     Emitter<ChatState> emit,
   ) async {
-    if (state is ChatLoaded) {
-      emit(const ChatConnecting());
-      
-      final success = await _chatRepository.connectToChat();
-      if (success) {
-        // Возвращаем предыдущее состояние, но с активным соединением
-        if (state is ChatLoaded) {
-          final chatLoaded = state as ChatLoaded;
-          emit(chatLoaded.copyWith(isConnectionActive: true));
-        } else {
-          emit(const ChatConnected());
-        }
+    // Убираем проверку на ChatLoaded, т.к. подключение должно работать в любом состоянии
+    emit(const ChatConnecting());
+    
+    print('🌐 ChatBloc: Попытка подключения к WebSocket...');
+    final success = await _chatRepository.connectToChat();
+    if (success) {
+      print('🌐 ChatBloc: Подключение успешно!');
+      // Возвращаем предыдущее состояние, но с активным соединением
+      if (state is ChatLoaded) {
+        final chatLoaded = state as ChatLoaded;
+        emit(chatLoaded.copyWith(isConnectionActive: true));
       } else {
-        emit(const ChatDisconnected(reason: 'Не удалось подключиться к серверу'));
+        emit(const ChatConnected());
       }
+    } else {
+      print('🌐 ChatBloc: Ошибка подключения!');
+      emit(const ChatDisconnected(reason: 'Не удалось подключиться к серверу'));
     }
   }
   

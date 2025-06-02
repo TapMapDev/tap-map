@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math'; // Добавляем импорт для функции min
 
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:web_socket_channel/io.dart';
@@ -152,15 +153,18 @@ class ChatWebSocketService {
     _isManuallyDisconnected = false;
     
     try {
+      print('🌐 WebSocket: Начинаем подключение...');
       _updateConnectionState(ConnectionState.connecting);
       
       final jwtToken = await _prefsRepository.getAccessToken();
       
       if (jwtToken == null || jwtToken.isEmpty) {
+        print('🌐 WebSocket: Ошибка - JWT токен пустой или null');
         _handleConnectionError('JWT token is empty or null');
         return false;
       }
       
+      print('🌐 WebSocket: JWT токен получен, пытаемся подключиться...');
       _channel = IOWebSocketChannel.connect(
         Uri.parse('wss://api.tap-map.net/ws/notifications/'),
         headers: {
@@ -174,6 +178,7 @@ class ChatWebSocketService {
       _subscribeToEvents();
       
       _isConnected = true;
+      print('🌐 WebSocket: Соединение установлено успешно!');
       _updateConnectionState(ConnectionState.connected);
       
       // Запускаем таймер пинга для поддержания соединения
@@ -181,6 +186,7 @@ class ChatWebSocketService {
       
       return true;
     } catch (e) {
+      print('🌐 WebSocket: Ошибка подключения: $e');
       _handleConnectionError(e.toString());
       return false;
     }
@@ -298,15 +304,22 @@ class ChatWebSocketService {
 
   /// Подписка на события WebSocket
   void _subscribeToEvents() {
-    if (_broadcastStream == null) return;
+    if (_broadcastStream == null) {
+      print('🌐 WebSocket: _broadcastStream is null, невозможно подписаться на события');
+      return;
+    }
     
+    print('🌐 WebSocket: Подписываемся на события...');
     _broadcastStream!.listen(
       (data) {
         try {
+          print('🌐 WebSocket: Получено событие: ${data.toString().substring(0, min(100, data.toString().length))}...');
           if (data is String) {
             try {
               final jsonData = jsonDecode(data) as Map<String, dynamic>;
               final event = WebSocketEventData.fromJson(jsonData);
+              
+              print('🌐 WebSocket: Событие обработано как ${event.type}');
               
               // Сбрасываем ожидание ответа на пинг, если пришел pong
               if (event.type == WebSocketEventType.ping) {
@@ -316,26 +329,32 @@ class ChatWebSocketService {
               
               _eventsController.add(event);
             } catch (e) {
+              print('🌐 WebSocket: Ошибка разбора JSON: $e');
               _eventsController.add(
                 WebSocketEventData.error('Ошибка разбора JSON: $e')
               );
             }
           } else {
+            print('🌐 WebSocket: Получены не-строковые данные: ${data.runtimeType}');
             _eventsController.add(WebSocketEventData.unknown(data));
           }
         } catch (e) {
+          print('🌐 WebSocket: Ошибка обработки события: $e');
           _eventsController.add(
             WebSocketEventData.error('Ошибка обработки события: $e')
           );
         }
       },
       onError: (error) {
+        print('🌐 WebSocket: Ошибка соединения: $error');
         _eventsController.add(WebSocketEventData.error(error.toString()));
         _cleanupConnection();
         _attemptReconnect();
       },
       onDone: () {
+        print('🌐 WebSocket: Соединение закрыто');
         if (!_isManuallyDisconnected) {
+          print('🌐 WebSocket: Пытаемся переподключиться...');
           _cleanupConnection();
           _attemptReconnect();
         }
