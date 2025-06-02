@@ -12,6 +12,9 @@ abstract class ChatDataSource {
   /// Получить сообщения для определенного чата
   Future<List<MessageModel>> getMessagesForChat(int chatId);
   
+  /// Получить сообщение по ID
+  Future<MessageModel?> getMessageById(int chatId, int messageId);
+  
   /// Создать новый чат
   Future<int> createChat({required String type, required int participantId});
   
