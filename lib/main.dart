@@ -26,6 +26,7 @@ import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,13 +82,13 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) => ChatBloc(
               chatRepository: getIt.get<ChatRepository>(),
-              prefsRepository: getIt.get<SharedPrefsRepository>(),
+              chatWebSocketService: getIt.get<ChatWebSocketService>(),
             ),
           ),
           BlocProvider(
             create: (context) => MessageActionsBloc(
               chatRepository: getIt.get<ChatRepository>(),
-              webSocketService: getIt.get<ChatWebSocketService>(),
+              chatWebSocketService: getIt.get<ChatWebSocketService>(),
             ),
           ),
           BlocProvider(
