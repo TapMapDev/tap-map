@@ -191,7 +191,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       
       if (processedMessage != null) {
         // Проверяем, относится ли сообщение к текущему чату
-        if (processedMessage.chatId == currentState.chat.id) {
+        if (processedMessage.chatId == currentState.chat.chatId) {
           // Добавляем новое сообщение к списку
           final updatedMessages = [...currentState.messages, processedMessage];
           
@@ -212,7 +212,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final userId = messageData['userId'] as int?;
       final isTyping = messageData['isTyping'] as bool? ?? false;
       
-      if (chatId != null && userId != null && chatId == currentState.chat.id) {
+      if (chatId != null && userId != null && chatId == currentState.chat.chatId) {
         emit(currentState.copyWith(isTyping: isTyping));
       }
     } else if (messageData['type'] == 'read') {
@@ -220,7 +220,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final chatId = messageData['chatId'] as int?;
       final messageId = messageData['messageId'] as int?;
       
-      if (chatId != null && messageId != null && chatId == currentState.chat.id) {
+      if (chatId != null && messageId != null && chatId == currentState.chat.chatId) {
         // Обновляем статус прочтения сообщения
         final updatedMessages = currentState.messages.map((message) {
           if (message.id == messageId) {
