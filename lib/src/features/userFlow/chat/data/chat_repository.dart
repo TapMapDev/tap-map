@@ -231,12 +231,19 @@ class ChatRepository {
     required int messageId,
   }) async {
     try {
+      print('📱 ChatRepository: Закрепление сообщения $messageId в чате $chatId');
       // Закрепляем на сервере
       await _remoteChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
       await _localChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
+      
+      // Обновляем кэш закрепленных сообщений после закрепления
+      print('📱 ChatRepository: Обновление кэша закрепленных сообщений после закрепления');
+      await _updatePinnedMessagesAsync(chatId);
+      
       return true;
     } catch (e) {
+      print('❌ ChatRepository: Ошибка при закреплении сообщения: $e');
       return false;
     }
   }
@@ -247,12 +254,19 @@ class ChatRepository {
     required int messageId,
   }) async {
     try {
+      print('📱 ChatRepository: Открепление сообщения $messageId в чате $chatId');
       // Открепляем на сервере
       await _remoteChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
       await _localChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
+      
+      // Обновляем кэш закрепленных сообщений после открепления
+      print('📱 ChatRepository: Обновление кэша закрепленных сообщений после открепления');
+      await _updatePinnedMessagesAsync(chatId);
+      
       return true;
     } catch (e) {
+      print('❌ ChatRepository: Ошибка при откреплении сообщения: $e');
       return false;
     }
   }
@@ -266,32 +280,20 @@ class ChatRepository {
     }
   }
 
-  /// Получить закрепленное сообщение
+  /// Получить закрепленное сообщение чата
   Future<MessageModel?> getPinnedMessage(int chatId) async {
     try {
-      final pinnedMessageId = await getPinnedMessageId(chatId);
-      if (pinnedMessageId == null) {
+      print('📂 ChatRepository: Получение закрепленного сообщения для чата $chatId');
+      final pinnedMessages = await getPinnedMessages(chatId);
+      if (pinnedMessages.isNotEmpty) {
+        print('📂 ChatRepository: Закрепленное сообщение найдено для чата $chatId');
+        return pinnedMessages.first;
+      } else {
+        print('📂 ChatRepository: Закрепленное сообщение не найдено для чата $chatId');
         return null;
       }
-      
-      // Пытаемся найти сообщение в кэше
-      try {
-        final messages = await _localChatDataSource.getMessagesForChat(chatId);
-        final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
-        return pinnedMessage;
-      } catch (e) {
-        // Если в кэше нет, пробуем получить с сервера
-        final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
-        try {
-          final pinnedMessage = messages.firstWhere((m) => m.id == pinnedMessageId);
-          return pinnedMessage;
-        } catch (e) {
-          // Сообщение не найдено
-          return null;
-        }
-      }
     } catch (e) {
-      // Ошибка при получении ID или сообщения
+      print('❌ ChatRepository: Ошибка при получении закрепленного сообщения: $e');
       return null;
     }
   }
