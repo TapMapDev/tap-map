@@ -214,30 +214,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   // Отображение состояния загрузки
                   if (state is MessageActionLoading) {
                     // Можно показать индикатор загрузки для разных типов действий
-                    String actionText = '';
-                    switch (state.actionType) {
-                      case MessageActionType.delete:
-                        actionText = 'Удаление сообщения...';
-                        break;
-                      case MessageActionType.edit:
-                        actionText = 'Сохранение изменений...';
-                        break;
-                      case MessageActionType.pin:
-                        actionText = 'Закрепление сообщения...';
-                        break;
-                      case MessageActionType.unpin:
-                        actionText = 'Открепление сообщения...';
-                        break;
-                      case MessageActionType.loadPin:
-                        actionText = 'Загрузка закрепленного сообщения...';
-                        break;
-                    }
-                    // Опционально: показать индикатор загрузки
-                    if (actionText.isNotEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(actionText)),
-                      );
-                    }
                   }
                   // Обработка удаления сообщений
                   else if (state is MessageActionSuccess &&
@@ -254,11 +230,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         chatId: widget.chatId,
                         messages: updatedMessages,
                       ));
-
-                      // Показываем уведомление об успешном удалении
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Сообщение удалено')),
-                      );
                     }
                   }
                   // Обработка ошибки удаления
@@ -270,13 +241,6 @@ class _ChatScreenState extends State<ChatScreen> {
                               Text('Ошибка при удалении: ${state.message}')),
                     );
                   }
-                  // Обработка успеха закрепления
-                  else if (state is MessageActionSuccess &&
-                      state.actionType == MessageActionType.pin) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Сообщение закреплено')),
-                    );
-                  }
                   // Обработка ошибки закрепления
                   else if (state is MessageActionFailure &&
                       state.actionType == MessageActionType.pin) {
@@ -284,13 +248,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       SnackBar(
                           content:
                               Text('Ошибка при закреплении: ${state.message}')),
-                    );
-                  }
-                  // Обработка успеха открепления
-                  else if (state is MessageActionSuccess &&
-                      state.actionType == MessageActionType.unpin) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Сообщение откреплено')),
                     );
                   }
                   // Обработка ошибки открепления
@@ -352,11 +309,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         messages: updatedMessages,
                       ));
                     }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Сообщение отредактировано')),
-                    );
                   }
                   // Обработка ошибки редактирования
                   else if (state is MessageActionFailure &&
