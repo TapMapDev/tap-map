@@ -16,34 +16,51 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<List<ChatModel>> getChats() async {
+    print('📂 LocalChatDataSource: Получение всех чатов из локальной базы данных');
     final chats = await _database.getAllChats();
+    print('📂 LocalChatDataSource: Получено ${chats.length} чатов из локальной базы данных');
     return chats.map(_mapChatToModel).toList();
   }
   
   @override
   Stream<List<ChatModel>> watchChats() {
+    print('📂 LocalChatDataSource: Настройка наблюдения за списком чатов');
     return _database.watchAllChats().map(
-      (chats) => chats.map(_mapChatToModel).toList(),
+      (chats) {
+        print('📂 LocalChatDataSource: Обновление списка чатов, получено ${chats.length} чатов');
+        return chats.map(_mapChatToModel).toList();
+      },
     );
   }
   
   @override
   Future<ChatModel?> getChatById(int chatId) async {
+    print('📂 LocalChatDataSource: Поиск чата с ID $chatId в локальной базе данных');
     final chat = await _database.getChatById(chatId);
-    if (chat == null) return null;
+    if (chat == null) {
+      print('📂 LocalChatDataSource: Чат с ID $chatId не найден в локальной базе данных');
+      return null;
+    }
+    print('📂 LocalChatDataSource: Чат с ID $chatId найден в локальной базе данных');
     return _mapChatToModel(chat);
   }
   
   @override
   Future<List<MessageModel>> getMessagesForChat(int chatId) async {
+    print('📂 LocalChatDataSource: Получение сообщений для чата $chatId из локальной базы данных');
     final messages = await _database.getMessagesForChat(chatId);
+    print('📂 LocalChatDataSource: Получено ${messages.length} сообщений для чата $chatId из локальной базы данных');
     return messages.map(_mapMessageToModel).toList();
   }
   
   @override
   Stream<List<MessageModel>> watchMessages(int chatId) {
+    print('📂 LocalChatDataSource: Настройка наблюдения за сообщениями чата $chatId');
     return _database.watchMessagesForChat(chatId).map(
-      (messages) => messages.map(_mapMessageToModel).toList(),
+      (messages) {
+        print('📂 LocalChatDataSource: Обновление сообщений чата $chatId, получено ${messages.length} сообщений');
+        return messages.map(_mapMessageToModel).toList();
+      },
     );
   }
   
@@ -55,7 +72,9 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<void> markChatAsRead(int chatId) async {
+    print('📂 LocalChatDataSource: Отметка чата $chatId как прочитанного в локальной базе данных');
     await _database.markMessagesAsRead(chatId);
+    print('📂 LocalChatDataSource: Чат $chatId отмечен как прочитанный');
   }
   
   @override
@@ -72,11 +91,14 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<void> deleteMessage(int chatId, int messageId, String action) async {
+    print('📂 LocalChatDataSource: Удаление сообщения с ID $messageId из чата $chatId');
     await _database.deleteMessage(messageId);
+    print('📂 LocalChatDataSource: Сообщение с ID $messageId удалено');
   }
   
   @override
   Future<void> editMessage(int chatId, int messageId, String text) async {
+    print('📂 LocalChatDataSource: Редактирование сообщения с ID $messageId из чата $chatId');
     final message = await _database.getMessageById(messageId);
     if (message != null) {
       await _database.insertMessage(
@@ -97,11 +119,13 @@ class LocalChatDataSource implements ChatDataSource {
           isMe: Value(message.isMe),
         ),
       );
+      print('📂 LocalChatDataSource: Сообщение с ID $messageId отредактировано');
     }
   }
   
   @override
   Future<void> pinMessage({required int chatId, required int messageId}) async {
+    print('📂 LocalChatDataSource: Закрепление сообщения с ID $messageId в чате $chatId');
     // Обновляем флаг в сообщении
     final message = await _database.getMessageById(messageId);
     if (message != null) {
@@ -123,6 +147,7 @@ class LocalChatDataSource implements ChatDataSource {
           isMe: Value(message.isMe),
         ),
       );
+      print('📂 LocalChatDataSource: Сообщение с ID $messageId закреплено');
     }
     
     // Обновляем ID закрепленного сообщения в чате
@@ -140,11 +165,13 @@ class LocalChatDataSource implements ChatDataSource {
           updatedAt: Value(chat.updatedAt),
         ),
       );
+      print('📂 LocalChatDataSource: ID закрепленного сообщения обновлен в чате $chatId');
     }
   }
   
   @override
   Future<void> unpinMessage({required int chatId, required int messageId}) async {
+    print('📂 LocalChatDataSource: Отмена закрепления сообщения с ID $messageId в чате $chatId');
     // Обновляем флаг в сообщении
     final message = await _database.getMessageById(messageId);
     if (message != null) {
@@ -166,6 +193,7 @@ class LocalChatDataSource implements ChatDataSource {
           isMe: Value(message.isMe),
         ),
       );
+      print('📂 LocalChatDataSource: Сообщение с ID $messageId отменено закрепление');
     }
     
     // Обновляем ID закрепленного сообщения в чате
@@ -183,11 +211,13 @@ class LocalChatDataSource implements ChatDataSource {
           updatedAt: Value(chat.updatedAt),
         ),
       );
+      print('📂 LocalChatDataSource: ID закрепленного сообщения обновлен в чате $chatId');
     }
   }
   
   @override
   Future<int?> getPinnedMessageId(int chatId) async {
+    print('📂 LocalChatDataSource: Получение ID закрепленного сообщения в чате $chatId');
     final chat = await _database.getChatById(chatId);
     return chat?.pinnedMessageId;
   }
@@ -200,101 +230,159 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<List<MessageModel>> getCachedMessagesForChat(int chatId) async {
-    return getMessagesForChat(chatId);
+    print('📂 LocalChatDataSource: Получение кэшированных сообщений для чата $chatId');
+    final messages = await getMessagesForChat(chatId);
+    print('📂 LocalChatDataSource: Возвращено ${messages.length} кэшированных сообщений для чата $chatId');
+    return messages;
   }
   
   @override
   Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
+    print('📂 LocalChatDataSource: Кэширование ${messages.length} сообщений для чата $chatId');
+    int successCount = 0;
+    
     for (final message in messages) {
+      try {
+        await _database.insertMessage(
+          MessagesCompanion(
+            messageId: Value(message.id),
+            chatId: Value(chatId),
+            messageText: Value(message.text), // Обновлено с text на messageText
+            senderUsername: Value(message.senderUsername),
+            senderUserId: Value(message.senderUserId),
+            createdAt: Value(message.createdAt),
+            editedAt: Value(message.editedAt),
+            replyToId: Value(message.replyToId),
+            forwardedFromId: Value(message.forwardedFromId),
+            attachmentsJson: Value(_encodeAttachments(message.attachments)), // Обновлено с attachments на attachmentsJson
+            messageType: Value(message.type.toString().split('.').last), // Обновлено с type на messageType
+            isRead: Value(message.isRead),
+          ),
+        );
+        successCount++;
+      } catch (e) {
+        print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения ${message.id}: $e');
+      }
+    }
+    
+    print('📂 LocalChatDataSource: Успешно кэшировано $successCount из ${messages.length} сообщений для чата $chatId');
+  }
+  
+  @override
+  Future<void> cacheMessage(int chatId, MessageModel message) async {
+    print('📂 LocalChatDataSource: Кэширование сообщения с ID ${message.id} для чата $chatId');
+    try {
       await _database.insertMessage(
         MessagesCompanion(
           messageId: Value(message.id),
           chatId: Value(chatId),
-          messageText: Value(message.text), // Обновлено с text на messageText
+          messageText: Value(message.text),
           senderUsername: Value(message.senderUsername),
           senderUserId: Value(message.senderUserId),
           createdAt: Value(message.createdAt),
           editedAt: Value(message.editedAt),
           replyToId: Value(message.replyToId),
           forwardedFromId: Value(message.forwardedFromId),
-          attachmentsJson: Value(_encodeAttachments(message.attachments)), // Обновлено с attachments на attachmentsJson
-          messageType: Value(message.type.toString().split('.').last), // Обновлено с type на messageType
+          attachmentsJson: Value(_encodeAttachments(message.attachments)),
+          messageType: Value(message.type.toString().split('.').last),
           isRead: Value(message.isRead),
         ),
       );
+      print('📂 LocalChatDataSource: Сообщение с ID ${message.id} успешно кэшировано');
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения ${message.id}: $e');
     }
-  }
-  
-  @override
-  Future<void> cacheMessage(int chatId, MessageModel message) async {
-    await _database.insertMessage(
-      MessagesCompanion(
-        messageId: Value(message.id),
-        chatId: Value(chatId),
-        messageText: Value(message.text),
-        senderUsername: Value(message.senderUsername),
-        senderUserId: Value(message.senderUserId),
-        createdAt: Value(message.createdAt),
-        editedAt: Value(message.editedAt),
-        replyToId: Value(message.replyToId),
-        forwardedFromId: Value(message.forwardedFromId),
-        attachmentsJson: Value(_encodeAttachments(message.attachments)),
-        messageType: Value(message.type.toString().split('.').last),
-        isRead: Value(message.isRead),
-      ),
-    );
   }
 
   @override
   Future<void> cacheChat(ChatModel chat) async {
-    await _database.insertChat(
-      ChatsCompanion(
-        chatId: Value(chat.chatId),
-        chatName: Value(chat.chatName),
-        lastMessageText: Value(chat.lastMessageText),
-        lastMessageSenderUsername: Value(chat.lastMessageSenderUsername),
-        lastMessageCreatedAt: Value(chat.lastMessageCreatedAt),
-        unreadCount: Value(chat.unreadCount),
-        pinnedMessageId: Value(chat.pinnedMessageId),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
+    print('📂 LocalChatDataSource: Кэширование чата с ID ${chat.chatId}');
+    try {
+      await _database.insertChat(
+        ChatsCompanion(
+          chatId: Value(chat.chatId),
+          chatName: Value(chat.chatName),
+          lastMessageText: Value(chat.lastMessageText),
+          lastMessageSenderUsername: Value(chat.lastMessageSenderUsername),
+          lastMessageCreatedAt: Value(chat.lastMessageCreatedAt),
+          unreadCount: Value(chat.unreadCount),
+          pinnedMessageId: Value(chat.pinnedMessageId),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      print('📂 LocalChatDataSource: Чат с ID ${chat.chatId} успешно кэширован');
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при кэшировании чата ${chat.chatId}: $e');
+    }
   }
 
   @override
   Future<void> cacheChats(List<ChatModel> chats) async {
+    print('📂 LocalChatDataSource: Кэширование ${chats.length} чатов');
+    int successCount = 0;
+    
     for (final chat in chats) {
-      await cacheChat(chat);
+      try {
+        await cacheChat(chat);
+        successCount++;
+      } catch (e) {
+        print('❌ LocalChatDataSource: Ошибка при кэшировании чата ${chat.chatId}: $e');
+      }
     }
+    
+    print('📂 LocalChatDataSource: Успешно кэшировано $successCount из ${chats.length} чатов');
   }
   
   @override
   Future<void> cacheMediaFile(String url, String localPath, String contentType) async {
-    final attachments = await (_database.messageAttachments.select()
-      ..where((a) => a.url.equals(url)))
-      .get();
-      
-    if (attachments.isNotEmpty) {
-      for (final attachment in attachments) {
-        await _database.updateAttachmentLocalPath(attachment.id, localPath);
+    print('📂 LocalChatDataSource: Кэширование медиафайла с URL $url в $localPath');
+    
+    try {
+      final attachments = await (_database.messageAttachments.select()
+        ..where((a) => a.url.equals(url)))
+        .get();
+        
+      if (attachments.isNotEmpty) {
+        print('📂 LocalChatDataSource: Найдено ${attachments.length} вложений с URL $url');
+        for (final attachment in attachments) {
+          await _database.updateAttachmentLocalPath(attachment.id, localPath);
+        }
+        print('📂 LocalChatDataSource: Локальный путь обновлен для всех вложений');
+      } else {
+        print('📂 LocalChatDataSource: Вложения с URL $url не найдены в базе данных');
       }
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при кэшировании медиафайла: $e');
     }
   }
   
   @override
   Future<String?> getMediaFilePath(String url) async {
-    final attachments = await (_database.messageAttachments.select()
-      ..where((a) => a.url.equals(url)))
-      .get();
-      
-    if (attachments.isNotEmpty && attachments.first.localPath != null) {
-      final file = File(attachments.first.localPath!);
-      if (await file.exists()) {
-        return attachments.first.localPath;
-      }
-    }
+    print('📂 LocalChatDataSource: Поиск локального пути для медиафайла с URL $url');
     
-    return null;
+    try {
+      final attachments = await (_database.messageAttachments.select()
+        ..where((a) => a.url.equals(url)))
+        .get();
+        
+      if (attachments.isNotEmpty && attachments.first.localPath != null) {
+        final filePath = attachments.first.localPath!;
+        final file = File(filePath);
+        if (await file.exists()) {
+          print('📂 LocalChatDataSource: Медиафайл найден локально: $filePath');
+          return filePath;
+        } else {
+          print('📂 LocalChatDataSource: Локальный путь найден, но файл не существует: $filePath');
+        }
+      } else {
+        print('📂 LocalChatDataSource: Локальный путь для URL $url не найден');
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при поиске локального пути медиафайла: $e');
+      return null;
+    }
   }
   
   // Вспомогательные методы для конвертации между моделями базы данных и бизнес-моделями
