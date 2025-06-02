@@ -46,6 +46,7 @@ class WebSocketEventData {
 
     switch (eventType) {
       case 'message':
+      case 'new_message':
         type = WebSocketEventType.message;
         break;
       case 'typing':

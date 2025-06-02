@@ -62,7 +62,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _replyBloc = context.read<ReplyBloc>();
     print('📱 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
     _initChat();
-    _chatBloc.add(const ConnectToChatEvent());
     _chatBloc.add(FetchChatEvent(widget.chatId));
   }
 
