@@ -53,23 +53,38 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    print(
-        '🚀 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
+    print('📱 ChatScreen: initState для чата ${widget.chatId}');
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
+    print('📱 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
     _initChat();
     _chatBloc.add(const ConnectToChatEvent());
     _chatBloc.add(FetchChatEvent(widget.chatId));
   }
 
   Future<void> _initChat() async {
+    print('📱 ChatScreen: Начинаем инициализацию чата ${widget.chatId}');
     await _loadCurrentUser();
+    // Проверяем состояние соединения WebSocket
+    final isConnected = _chatBloc.webSocketService.isConnected();
+    print('📱 ChatScreen: Состояние WebSocket перед загрузкой закрепленного сообщения: ${isConnected ? "подключено" : "отключено"}');
     // Временно отключаем загрузку закрепленного сообщения для тестирования
     // _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
+    // Добавляем отложенную проверку состояния соединения через 3 секунды
+    Future.delayed(const Duration(seconds: 3), () {
+      final isConnectedAfterDelay = _chatBloc.webSocketService.isConnected();
+      print('📱 ChatScreen: Состояние WebSocket через 3 секунды: ${isConnectedAfterDelay ? "подключено" : "отключено"}');
+      // Состояние блока
+      final currentState = _chatBloc.state;
+      print('📱 ChatScreen: Текущее состояние ChatBloc: $currentState');
+      // Получаем состояние подключения из сервиса
+      final connectionState = _chatBloc.webSocketService.connectionState;
+      print('📱 ChatScreen: Текущее connectionState: $connectionState');
+    });
   }
 
   Future<void> _loadCurrentUser() async {
@@ -103,7 +118,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messageController.text.trim().isEmpty) {
       return;
     }
-    
     // Проверяем состояние соединения перед отправкой
     final connectionState = _connectionBloc.state.state;
     if (connectionState != chat.ConnectionState.connected) {

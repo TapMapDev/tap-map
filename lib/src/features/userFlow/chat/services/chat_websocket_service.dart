@@ -158,20 +158,33 @@ class ChatWebSocketService {
       
       final jwtToken = await _prefsRepository.getAccessToken();
       
+      // Выводим первые и последние 10 символов токена для отладки
+      if (jwtToken != null && jwtToken.isNotEmpty) {
+        final visibleToken = jwtToken.length > 20 
+            ? '${jwtToken.substring(0, 10)}...${jwtToken.substring(jwtToken.length - 10)}'
+            : jwtToken;
+        print('🌐 WebSocket: JWT токен получен: $visibleToken');
+      } else {
+        print('🌐 WebSocket: ОШИБКА - JWT токен пустой или null');
+      }
+      
       if (jwtToken == null || jwtToken.isEmpty) {
         print('🌐 WebSocket: Ошибка - JWT токен пустой или null');
         _handleConnectionError('JWT token is empty or null');
         return false;
       }
       
-      print('🌐 WebSocket: JWT токен получен, пытаемся подключиться...');
+      final wsUrl = 'wss://api.tap-map.net/ws/notifications/';
+      print('🌐 WebSocket: Пытаемся подключиться к $wsUrl');
+      
       _channel = IOWebSocketChannel.connect(
-        Uri.parse('wss://api.tap-map.net/ws/notifications/'),
+        Uri.parse(wsUrl),
         headers: {
           'Authorization': 'Bearer $jwtToken',
         },
       );
       
+      print('🌐 WebSocket: Канал создан, получаем broadcast stream...');
       _broadcastStream = _channel!.stream.asBroadcastStream();
       
       // Подписываемся на события
@@ -186,7 +199,7 @@ class ChatWebSocketService {
       
       return true;
     } catch (e) {
-      print('🌐 WebSocket: Ошибка подключения: $e');
+      print('🌐 WebSocket: КРИТИЧЕСКАЯ ОШИБКА подключения: $e');
       _handleConnectionError(e.toString());
       return false;
     }
@@ -269,6 +282,7 @@ class ChatWebSocketService {
     _stopPingTimeoutTimer();
     _pingTimeoutTimer = Timer(_pingTimeout, () {
       if (_waitingForPingResponse) {
+        print('🌐 WebSocket: ТАЙМ-АУТ ПИНГА! Не получили ответ за $_pingTimeout сек');
         _waitingForPingResponse = false;
         _cleanupConnection();
         _attemptReconnect();
@@ -286,18 +300,25 @@ class ChatWebSocketService {
 
   /// Отправка пинга для поддержания соединения
   void _sendPing() {
-    if (!_isConnected || _channel == null) return;
+    if (!_isConnected || _channel == null) {
+      print('🌐 WebSocket: Не отправляем пинг, т.к. соединение неактивно');
+      return;
+    }
     
     try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final jsonMessage = jsonEncode({
         'type': 'ping',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': timestamp,
       });
       
+      print('🌐 WebSocket: Отправляем пинг с timestamp=$timestamp');
       _channel!.sink.add(jsonMessage);
       _waitingForPingResponse = true;
+      print('🌐 WebSocket: Запускаем таймер ожидания ответа на пинг ($_pingTimeout сек)');
       _startPingTimeoutTimer();
     } catch (e) {
+      print('🌐 WebSocket: Ошибка отправки пинга: $e');
       _handleConnectionError('Ошибка отправки пинга: $e');
     }
   }
@@ -313,7 +334,11 @@ class ChatWebSocketService {
     _broadcastStream!.listen(
       (data) {
         try {
-          print('🌐 WebSocket: Получено событие: ${data.toString().substring(0, min(100, data.toString().length))}...');
+          final shortData = data.toString().length > 100 
+              ? '${data.toString().substring(0, min(100, data.toString().length))}...' 
+              : data.toString();
+          print('🌐 WebSocket: Получено событие: $shortData');
+          
           if (data is String) {
             try {
               final jsonData = jsonDecode(data) as Map<String, dynamic>;
@@ -323,13 +348,14 @@ class ChatWebSocketService {
               
               // Сбрасываем ожидание ответа на пинг, если пришел pong
               if (event.type == WebSocketEventType.ping) {
+                print('🌐 WebSocket: Получен ответ на пинг (pong)');
                 _waitingForPingResponse = false;
                 _stopPingTimeoutTimer();
               }
               
               _eventsController.add(event);
             } catch (e) {
-              print('🌐 WebSocket: Ошибка разбора JSON: $e');
+              print('🌐 WebSocket: Ошибка разбора JSON: $e, данные: ${data.toString()}');
               _eventsController.add(
                 WebSocketEventData.error('Ошибка разбора JSON: $e')
               );
@@ -346,7 +372,7 @@ class ChatWebSocketService {
         }
       },
       onError: (error) {
-        print('🌐 WebSocket: Ошибка соединения: $error');
+        print('🌐 WebSocket: КРИТИЧЕСКАЯ ОШИБКА соединения: $error');
         _eventsController.add(WebSocketEventData.error(error.toString()));
         _cleanupConnection();
         _attemptReconnect();
@@ -354,7 +380,7 @@ class ChatWebSocketService {
       onDone: () {
         print('🌐 WebSocket: Соединение закрыто');
         if (!_isManuallyDisconnected) {
-          print('🌐 WebSocket: Пытаемся переподключиться...');
+          print('🌐 WebSocket: Пытаемся переподключиться после закрытия...');
           _cleanupConnection();
           _attemptReconnect();
         }
@@ -364,11 +390,13 @@ class ChatWebSocketService {
 
   /// Обработка ошибки соединения
   void _handleConnectionError(String error) {
+    print('🌐 WebSocket: Обрабатываем ошибку соединения: $error');
     _cleanupConnection();
     _updateConnectionState(ConnectionState.error);
     _eventsController.add(WebSocketEventData.error(error));
     
     if (!_isManuallyDisconnected) {
+      print('🌐 WebSocket: Запланировано переподключение через $_reconnectDelay');
       _reconnectTimer = Timer(_reconnectDelay, _attemptReconnect);
     }
   }
