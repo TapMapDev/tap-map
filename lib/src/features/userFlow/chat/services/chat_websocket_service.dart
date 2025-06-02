@@ -8,9 +8,21 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Типы событий WebSocket
 enum WebSocketEventType {
-  message,
+  createMessage,
+  editMessage,
+  deleteMessage,
   typing,
+  updateLocation,
   readMessage,
+  addReaction,
+  removeReaction,
+  muteNotifications,
+  unmuteNotifications,
+  pinChat,
+  unpinChat,
+  pinMessage,
+  unpinMessage,
+  message,
   userStatus,
   error,
   connection,
@@ -45,15 +57,51 @@ class WebSocketEventData {
     WebSocketEventType type;
 
     switch (eventType) {
-      case 'message':
-      case 'new_message':
-        type = WebSocketEventType.message;
+      case 'create_message':
+        type = WebSocketEventType.createMessage;
+        break;
+      case 'edit_message':
+        type = WebSocketEventType.editMessage;
+        break;
+      case 'delete_message':
+        type = WebSocketEventType.deleteMessage;
         break;
       case 'typing':
         type = WebSocketEventType.typing;
         break;
+      case 'update_location':
+        type = WebSocketEventType.updateLocation;
+        break;
       case 'read_message':
         type = WebSocketEventType.readMessage;
+        break;
+      case 'add_reaction':
+        type = WebSocketEventType.addReaction;
+        break;
+      case 'remove_reaction':
+        type = WebSocketEventType.removeReaction;
+        break;
+      case 'mute_notifications':
+        type = WebSocketEventType.muteNotifications;
+        break;
+      case 'unmute_notifications':
+        type = WebSocketEventType.unmuteNotifications;
+        break;
+      case 'pin_chat':
+        type = WebSocketEventType.pinChat;
+        break;
+      case 'unpin_chat':
+        type = WebSocketEventType.unpinChat;
+        break;
+      case 'pin_message':
+        type = WebSocketEventType.pinMessage;
+        break;
+      case 'unpin_message':
+        type = WebSocketEventType.unpinMessage;
+        break;
+      case 'message':
+      case 'new_message':
+        type = WebSocketEventType.message;
         break;
       case 'user_status':
         type = WebSocketEventType.userStatus;
@@ -494,6 +542,173 @@ class ChatWebSocketService {
         'edited_at': DateTime.now().toIso8601String(),
       });
       
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Удаление сообщения
+  void deleteMessage({
+    required int chatId,
+    required int messageId,
+    required String action,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'delete_message',
+        'chat_id': chatId,
+        'message_id': messageId,
+        'action': action,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Добавление реакции
+  void addReaction({
+    required int chatId,
+    required int messageId,
+    required String emoji,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'add_reaction',
+        'chat_id': chatId,
+        'message_id': messageId,
+        'emoji': emoji,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Удаление реакции
+  void removeReaction({
+    required int chatId,
+    required int messageId,
+    required String emoji,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'remove_reaction',
+        'chat_id': chatId,
+        'message_id': messageId,
+        'emoji': emoji,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Обновление геолокации пользователя
+  void updateLocation({
+    required double lat,
+    required double lon,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'update_location',
+        'lat': lat,
+        'lon': lon,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Выключение уведомлений
+  void muteNotifications({
+    required int chatId,
+    int? hours,
+    DateTime? untilDateTime,
+    bool permanently = false,
+  }) {
+    _reconnectAndExecute(() {
+      final Map<String, dynamic> payload = {
+        'type': 'mute_notifications',
+        'chat_id': chatId,
+      };
+
+      if (hours != null) {
+        payload['hours'] = hours;
+      } else if (untilDateTime != null) {
+        payload['until_date'] =
+            untilDateTime.toIso8601String().split('T').first;
+        payload['until_time'] =
+            untilDateTime.toIso8601String().split('T').last.substring(0, 5);
+      } else if (permanently) {
+        payload['permanently'] = true;
+      }
+
+      final jsonMessage = jsonEncode(payload);
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Включение уведомлений
+  void unmuteNotifications({required int chatId}) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'unmute_notifications',
+        'chat_id': chatId,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Закрепление чата
+  void pinChat({required int chatId}) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'pin_chat',
+        'chat_id': chatId,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Открепление чата
+  void unpinChat({required int chatId}) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'unpin_chat',
+        'chat_id': chatId,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Закрепление сообщения
+  void pinMessage({
+    required int chatId,
+    required int messageId,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'pin_message',
+        'chat_id': chatId,
+        'message_id': messageId,
+      });
+
+      _channel!.sink.add(jsonMessage);
+    });
+  }
+
+  /// Открепление сообщения
+  void unpinMessage({
+    required int chatId,
+    required int messageId,
+  }) {
+    _reconnectAndExecute(() {
+      final jsonMessage = jsonEncode({
+        'type': 'unpin_message',
+        'chat_id': chatId,
+        'message_id': messageId,
+      });
+
       _channel!.sink.add(jsonMessage);
     });
   }
