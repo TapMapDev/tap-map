@@ -244,6 +244,29 @@ class LocalChatDataSource implements ChatDataSource {
       ),
     );
   }
+
+  @override
+  Future<void> cacheChat(ChatModel chat) async {
+    await _database.insertChat(
+      ChatsCompanion(
+        chatId: Value(chat.chatId),
+        chatName: Value(chat.chatName),
+        lastMessageText: Value(chat.lastMessageText),
+        lastMessageSenderUsername: Value(chat.lastMessageSenderUsername),
+        lastMessageCreatedAt: Value(chat.lastMessageCreatedAt),
+        unreadCount: Value(chat.unreadCount),
+        pinnedMessageId: Value(chat.pinnedMessageId),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
+  Future<void> cacheChats(List<ChatModel> chats) async {
+    for (final chat in chats) {
+      await cacheChat(chat);
+    }
+  }
   
   @override
   Future<void> cacheMediaFile(String url, String localPath, String contentType) async {
