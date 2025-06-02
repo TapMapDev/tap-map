@@ -137,30 +137,46 @@ class ChatRepository {
   }
   
   /// Удалить сообщение
-  Future<void> deleteMessage(int chatId, int messageId, String action) async {
+  Future<bool> deleteMessage({
+    required int chatId, 
+    required int messageId, 
+    required bool deleteForAll
+  }) async {
     try {
+      final action = deleteForAll ? 'all' : 'for_me';
       // Удаляем на сервере
       await _remoteChatDataSource.deleteMessage(chatId, messageId, action);
       // И в локальном кэше
       await _localChatDataSource.deleteMessage(chatId, messageId, action);
+      return true;
     } catch (e) {
       // Если только локально (для себя)
-      if (action == 'for_me') {
-        await _localChatDataSource.deleteMessage(chatId, messageId, action);
+      if (!deleteForAll) {
+        try {
+          await _localChatDataSource.deleteMessage(chatId, messageId, 'for_me');
+          return true;
+        } catch (_) {
+          return false;
+        }
       }
-      rethrow;
+      return false;
     }
   }
   
   /// Редактировать сообщение
-  Future<void> editMessage(int chatId, int messageId, String text) async {
+  Future<MessageModel?> editMessage({
+    required int chatId, 
+    required int messageId, 
+    required String text
+  }) async {
     try {
       // Редактируем на сервере
-      await _remoteChatDataSource.editMessage(chatId, messageId, text);
+      final editedMessage = await _remoteChatDataSource.editMessage(chatId, messageId, text);
       // И в локальном кэше
       await _localChatDataSource.editMessage(chatId, messageId, text);
+      return editedMessage;
     } catch (e) {
-      rethrow;
+      return null;
     }
   }
   
@@ -180,7 +196,7 @@ class ChatRepository {
   }
   
   /// Открепить сообщение
-  Future<void> unpinMessage({
+  Future<bool> unpinMessage({
     required int chatId,
     required int messageId,
   }) async {
@@ -189,8 +205,9 @@ class ChatRepository {
       await _remoteChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
       await _localChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
   
@@ -234,9 +251,14 @@ class ChatRepository {
   }
   
   /// Загрузить файл
-  Future<String> uploadFile(String filePath) async {
+  Future<String> uploadFile({
+    required File file,
+    Function(double)? onProgress,
+  }) async {
     // Загрузка файла может происходить только через удаленный источник
-    return await _remoteChatDataSource.uploadFile(filePath);
+    return await _remoteChatDataSource.uploadFile(
+      file.path
+    );
   }
   
   /// Отправить сообщение
