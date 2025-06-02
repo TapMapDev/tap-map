@@ -9,8 +9,8 @@ import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_state.dart';
@@ -54,36 +54,47 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     print('📱 ChatScreen: initState для чата ${widget.chatId}');
+    
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
+    
     print('📱 ChatScreen: Initializing with chatId: ${widget.chatId}, chatName: ${widget.chatName}');
+    
     _initChat();
-    _chatBloc.add(const ConnectToChatEvent());
-    _chatBloc.add(FetchChatEvent(widget.chatId));
+    
+    // Добавляем небольшую задержку перед отправкой событий, чтобы дать время на инициализацию
+    Future.delayed(const Duration(milliseconds: 500), () {
+      print('📱 ChatScreen: Отправляем события после задержки для чата ${widget.chatId}');
+      // Сначала запускаем подключение через ConnectionBloc
+      context.read<ConnectionBloc>().add(const ConnectEvent());
+      // Потом загружаем данные чата
+      _chatBloc.add(FetchChatEvent(widget.chatId));
+    });
   }
 
   Future<void> _initChat() async {
-    print('📱 ChatScreen: Начинаем инициализацию чата ${widget.chatId}');
     await _loadCurrentUser();
-    // Проверяем состояние соединения WebSocket
-    final isConnected = _chatBloc.webSocketService.isConnected();
-    print('📱 ChatScreen: Состояние WebSocket перед загрузкой закрепленного сообщения: ${isConnected ? "подключено" : "отключено"}');
-    // Временно отключаем загрузку закрепленного сообщения для тестирования
-    // _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
-    // Добавляем отложенную проверку состояния соединения через 3 секунды
-    Future.delayed(const Duration(seconds: 3), () {
-      final isConnectedAfterDelay = _chatBloc.webSocketService.isConnected();
-      print('📱 ChatScreen: Состояние WebSocket через 3 секунды: ${isConnectedAfterDelay ? "подключено" : "отключено"}');
-      // Состояние блока
-      final currentState = _chatBloc.state;
-      print('📱 ChatScreen: Текущее состояние ChatBloc: $currentState');
-      // Получаем состояние подключения из сервиса
-      final connectionState = _chatBloc.webSocketService.connectionState;
-      print('📱 ChatScreen: Текущее connectionState: $connectionState');
+
+    print('📱 ChatScreen: Проверяем состояние соединения WebSocket...');
+    // Используем ConnectionBloc для проверки состояния соединения
+    final connectionState = context.read<ConnectionBloc>().state;
+    final isConnected = connectionState.state == chat.ConnectionState.connected;
+    print('📱 ChatScreen: Текущее состояние WebSocket: ${isConnected ? 'подключено' : 'не подключено'}');
+    print('📱 ChatScreen: Текущее состояние ConnectionBloc: ${connectionState.state}');
+    
+    // Восстанавливаем загрузку закрепленного сообщения с небольшой задержкой
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      print('📱 ChatScreen: Загружаем закрепленное сообщение для чата ${widget.chatId}');
+      _messageActionsBloc.add(LoadPinnedMessageAction(widget.chatId));
+      
+      // Повторно проверяем состояние соединения после задержки
+      final connectionStateAfterDelay = context.read<ConnectionBloc>().state;
+      final isConnectedAfterDelay = connectionStateAfterDelay.state == chat.ConnectionState.connected;
+      print('📱 ChatScreen: Состояние WebSocket после задержки: ${isConnectedAfterDelay ? 'подключено' : 'не подключено'}');
     });
   }
 
@@ -187,8 +198,12 @@ class _ChatScreenState extends State<ChatScreen> {
         return 'устанавливается соединение';
       case chat.ConnectionState.disconnected:
         return 'нет соединения';
-      case chat.ConnectionState.connected:
-        return 'соединение установлено';
+      case chat.ConnectionState.reconnecting:
+        return 'восстанавливается соединение';
+      case chat.ConnectionState.waitingForNetwork:
+        return 'ожидание сети';
+      case chat.ConnectionState.error:
+        return 'ошибка соединения';
       default:
         return 'неизвестное состояние';
     }
@@ -262,10 +277,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   } else if (state.state == chat.ConnectionState.error) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 5),
-                      ),
+                          content: Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 5),
+                        ),
                     );
                   } else if (state.state == chat.ConnectionState.connected) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -427,6 +442,23 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
+                    BlocBuilder<ConnectionBloc, ConnectionBlocState>(
+                      builder: (context, state) {
+                        if (state.state != chat.ConnectionState.connected) {
+                          return Container(
+                            color: _getConnectionStatusColor(state.state),
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            width: double.infinity,
+                            child: Text(
+                              _getConnectionMessage(state.state),
+                              style: const TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                     BlocBuilder<MessageActionsBloc, MessageActionState>(
                       builder: (context, state) {
                         // Если есть закрепленное сообщение, показываем его
@@ -734,6 +766,21 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
+  }
+
+  Color _getConnectionStatusColor(chat.ConnectionState state) {
+    switch (state) {
+      case chat.ConnectionState.connecting:
+      case chat.ConnectionState.reconnecting:
+        return Colors.orange;
+      case chat.ConnectionState.disconnected:
+      case chat.ConnectionState.error:
+        return Colors.red;
+      case chat.ConnectionState.waitingForNetwork:
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _showMessageActions(MessageModel message) {
