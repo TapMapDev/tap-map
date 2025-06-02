@@ -8,9 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_state.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_bloc.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_event.dart';
-import 'package:tap_map/src/features/userFlow/chat/bloc/connection_bloc/connection_state.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_event.dart';
 import 'package:tap_map/src/features/userFlow/chat/bloc/message_actions_bloc/message_actions_state.dart';
@@ -22,8 +19,7 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart'
-    as chat;
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -37,7 +33,6 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatBloc _chatBloc;
-  late final ConnectionBloc _connectionBloc;
   late final MessageActionsBloc _messageActionsBloc;
   late final ReplyBloc _replyBloc;
   final _messageController = TextEditingController();
@@ -58,7 +53,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatRepository = GetIt.instance<ChatRepository>();
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
-    _connectionBloc = context.read<ConnectionBloc>();
     _messageActionsBloc = context.read<MessageActionsBloc>();
     _replyBloc = context.read<ReplyBloc>();
 
@@ -178,7 +172,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _chatBloc.add(const DisconnectFromChatEvent());
+    // Удаляем вызов отключения от WebSocket, так как теперь это делается в BottomNavbar
+    // _chatBloc.add(const DisconnectFromChatEvent());
     super.dispose();
   }
 
@@ -381,24 +376,6 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
-                    // Удаляем отображение состояния соединения
-                    // BlocBuilder<ConnectionBloc, ConnectionBlocState>(
-                    //   builder: (context, state) {
-                    //     if (state.state != chat.ConnectionState.connected) {
-                    //       return Container(
-                    //         color: _getConnectionStatusColor(state.state),
-                    //         padding: const EdgeInsets.symmetric(vertical: 4),
-                    //         width: double.infinity,
-                    //         child: Text(
-                    //           _getConnectionMessage(state.state),
-                    //           style: const TextStyle(color: Colors.white),
-                    //           textAlign: TextAlign.center,
-                    //         ),
-                    //       );
-                    //     }
-                    //     return const SizedBox.shrink();
-                    //   },
-                    // ),
                     BlocBuilder<MessageActionsBloc, MessageActionState>(
                       builder: (context, state) {
                         // Если есть закрепленное сообщение, показываем его
