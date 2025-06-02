@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
-import 'package:tap_map/src/features/userFlow/chat/data/chat_data_source.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
@@ -125,7 +125,7 @@ class RemoteChatDataSource implements ChatDataSource {
   }
 
   @override
-  Future<void> editMessage(int chatId, int messageId, String text) async {
+  Future<MessageModel> editMessage(int chatId, int messageId, String text) async {
     try {
       final response = await _dioClient.patch(
         '/chat/$chatId/messages/$messageId/edit/',
@@ -135,7 +135,11 @@ class RemoteChatDataSource implements ChatDataSource {
         },
       );
 
-      if (response.statusCode != 200) {
+      if (response.statusCode == 200) {
+        // Создаем модель сообщения из ответа API
+        final Map<String, dynamic> data = response.data;
+        return MessageModel.fromJson(data);
+      } else {
         throw Exception('Не удалось отредактировать сообщение: ${response.statusCode}');
       }
     } catch (e) {
@@ -309,6 +313,11 @@ class RemoteChatDataSource implements ChatDataSource {
   
   @override
   Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
+    // Ничего не делаем, т.к. удаленный источник не кэширует
+  }
+  
+  @override
+  Future<void> cacheMessage(int chatId, MessageModel message) async {
     // Ничего не делаем, т.к. удаленный источник не кэширует
   }
   
