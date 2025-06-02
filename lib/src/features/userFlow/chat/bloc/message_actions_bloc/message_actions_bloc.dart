@@ -126,9 +126,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
         // Если сообщение не новое, пытаемся удалить через API
         try {
           await _chatRepository.deleteMessage(
-            event.chatId,
-            event.messageId,
-            event.action,
+            chatId: event.chatId,
+            messageId: event.messageId,
+            deleteForAll: event.action == 'all',
           );
         } catch (e) {
           // Даже если API удаление не удалось, продолжаем с локальным удалением
@@ -188,9 +188,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
       } else {
         // Редактирование через API
         await _chatRepository.editMessage(
-          event.chatId,
-          event.messageId, 
-          event.text
+          chatId: event.chatId,
+          messageId: event.messageId,
+          text: event.text,
         );
       }
 
