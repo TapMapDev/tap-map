@@ -126,7 +126,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<ChatRepository>(
     () => ChatRepository(
       remoteChatDataSource: getIt<RemoteChatDataSource>(),
-      localChatDataSource: getIt<ChatDataSource>(),
+      localChatDataSource: getIt.get<ChatDataSource>(instanceName: 'local'),
       webSocketService: getIt<ChatWebSocketService>(),
       userRepository: getIt<UserRepository>(),
     ),
