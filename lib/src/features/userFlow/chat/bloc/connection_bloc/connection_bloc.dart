@@ -106,9 +106,16 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionBlocState> {
   void _handleWebSocketEvent(WebSocketEventData event) {
     if (event.type == WebSocketEventType.connection) {
       // Получаем состояние напрямую из данных события
-      final connectionState = event.data != null 
-          ? event.data!['connectionState'] as ConnectionState? 
-          : null;
+      ConnectionState? connectionState;
+      if (event.data != null) {
+        final stateString = event.data!['state'] as String?;
+        if (stateString != null) {
+          connectionState = ConnectionState.values.firstWhere(
+                (s) => s.toString() == stateString,
+            orElse: () => ConnectionState.disconnected,
+          );
+        }
+      }
       
       add(ConnectionStatusEvent(
         connectionState: connectionState ?? ConnectionState.disconnected
