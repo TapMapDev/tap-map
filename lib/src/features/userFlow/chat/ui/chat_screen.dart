@@ -24,7 +24,6 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart'
     as chat;
-import 'package:tap_map/src/features/userFlow/chat/widgets/connection_status_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -50,7 +49,6 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
-  bool _wasDisconnected = false;
 
   @override
   void initState() {
@@ -145,13 +143,6 @@ class _ChatScreenState extends State<ChatScreen> {
     print(
         '🌐 ChatScreen: Отправка сообщения от пользователя: $_currentUsername, ID: $_currentUserId');
 
-    // Проверяем состояние соединения перед отправкой
-    final connectionState = _connectionBloc.state.state;
-    if (connectionState != chat.ConnectionState.connected) {
-      _showConnectionErrorSnackBar();
-      return;
-    }
-
     if (_selectedMediaFile != null ||
         _messageController.text.trim().isNotEmpty) {
       if (_editingMessage != null) {
@@ -199,33 +190,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showConnectionErrorSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            'Невозможно отправить сообщение: ${_getConnectionMessage(_connectionBloc.state.state)}'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  String _getConnectionMessage(chat.ConnectionState state) {
-    switch (state) {
-      case chat.ConnectionState.connecting:
-        return 'устанавливается соединение';
-      case chat.ConnectionState.disconnected:
-        return 'нет соединения';
-      case chat.ConnectionState.reconnecting:
-        return 'восстанавливается соединение';
-      case chat.ConnectionState.waitingForNetwork:
-        return 'ожидание сети';
-      case chat.ConnectionState.error:
-        return 'ошибка соединения';
-      default:
-        return 'неизвестное состояние';
-    }
-  }
-
   @override
   void dispose() {
     _messageController.dispose();
@@ -262,60 +226,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
-            actions: [
-              // Индикатор статуса соединения
-              BlocBuilder<ConnectionBloc, ConnectionBlocState>(
-                builder: (context, state) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: ConnectionStatusIndicator(
-                      connectionState: state.state,
-                      reconnectAttempt: state.reconnectAttempt,
-                      maxReconnectAttempts: state.maxReconnectAttempts,
-                    ),
-                  );
-                },
-              ),
-            ],
           ),
           body: MultiBlocListener(
             listeners: [
-              // Слушатель состояния соединения
-              BlocListener<ConnectionBloc, ConnectionBlocState>(
-                listener: (context, state) {
-                  // Показываем уведомления только при изменении состояния
-                  if (state.state == chat.ConnectionState.disconnected) {
-                    _wasDisconnected = true;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Соединение потеряно'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  } else if (state.state == chat.ConnectionState.error) {
-                    _wasDisconnected = true;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Ошибка соединения: ${state.message ?? "Неизвестная ошибка"}'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 5),
-                        ),
-                    );
-                  } else if (state.state == chat.ConnectionState.connected && _wasDisconnected) {
-                    _wasDisconnected = false;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Соединение восстановлено'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else if (state.state == chat.ConnectionState.reconnecting ||
-                      state.state == chat.ConnectionState.waitingForNetwork) {
-                    _wasDisconnected = true;
-                  }
-                },
-              ),
               // Слушатель действий с сообщениями (замена DeleteMessageBloc и EditBloc)
               BlocListener<MessageActionsBloc, MessageActionState>(
                 listener: (context, state) {
@@ -484,23 +397,24 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
-                    BlocBuilder<ConnectionBloc, ConnectionBlocState>(
-                      builder: (context, state) {
-                        if (state.state != chat.ConnectionState.connected) {
-                          return Container(
-                            color: _getConnectionStatusColor(state.state),
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            width: double.infinity,
-                            child: Text(
-                              _getConnectionMessage(state.state),
-                              style: const TextStyle(color: Colors.white),
-                              textAlign: TextAlign.center,
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
+                    // Удаляем отображение состояния соединения
+                    // BlocBuilder<ConnectionBloc, ConnectionBlocState>(
+                    //   builder: (context, state) {
+                    //     if (state.state != chat.ConnectionState.connected) {
+                    //       return Container(
+                    //         color: _getConnectionStatusColor(state.state),
+                    //         padding: const EdgeInsets.symmetric(vertical: 4),
+                    //         width: double.infinity,
+                    //         child: Text(
+                    //           _getConnectionMessage(state.state),
+                    //           style: const TextStyle(color: Colors.white),
+                    //           textAlign: TextAlign.center,
+                    //         ),
+                    //       );
+                    //     }
+                    //     return const SizedBox.shrink();
+                    //   },
+                    // ),
                     BlocBuilder<MessageActionsBloc, MessageActionState>(
                       builder: (context, state) {
                         // Если есть закрепленное сообщение, показываем его
@@ -810,21 +724,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
-  }
-
-  Color _getConnectionStatusColor(chat.ConnectionState state) {
-    switch (state) {
-      case chat.ConnectionState.connecting:
-      case chat.ConnectionState.reconnecting:
-        return Colors.orange;
-      case chat.ConnectionState.disconnected:
-      case chat.ConnectionState.error:
-        return Colors.red;
-      case chat.ConnectionState.waitingForNetwork:
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 
   void _showMessageActions(MessageModel message) {
