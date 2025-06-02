@@ -50,6 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
+  bool _wasDisconnected = false;
 
   @override
   void initState() {
@@ -285,6 +286,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 listener: (context, state) {
                   // Показываем уведомления только при изменении состояния
                   if (state.state == chat.ConnectionState.disconnected) {
+                    _wasDisconnected = true;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Соединение потеряно'),
@@ -292,6 +294,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     );
                   } else if (state.state == chat.ConnectionState.error) {
+                    _wasDisconnected = true;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -300,13 +303,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         duration: const Duration(seconds: 5),
                       ),
                     );
-                  } else if (state.state == chat.ConnectionState.connected) {
+                  } else if (state.state == chat.ConnectionState.connected && _wasDisconnected) {
+                    _wasDisconnected = false;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Соединение восстановлено'),
                         backgroundColor: Colors.green,
                       ),
                     );
+                  } else if (state.state == chat.ConnectionState.reconnecting ||
+                      state.state == chat.ConnectionState.waitingForNetwork) {
+                    _wasDisconnected = true;
                   }
                 },
               ),
