@@ -179,8 +179,9 @@ class RemoteChatDataSource implements ChatDataSource {
         attachments: attachments,
       );
 
-      // Получаем имя пользователя из SharedPreferences
-      final String? username = _prefs.getString('username');
+      // Получаем имя пользователя из WebSocketService или из SharedPreferences
+      String? username = _webSocketService?.currentUsername;
+      username ??= _prefs.getString('chat_username');
       if (username == null) {
         throw Exception('Имя пользователя не установлено');
       }
