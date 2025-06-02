@@ -181,7 +181,7 @@ class ChatRepository {
   }
   
   /// Закрепить сообщение
-  Future<void> pinMessage({
+  Future<bool> pinMessage({
     required int chatId,
     required int messageId,
   }) async {
@@ -190,8 +190,9 @@ class ChatRepository {
       await _remoteChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
       // И в локальном кэше
       await _localChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
   

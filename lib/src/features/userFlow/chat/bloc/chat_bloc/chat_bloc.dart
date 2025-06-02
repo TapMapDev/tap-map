@@ -333,7 +333,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       add(SendMessageEvent(
         chatId: event.chatId,
         text: event.caption ?? '',
-        attachments: [uploadResult],
+        attachments: [{
+          'url': uploadResult,
+          'type': _getFileTypeFromExtension(event.file.path),
+        }],
       ));
       
     } catch (e) {
@@ -608,5 +611,32 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<void> close() {
     _webSocketSubscription?.cancel();
     return super.close();
+  }
+  
+  /// Определяет тип файла на основе расширения
+  String _getFileTypeFromExtension(String filePath) {
+    final extension = filePath.toLowerCase().split('.').last;
+    
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return 'image';
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+      case 'mkv':
+        return 'video';
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+        return 'audio';
+      case 'pdf':
+        return 'document';
+      default:
+        return 'file';
+    }
   }
 }
