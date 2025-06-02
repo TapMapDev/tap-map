@@ -236,6 +236,26 @@ class RemoteChatDataSource implements ChatDataSource {
     }
   }
 
+  /// Получить сообщение по его ID с сервера
+  Future<MessageModel?> getMessageById(int chatId, int messageId) async {
+    try {
+      print('📱 RemoteChatDataSource: Запрос сообщения с ID $messageId для чата $chatId');
+      final response = await _dioClient.get('/chat/$chatId/message/$messageId/');
+
+      if (response.statusCode == 200) {
+        final messageData = response.data;
+        print('📱 RemoteChatDataSource: Сообщение с ID $messageId успешно получено');
+        return MessageModel.fromJson(messageData);
+      } else {
+        print('❌ RemoteChatDataSource: Сервер вернул код ${response.statusCode} при запросе сообщения');
+        return null;
+      }
+    } catch (e) {
+      print('❌ RemoteChatDataSource: Ошибка при получении сообщения по ID: $e');
+      return null;
+    }
+  }
+
   @override
   Future<void> pinMessage({
     required int chatId,

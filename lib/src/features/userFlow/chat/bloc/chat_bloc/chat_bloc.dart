@@ -142,6 +142,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Загружаем сообщения чата
       final messages = await _chatRepository.getMessages(event.chatId);
       
+      // Загружаем закрепленное сообщение
+      MessageModel? pinnedMessage;
+      try {
+        final pinnedMessageId = await _chatRepository.getPinnedMessageId(event.chatId);
+        if (pinnedMessageId != null) {
+          // Ищем закрепленное сообщение среди загруженных сообщений
+          pinnedMessage = messages.firstWhere(
+            (message) => message.id == pinnedMessageId,
+            orElse: () => null,
+          );
+          
+          // Если не нашли в загруженных сообщениях, пробуем загрузить напрямую
+          if (pinnedMessage == null) {
+            pinnedMessage = await _chatRepository.getMessageById(event.chatId, pinnedMessageId);
+          }
+        }
+      } catch (e) {
+        // Логируем ошибку, но продолжаем выполнение - отсутствие закрепленного сообщения не критично
+        print('Ошибка при загрузке закрепленного сообщения: $e');
+      }
+      
       // Отмечаем чат как прочитанный
       await _chatRepository.markChatAsRead(event.chatId);
       
@@ -155,6 +176,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         chat: chat,
         messages: messages,
         isConnectionActive: isConnected,
+        pinnedMessage: pinnedMessage, // Добавляем закрепленное сообщение в состояние
       ));
     } catch (e) {
       emit(ChatError(message: 'Ошибка загрузки чата: $e'));

@@ -492,4 +492,21 @@ class ChatRepository {
       return null;
     }
   }
+
+  /// Получить сообщение по его ID
+  Future<MessageModel?> getMessageById(int chatId, int messageId) async {
+    try {
+      // Сначала проверяем в локальном кэше
+      final localMessage = await _localChatDataSource.getMessageById(chatId, messageId);
+      if (localMessage != null) {
+        return localMessage;
+      }
+      
+      // Если нет в кэше, загружаем с сервера
+      return await _remoteChatDataSource.getMessageById(chatId, messageId);
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка при получении сообщения по ID $messageId: $e');
+      return null;
+    }
+  }
 }

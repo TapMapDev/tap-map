@@ -328,10 +328,10 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
-                    BlocBuilder<MessageActionsBloc, MessageActionState>(
+                    BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
-                        // Если есть закрепленное сообщение, показываем его
-                        if (state is MessagePinActive) {
+                        // Если загрузились данные чата и есть закрепленное сообщение, показываем его
+                        if (state is ChatLoaded && state.pinnedMessage != null) {
                           return Container(
                             padding: const EdgeInsets.all(8.0),
                             color: Colors.amber.withOpacity(0.2),
@@ -341,7 +341,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    state.pinnedMessage.text,
+                                    state.pinnedMessage!.text,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w500),
                                     maxLines: 2,
@@ -353,7 +353,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   onPressed: () {
                                     _messageActionsBloc.add(UnpinMessageAction(
                                       chatId: widget.chatId,
-                                      messageId: state.pinnedMessage.id,
+                                      messageId: state.pinnedMessage!.id,
                                     ));
                                   },
                                 ),
@@ -361,7 +361,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           );
                         }
-                        // Если состояние MessagePinEmpty или любое другое, не показываем ничего
+                        // Если состояние не ChatLoaded или нет закрепленного сообщения, не показываем ничего
                         return const SizedBox.shrink();
                       },
                     ),

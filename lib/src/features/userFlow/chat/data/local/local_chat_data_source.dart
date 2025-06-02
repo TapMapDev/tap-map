@@ -99,7 +99,7 @@ class LocalChatDataSource implements ChatDataSource {
   @override
   Future<void> editMessage(int chatId, int messageId, String text) async {
     print('📂 LocalChatDataSource: Редактирование сообщения с ID $messageId из чата $chatId');
-    final message = await _database.getMessageById(messageId);
+    final message = await _database.getMessageById(chatId, messageId);
     if (message != null) {
       await _database.insertMessage(
         MessagesCompanion(
@@ -127,7 +127,7 @@ class LocalChatDataSource implements ChatDataSource {
   Future<void> pinMessage({required int chatId, required int messageId}) async {
     print('📂 LocalChatDataSource: Закрепление сообщения с ID $messageId в чате $chatId');
     // Обновляем флаг в сообщении
-    final message = await _database.getMessageById(messageId);
+    final message = await _database.getMessageById(chatId, messageId);
     if (message != null) {
       await _database.insertMessage(
         MessagesCompanion(
@@ -173,7 +173,7 @@ class LocalChatDataSource implements ChatDataSource {
   Future<void> unpinMessage({required int chatId, required int messageId}) async {
     print('📂 LocalChatDataSource: Отмена закрепления сообщения с ID $messageId в чате $chatId');
     // Обновляем флаг в сообщении
-    final message = await _database.getMessageById(messageId);
+    final message = await _database.getMessageById(chatId, messageId);
     if (message != null) {
       await _database.insertMessage(
         MessagesCompanion(
@@ -381,6 +381,23 @@ class LocalChatDataSource implements ChatDataSource {
       return null;
     } catch (e) {
       print('❌ LocalChatDataSource: Ошибка при поиске локального пути медиафайла: $e');
+      return null;
+    }
+  }
+  
+  /// Получить сообщение по его ID из локального кэша
+  Future<MessageModel?> getMessageById(int chatId, int messageId) async {
+    try {
+      print('📂 LocalChatDataSource: Получение сообщения $messageId для чата $chatId из кэша');
+      final message = await _database.getMessageById(chatId, messageId);
+      if (message == null) {
+        print('📂 LocalChatDataSource: Сообщение $messageId не найдено в кэше');
+        return null;
+      }
+      print('📂 LocalChatDataSource: Сообщение $messageId найдено в кэше');
+      return _mapMessageToModel(message);
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при получении сообщения по ID: $e');
       return null;
     }
   }

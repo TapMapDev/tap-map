@@ -123,8 +123,11 @@ class ChatDatabase extends _$ChatDatabase {
         .watch();
   }
 
-  Future<Message?> getMessageById(int messageId) {
-    return (select(messages)..where((m) => m.messageId.equals(messageId))).getSingleOrNull();
+  // Получить сообщение по его ID и ID чата
+  Future<Message?> getMessageById(int chatId, int messageId) {
+    return (select(messages)
+      ..where((m) => m.messageId.equals(messageId) & m.chatId.equals(chatId)))
+      .getSingleOrNull();
   }
 
   Future<int> insertMessage(MessagesCompanion message) {
