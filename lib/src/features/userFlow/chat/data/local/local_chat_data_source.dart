@@ -401,6 +401,30 @@ class LocalChatDataSource implements ChatDataSource {
       return null;
     }
   }
+
+  @override
+  Future<List<MessageModel>> getPinnedMessages(int chatId) async {
+    try {
+      print('📂 LocalChatDataSource: Получение закрепленных сообщений для чата $chatId');
+      final pinnedMessageId = await getPinnedMessageId(chatId);
+      if (pinnedMessageId == null) {
+        print('📂 LocalChatDataSource: ID закрепленного сообщения не найден для чата $chatId');
+        return [];
+      }
+      
+      final message = await getMessageById(chatId, pinnedMessageId);
+      if (message != null) {
+        print('📂 LocalChatDataSource: Найдено закрепленное сообщение для чата $chatId');
+        return [message];
+      } else {
+        print('📂 LocalChatDataSource: Закрепленное сообщение не найдено в локальной базе данных');
+        return [];
+      }
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при получении закрепленных сообщений: $e');
+      return [];
+    }
+  }
   
   // Вспомогательные методы для конвертации между моделями базы данных и бизнес-моделями
   

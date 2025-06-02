@@ -332,7 +332,8 @@ class ChatRepository {
       );
       
       print('💾 ChatRepository: Кэширование отправленного сообщения в локальное хранилище');
-      await _localChatDataSource.cacheMessage(chatId, message);
+      // Кэшируем сообщение
+      await _localChatDataSource.cacheMessage(message.chatId, message);
       print('💾 ChatRepository: Сообщение успешно кэшировано, ID: ${message.id}');
       
       return message;
@@ -482,8 +483,7 @@ class ChatRepository {
       
       print('💾 ChatRepository: Кэширование сообщения в локальное хранилище');
       // Кэшируем сообщение
-      final chatId = newMessage.chatId;
-      await _localChatDataSource.cacheMessage(chatId, newMessage);
+      await _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
       print('💾 ChatRepository: Сообщение успешно кэшировано');
       
       return newMessage;
@@ -507,6 +507,40 @@ class ChatRepository {
     } catch (e) {
       print('❌ ChatRepository: Ошибка при получении сообщения по ID $messageId: $e');
       return null;
+    }
+  }
+  
+  /// Получить список закрепленных сообщений чата
+  Future<List<MessageModel>> getPinnedMessages(int chatId) async {
+    try {
+      // Сначала проверяем в локальном кэше
+      final localMessages = await _localChatDataSource.getPinnedMessages(chatId);
+      if (localMessages.isNotEmpty) {
+        print('📂 ChatRepository: Получено ${localMessages.length} закрепленных сообщений из локального хранилища для чата $chatId');
+        
+        // Асинхронно обновляем с сервера
+        _updatePinnedMessagesAsync(chatId);
+        
+        return localMessages;
+      }
+      
+      // Если нет в кэше, загружаем с сервера
+      final remoteMessages = await _remoteChatDataSource.getPinnedMessages(chatId);
+      print('📱 ChatRepository: Получено ${remoteMessages.length} закрепленных сообщений с сервера для чата $chatId');
+      return remoteMessages;
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка при получении закрепленных сообщений: $e');
+      return [];
+    }
+  }
+  
+  /// Асинхронное обновление закрепленных сообщений с сервера
+  Future<void> _updatePinnedMessagesAsync(int chatId) async {
+    try {
+      print('📱 ChatRepository: Асинхронное обновление закрепленных сообщений для чата $chatId');
+      await _remoteChatDataSource.getPinnedMessages(chatId);
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка при асинхронном обновлении закрепленных сообщений: $e');
     }
   }
 }

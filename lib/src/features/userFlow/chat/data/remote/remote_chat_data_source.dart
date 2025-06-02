@@ -240,19 +240,55 @@ class RemoteChatDataSource implements ChatDataSource {
   Future<MessageModel?> getMessageById(int chatId, int messageId) async {
     try {
       print('📱 RemoteChatDataSource: Запрос сообщения с ID $messageId для чата $chatId');
-      final response = await _dioClient.get('/chat/$chatId/message/$messageId/');
-
-      if (response.statusCode == 200) {
-        final messageData = response.data;
-        print('📱 RemoteChatDataSource: Сообщение с ID $messageId успешно получено');
-        return MessageModel.fromJson(messageData);
-      } else {
-        print('❌ RemoteChatDataSource: Сервер вернул код ${response.statusCode} при запросе сообщения');
-        return null;
+      
+      // Сначала попробуем найти сообщение среди закрепленных
+      final pinnedMessages = await getPinnedMessages(chatId);
+      final foundMessage = pinnedMessages.where((message) => message.id == messageId).toList();
+      if (foundMessage.isNotEmpty) {
+        return foundMessage.first;
       }
+      
+      // Если не нашли среди закрепленных, и это закрепленное сообщение,
+      // значит оно должно было быть среди закрепленных, но не найдено
+      final pinnedId = await getPinnedMessageId(chatId);
+      if (pinnedId == messageId) {
+        print('❌ RemoteChatDataSource: Закрепленное сообщение с ID $messageId не найдено в API закрепленных сообщений');
+      }
+      
+      // К сожалению, на сервере нет эндпоинта для получения отдельного сообщения по ID
+      print('❌ RemoteChatDataSource: На сервере нет эндпоинта для получения отдельного сообщения по ID');
+      return null;
     } catch (e) {
       print('❌ RemoteChatDataSource: Ошибка при получении сообщения по ID: $e');
       return null;
+    }
+  }
+
+  /// Получить список закрепленных сообщений чата
+  @override
+  Future<List<MessageModel>> getPinnedMessages(int chatId) async {
+    try {
+      print('📱 RemoteChatDataSource: Запрос закрепленных сообщений для чата $chatId');
+      final response = await _dioClient.client.get('/chat/$chatId/messages/pinned/');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        final messages = data.map((json) => MessageModel.fromJson(json)).toList();
+        print('📱 RemoteChatDataSource: Получено ${messages.length} закрепленных сообщений для чата $chatId');
+        
+        // Кэшируем сообщения
+        for (final message in messages) {
+          await cacheMessage(chatId, message);
+        }
+        
+        return messages;
+      } else {
+        print('❌ RemoteChatDataSource: Сервер вернул код ${response.statusCode} при запросе закрепленных сообщений');
+        return [];
+      }
+    } catch (e) {
+      print('❌ RemoteChatDataSource: Ошибка при получении закрепленных сообщений: $e');
+      return [];
     }
   }
 
