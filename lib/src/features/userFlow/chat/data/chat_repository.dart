@@ -5,7 +5,7 @@ import 'package:tap_map/src/features/userFlow/chat/data/remote/remote_chat_data_
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
-import 'package:tap_map/src/features/userFlow/profile/data/user_repository.dart';
+import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
 /// Новая реализация репозитория чатов с поддержкой кэширования
 class ChatRepository {
@@ -77,6 +77,26 @@ class ChatRepository {
         'messages': messages,
         'pinnedMessageId': pinnedMessageId,
       };
+    }
+  }
+  
+  /// Получить только чат по ID (метод для обратной совместимости)
+  Future<ChatModel?> getChatById(int chatId) async {
+    try {
+      final result = await fetchChatWithMessages(chatId);
+      return result['chat'] as ChatModel?;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Получить сообщения для чата (метод для обратной совместимости)
+  Future<List<MessageModel>> getMessages(int chatId) async {
+    try {
+      final result = await fetchChatWithMessages(chatId);
+      return result['messages'] as List<MessageModel>;
+    } catch (e) {
+      return [];
     }
   }
   
