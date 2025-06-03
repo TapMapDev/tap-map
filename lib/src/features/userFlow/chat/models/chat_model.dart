@@ -29,7 +29,9 @@ class ChatModel extends Equatable {
     return ChatModel(
       chatId: json['id'] as int? ?? json['chat_id'] as int? ?? 0,
       chatName: json['chat_name'] as String? ?? 'Unknown Chat',
-      chatPhoto: json['chat_photo'] as String?,
+      chatPhoto: json['chat_photo'] as String? ??
+          json['chat_photo_url'] as String? ??
+          json['photo_url'] as String?,
       lastMessageText: json['last_message_text'] as String?,
       lastMessageSenderUsername:
           json['last_message_sender_username'] as String?,
