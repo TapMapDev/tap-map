@@ -462,7 +462,7 @@ class ChatRepository {
   }
 
   /// Обработать входящее сообщение из WebSocket и обогатить его данными о пользователе
-  MessageModel? processWebSocketMessage(Map<String, dynamic> messageData) {
+  Future<MessageModel?> processWebSocketMessage(Map<String, dynamic> messageData) async {
     try {
       print('📩 ChatRepository: Processing WebSocket message: $messageData');
       
@@ -472,11 +472,7 @@ class ChatRepository {
         return null;
       }
 
-      final user = _userRepository.getUserById(senderId);
-      if (user == null) {
-        print('❌ ChatRepository: No username for sender_id: $senderId');
-        return null;
-      }
+      final user = await _userRepository.getUserById(senderId);
 
       final newMessage = MessageModel.fromJson({
         ...messageData,
@@ -485,7 +481,7 @@ class ChatRepository {
 
       print('📨 ChatRepository: Processed message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
       
-      _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
+      await _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
       
       return newMessage;
     } catch (e) {

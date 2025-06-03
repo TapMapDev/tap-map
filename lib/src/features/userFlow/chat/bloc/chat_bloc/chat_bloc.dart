@@ -256,7 +256,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Обработка разных типов сообщений
     if (messageData['type'] == 'message') {
       // Обработка нового сообщения
-      final processedMessage = _chatRepository.processWebSocketMessage(messageData);
+      final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
       
       if (processedMessage != null) {
         // Проверяем, относится ли сообщение к текущему чату
