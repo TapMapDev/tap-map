@@ -70,63 +70,48 @@ class ChatRepository {
   /// Получить чат и его сообщения с кэшированием
   /// Обновлено для использования стратегии "сначала кэш, потом сервер"
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
-    print('📱 ChatRepository: Запрос чата $chatId и его сообщений');
+    // Проверка на валидность chatId
+    if (chatId <= 0) {
+      print('❌ ChatRepository: Получен запрос к несуществующему чату с ID $chatId');
+      throw Exception('Неверный ID чата: $chatId');
+    }
     
     try {
-      // Получаем чат из локальной базы данных
+      // Проверяем локальный кэш сначала
       final localChat = await _localChatDataSource.getChatById(chatId);
-      final pinnedMessageId = localChat?.pinnedMessageId;
       
-      // Получаем сообщения с использованием новой стратегии кэширования
-      final messagesResponse = await getMessagesWithCacheStrategy(chatId);
-      
-      print('📱 ChatRepository: Получено ${messagesResponse.messages.length} сообщений, источник: '
-          '${messagesResponse.fromCache ? "кэш" : "сервер"}, последнее обновление: ${messagesResponse.lastUpdated}');
-      
-      // Если у нас есть локальный чат, возвращаем его с сообщениями
+      // Если в кэше есть чат, возвращаем его
       if (localChat != null) {
-        // Если кэш старый, асинхронно обновляем данные чата с сервера
-        if (messagesResponse.fromCache && messagesResponse.lastUpdated != null) {
-          final cacheAge = DateTime.now().difference(messagesResponse.lastUpdated!).inMinutes;
-          
-          // Проверяем, поддерживает ли источник данных расширенные возможности кэширования
-          if (_localChatDataSource is LocalChatDataSource) {
-            final ttl = ChatCacheConfig.messageCacheTTLMinutes;
-            if (cacheAge >= ttl) {
-              _updateChatDataAsync(chatId);
-            }
-          }
-        }
+        print('💾 ChatRepository: Возвращаем чат из локального кэша: ${localChat.chatId}');
+        
+        // Асинхронно обновляем данные с сервера без блокировки UI
+        _updateChatDataAsync(chatId);
         
         return {
           'chat': localChat,
-          'messages': messagesResponse.messages,
-          'pinnedMessageId': pinnedMessageId,
-          'fromCache': messagesResponse.fromCache,
-          'lastUpdated': messagesResponse.lastUpdated,
+          'fromCache': true
         };
       }
       
-      // Если локального чата нет, загружаем с сервера
-      print('📱 ChatRepository: Локальный чат не найден, загружаем с сервера');
+      // Если в кэше нет, загружаем с сервера
+      print('🌐 ChatRepository: Загружаем чат с сервера: $chatId');
       final remoteChat = await _remoteChatDataSource.getChatById(chatId);
-      final remotePinnedId = await _remoteChatDataSource.getPinnedMessageId(chatId);
       
-      // Кэшируем данные чата
       if (remoteChat != null) {
-        await _localChatDataSource.cacheChat(remoteChat.copyWith(pinnedMessageId: remotePinnedId));
+        // Кэшируем результат
+        await _localChatDataSource.cacheChat(remoteChat);
+        
+        return {
+          'chat': remoteChat,
+          'fromCache': false
+        };
+      } else {
+        // Чат не найден ни в кэше, ни на сервере
+        throw Exception('Чат не найден: $chatId');
       }
-      
-      return {
-        'chat': remoteChat,
-        'messages': messagesResponse.messages,
-        'pinnedMessageId': remotePinnedId,
-        'fromCache': false,
-        'lastUpdated': DateTime.now(),
-      };
     } catch (e) {
-      print('❌ ChatRepository: Ошибка при получении чата: $e');
-      rethrow;
+      print('❌ ChatRepository: Ошибка при загрузке чата $chatId: $e');
+      throw Exception('Ошибка при загрузке чата: $e');
     }
   }
   
@@ -147,6 +132,23 @@ class ChatRepository {
         print('❌ ChatRepository: Ошибка при фоновом обновлении данных чата: $e');
       }
     }();
+  }
+  
+  /// Получить только чат по ID (метод для обратной совместимости)
+  Future<ChatModel?> getChatById(int chatId) async {
+    // Проверка на валидность chatId
+    if (chatId <= 0) {
+      print('❌ ChatRepository: Попытка получить несуществующий чат с ID $chatId');
+      return null;
+    }
+    
+    try {
+      final result = await fetchChatWithMessages(chatId);
+      return result['chat'] as ChatModel?;
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка в getChatById для чата $chatId: $e');
+      return null;
+    }
   }
   
   /// Получить сообщения для чата с использованием стратегии "сначала кэш, потом сервер"
@@ -248,16 +250,6 @@ class ChatRepository {
         print('❌ ChatRepository: Ошибка при фоновом обновлении сообщений: $e');
       }
     }();
-  }
-  
-  /// Получить только чат по ID (метод для обратной совместимости)
-  Future<ChatModel?> getChatById(int chatId) async {
-    try {
-      final result = await fetchChatWithMessages(chatId);
-      return result['chat'] as ChatModel?;
-    } catch (e) {
-      return null;
-    }
   }
   
   /// Получить сообщения для чата (метод для обратной совместимости)
@@ -588,7 +580,15 @@ class ChatRepository {
     try {
       print('📩 ChatRepository: Processing WebSocket message: $messageData');
       
+      // Извлекаем chatId и проверяем его валидность
+      final int? chatId = messageData['chat_id'] as int? ?? messageData['chat'] as int?;
       final int? senderId = messageData['sender_id'] ?? messageData['user_id'];
+      
+      if (chatId == null || chatId <= 0) {
+        print('❌ ChatRepository: Невалидный ID чата в сообщении: $chatId');
+        return null;
+      }
+      
       if (senderId == null) {
         print('❌ ChatRepository: No sender_id or user_id in message data');
         return null;
