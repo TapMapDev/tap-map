@@ -52,6 +52,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
         (m) => m.id == event.messageId,
         orElse: () => throw Exception('Сообщение не найдено'),
       );
+      
+      // Обновляем UI через ChatBloc, чтобы сразу отобразить закрепленное сообщение
+      _chatBloc.updatePinnedMessage(pinnedMessage);
 
       emit(MessagePinActive(
         pinnedMessage: pinnedMessage,
@@ -77,6 +80,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
         chatId: event.chatId,
         messageId: event.messageId,
       );
+      
+      // Обновляем UI через ChatBloc, убираем закрепленное сообщение
+      _chatBloc.updatePinnedMessage(null);
 
       emit(MessagePinEmpty());
     } catch (e) {
@@ -96,6 +102,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
       emit(const MessageActionLoading(MessageActionType.loadPin));
 
       final result = await _chatRepository.getPinnedMessage(event.chatId);
+      
+      // Обновляем UI через ChatBloc
+      _chatBloc.updatePinnedMessage(result);
       
       if (result != null) {
         emit(MessagePinActive(

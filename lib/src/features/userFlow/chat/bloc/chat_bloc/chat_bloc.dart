@@ -675,6 +675,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
   
+  /// Публичный метод для обновления закрепленного сообщения
+  void updatePinnedMessage(MessageModel? message) {
+    if (state is ChatLoaded) {
+      final currentState = state as ChatLoaded;
+      
+      if (message != null) {
+        // Обновление закрепленного сообщения
+        emit(currentState.copyWith(pinnedMessage: message));
+      } else {
+        // Снятие закрепления
+        emit(currentState.copyWith(
+          clearPinnedMessage: true,
+        ));
+      }
+    }
+  }
+  
   @override
   Future<void> close() {
     _webSocketSubscription?.cancel();
