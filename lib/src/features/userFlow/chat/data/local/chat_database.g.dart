@@ -623,6 +623,24 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_me" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _commentsCountMeta =
+      const VerificationMeta('commentsCount');
+  @override
+  late final GeneratedColumn<int> commentsCount = GeneratedColumn<int>(
+      'comments_count', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _reactionsJsonMeta =
+      const VerificationMeta('reactionsJson');
+  @override
+  late final GeneratedColumn<String> reactionsJson = GeneratedColumn<String>(
+      'reactions_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pinOrderMeta =
+      const VerificationMeta('pinOrder');
+  @override
+  late final GeneratedColumn<int> pinOrder = GeneratedColumn<int>(
+      'pin_order', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -639,7 +657,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         messageType,
         isPinned,
         isRead,
-        isMe
+        isMe,
+        commentsCount,
+        reactionsJson,
+        pinOrder
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -734,6 +755,22 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
       context.handle(
           _isMeMeta, isMe.isAcceptableOrUnknown(data['is_me']!, _isMeMeta));
     }
+    if (data.containsKey('comments_count')) {
+      context.handle(
+          _commentsCountMeta,
+          commentsCount.isAcceptableOrUnknown(
+              data['comments_count']!, _commentsCountMeta));
+    }
+    if (data.containsKey('reactions_json')) {
+      context.handle(
+          _reactionsJsonMeta,
+          reactionsJson.isAcceptableOrUnknown(
+              data['reactions_json']!, _reactionsJsonMeta));
+    }
+    if (data.containsKey('pin_order')) {
+      context.handle(_pinOrderMeta,
+          pinOrder.isAcceptableOrUnknown(data['pin_order']!, _pinOrderMeta));
+    }
     return context;
   }
 
@@ -773,6 +810,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_read'])!,
       isMe: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_me'])!,
+      commentsCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}comments_count']),
+      reactionsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reactions_json']),
+      pinOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}pin_order']),
     );
   }
 
@@ -798,6 +841,9 @@ class Message extends DataClass implements Insertable<Message> {
   final bool isPinned;
   final bool isRead;
   final bool isMe;
+  final int? commentsCount;
+  final String? reactionsJson;
+  final int? pinOrder;
   const Message(
       {required this.id,
       required this.messageId,
@@ -813,7 +859,10 @@ class Message extends DataClass implements Insertable<Message> {
       required this.messageType,
       required this.isPinned,
       required this.isRead,
-      required this.isMe});
+      required this.isMe,
+      this.commentsCount,
+      this.reactionsJson,
+      this.pinOrder});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -842,6 +891,15 @@ class Message extends DataClass implements Insertable<Message> {
     map['is_pinned'] = Variable<bool>(isPinned);
     map['is_read'] = Variable<bool>(isRead);
     map['is_me'] = Variable<bool>(isMe);
+    if (!nullToAbsent || commentsCount != null) {
+      map['comments_count'] = Variable<int>(commentsCount);
+    }
+    if (!nullToAbsent || reactionsJson != null) {
+      map['reactions_json'] = Variable<String>(reactionsJson);
+    }
+    if (!nullToAbsent || pinOrder != null) {
+      map['pin_order'] = Variable<int>(pinOrder);
+    }
     return map;
   }
 
@@ -872,6 +930,15 @@ class Message extends DataClass implements Insertable<Message> {
       isPinned: Value(isPinned),
       isRead: Value(isRead),
       isMe: Value(isMe),
+      commentsCount: commentsCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(commentsCount),
+      reactionsJson: reactionsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reactionsJson),
+      pinOrder: pinOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pinOrder),
     );
   }
 
@@ -894,6 +961,9 @@ class Message extends DataClass implements Insertable<Message> {
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       isRead: serializer.fromJson<bool>(json['isRead']),
       isMe: serializer.fromJson<bool>(json['isMe']),
+      commentsCount: serializer.fromJson<int?>(json['commentsCount']),
+      reactionsJson: serializer.fromJson<String?>(json['reactionsJson']),
+      pinOrder: serializer.fromJson<int?>(json['pinOrder']),
     );
   }
   @override
@@ -915,6 +985,9 @@ class Message extends DataClass implements Insertable<Message> {
       'isPinned': serializer.toJson<bool>(isPinned),
       'isRead': serializer.toJson<bool>(isRead),
       'isMe': serializer.toJson<bool>(isMe),
+      'commentsCount': serializer.toJson<int?>(commentsCount),
+      'reactionsJson': serializer.toJson<String?>(reactionsJson),
+      'pinOrder': serializer.toJson<int?>(pinOrder),
     };
   }
 
@@ -933,7 +1006,10 @@ class Message extends DataClass implements Insertable<Message> {
           String? messageType,
           bool? isPinned,
           bool? isRead,
-          bool? isMe}) =>
+          bool? isMe,
+          Value<int?> commentsCount = const Value.absent(),
+          Value<String?> reactionsJson = const Value.absent(),
+          Value<int?> pinOrder = const Value.absent()}) =>
       Message(
         id: id ?? this.id,
         messageId: messageId ?? this.messageId,
@@ -955,6 +1031,11 @@ class Message extends DataClass implements Insertable<Message> {
         isPinned: isPinned ?? this.isPinned,
         isRead: isRead ?? this.isRead,
         isMe: isMe ?? this.isMe,
+        commentsCount:
+            commentsCount.present ? commentsCount.value : this.commentsCount,
+        reactionsJson:
+            reactionsJson.present ? reactionsJson.value : this.reactionsJson,
+        pinOrder: pinOrder.present ? pinOrder.value : this.pinOrder,
       );
   Message copyWithCompanion(MessagesCompanion data) {
     return Message(
@@ -983,6 +1064,13 @@ class Message extends DataClass implements Insertable<Message> {
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
       isRead: data.isRead.present ? data.isRead.value : this.isRead,
       isMe: data.isMe.present ? data.isMe.value : this.isMe,
+      commentsCount: data.commentsCount.present
+          ? data.commentsCount.value
+          : this.commentsCount,
+      reactionsJson: data.reactionsJson.present
+          ? data.reactionsJson.value
+          : this.reactionsJson,
+      pinOrder: data.pinOrder.present ? data.pinOrder.value : this.pinOrder,
     );
   }
 
@@ -1003,7 +1091,10 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('messageType: $messageType, ')
           ..write('isPinned: $isPinned, ')
           ..write('isRead: $isRead, ')
-          ..write('isMe: $isMe')
+          ..write('isMe: $isMe, ')
+          ..write('commentsCount: $commentsCount, ')
+          ..write('reactionsJson: $reactionsJson, ')
+          ..write('pinOrder: $pinOrder')
           ..write(')'))
         .toString();
   }
@@ -1024,7 +1115,10 @@ class Message extends DataClass implements Insertable<Message> {
       messageType,
       isPinned,
       isRead,
-      isMe);
+      isMe,
+      commentsCount,
+      reactionsJson,
+      pinOrder);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1043,7 +1137,10 @@ class Message extends DataClass implements Insertable<Message> {
           other.messageType == this.messageType &&
           other.isPinned == this.isPinned &&
           other.isRead == this.isRead &&
-          other.isMe == this.isMe);
+          other.isMe == this.isMe &&
+          other.commentsCount == this.commentsCount &&
+          other.reactionsJson == this.reactionsJson &&
+          other.pinOrder == this.pinOrder);
 }
 
 class MessagesCompanion extends UpdateCompanion<Message> {
@@ -1062,6 +1159,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<bool> isPinned;
   final Value<bool> isRead;
   final Value<bool> isMe;
+  final Value<int?> commentsCount;
+  final Value<String?> reactionsJson;
+  final Value<int?> pinOrder;
   const MessagesCompanion({
     this.id = const Value.absent(),
     this.messageId = const Value.absent(),
@@ -1078,6 +1178,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.isPinned = const Value.absent(),
     this.isRead = const Value.absent(),
     this.isMe = const Value.absent(),
+    this.commentsCount = const Value.absent(),
+    this.reactionsJson = const Value.absent(),
+    this.pinOrder = const Value.absent(),
   });
   MessagesCompanion.insert({
     this.id = const Value.absent(),
@@ -1095,6 +1198,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.isPinned = const Value.absent(),
     this.isRead = const Value.absent(),
     this.isMe = const Value.absent(),
+    this.commentsCount = const Value.absent(),
+    this.reactionsJson = const Value.absent(),
+    this.pinOrder = const Value.absent(),
   })  : messageId = Value(messageId),
         chatId = Value(chatId),
         messageText = Value(messageText),
@@ -1116,6 +1222,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<bool>? isPinned,
     Expression<bool>? isRead,
     Expression<bool>? isMe,
+    Expression<int>? commentsCount,
+    Expression<String>? reactionsJson,
+    Expression<int>? pinOrder,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1133,6 +1242,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (isPinned != null) 'is_pinned': isPinned,
       if (isRead != null) 'is_read': isRead,
       if (isMe != null) 'is_me': isMe,
+      if (commentsCount != null) 'comments_count': commentsCount,
+      if (reactionsJson != null) 'reactions_json': reactionsJson,
+      if (pinOrder != null) 'pin_order': pinOrder,
     });
   }
 
@@ -1151,7 +1263,10 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       Value<String>? messageType,
       Value<bool>? isPinned,
       Value<bool>? isRead,
-      Value<bool>? isMe}) {
+      Value<bool>? isMe,
+      Value<int?>? commentsCount,
+      Value<String?>? reactionsJson,
+      Value<int?>? pinOrder}) {
     return MessagesCompanion(
       id: id ?? this.id,
       messageId: messageId ?? this.messageId,
@@ -1168,6 +1283,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? this.isRead,
       isMe: isMe ?? this.isMe,
+      commentsCount: commentsCount ?? this.commentsCount,
+      reactionsJson: reactionsJson ?? this.reactionsJson,
+      pinOrder: pinOrder ?? this.pinOrder,
     );
   }
 
@@ -1219,6 +1337,15 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (isMe.present) {
       map['is_me'] = Variable<bool>(isMe.value);
     }
+    if (commentsCount.present) {
+      map['comments_count'] = Variable<int>(commentsCount.value);
+    }
+    if (reactionsJson.present) {
+      map['reactions_json'] = Variable<String>(reactionsJson.value);
+    }
+    if (pinOrder.present) {
+      map['pin_order'] = Variable<int>(pinOrder.value);
+    }
     return map;
   }
 
@@ -1239,7 +1366,10 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('messageType: $messageType, ')
           ..write('isPinned: $isPinned, ')
           ..write('isRead: $isRead, ')
-          ..write('isMe: $isMe')
+          ..write('isMe: $isMe, ')
+          ..write('commentsCount: $commentsCount, ')
+          ..write('reactionsJson: $reactionsJson, ')
+          ..write('pinOrder: $pinOrder')
           ..write(')'))
         .toString();
   }
@@ -1929,6 +2059,9 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   Value<bool> isPinned,
   Value<bool> isRead,
   Value<bool> isMe,
+  Value<int?> commentsCount,
+  Value<String?> reactionsJson,
+  Value<int?> pinOrder,
 });
 typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<int> id,
@@ -1946,6 +2079,9 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<bool> isPinned,
   Value<bool> isRead,
   Value<bool> isMe,
+  Value<int?> commentsCount,
+  Value<String?> reactionsJson,
+  Value<int?> pinOrder,
 });
 
 class $$MessagesTableFilterComposer
@@ -2004,6 +2140,15 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<bool> get isMe => $composableBuilder(
       column: $table.isMe, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get commentsCount => $composableBuilder(
+      column: $table.commentsCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get pinOrder => $composableBuilder(
+      column: $table.pinOrder, builder: (column) => ColumnFilters(column));
 }
 
 class $$MessagesTableOrderingComposer
@@ -2063,6 +2208,17 @@ class $$MessagesTableOrderingComposer
 
   ColumnOrderings<bool> get isMe => $composableBuilder(
       column: $table.isMe, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get commentsCount => $composableBuilder(
+      column: $table.commentsCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get pinOrder => $composableBuilder(
+      column: $table.pinOrder, builder: (column) => ColumnOrderings(column));
 }
 
 class $$MessagesTableAnnotationComposer
@@ -2118,6 +2274,15 @@ class $$MessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get isMe =>
       $composableBuilder(column: $table.isMe, builder: (column) => column);
+
+  GeneratedColumn<int> get commentsCount => $composableBuilder(
+      column: $table.commentsCount, builder: (column) => column);
+
+  GeneratedColumn<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson, builder: (column) => column);
+
+  GeneratedColumn<int> get pinOrder =>
+      $composableBuilder(column: $table.pinOrder, builder: (column) => column);
 }
 
 class $$MessagesTableTableManager extends RootTableManager<
@@ -2158,6 +2323,9 @@ class $$MessagesTableTableManager extends RootTableManager<
             Value<bool> isPinned = const Value.absent(),
             Value<bool> isRead = const Value.absent(),
             Value<bool> isMe = const Value.absent(),
+            Value<int?> commentsCount = const Value.absent(),
+            Value<String?> reactionsJson = const Value.absent(),
+            Value<int?> pinOrder = const Value.absent(),
           }) =>
               MessagesCompanion(
             id: id,
@@ -2175,6 +2343,9 @@ class $$MessagesTableTableManager extends RootTableManager<
             isPinned: isPinned,
             isRead: isRead,
             isMe: isMe,
+            commentsCount: commentsCount,
+            reactionsJson: reactionsJson,
+            pinOrder: pinOrder,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -2192,6 +2363,9 @@ class $$MessagesTableTableManager extends RootTableManager<
             Value<bool> isPinned = const Value.absent(),
             Value<bool> isRead = const Value.absent(),
             Value<bool> isMe = const Value.absent(),
+            Value<int?> commentsCount = const Value.absent(),
+            Value<String?> reactionsJson = const Value.absent(),
+            Value<int?> pinOrder = const Value.absent(),
           }) =>
               MessagesCompanion.insert(
             id: id,
@@ -2209,6 +2383,9 @@ class $$MessagesTableTableManager extends RootTableManager<
             isPinned: isPinned,
             isRead: isRead,
             isMe: isMe,
+            commentsCount: commentsCount,
+            reactionsJson: reactionsJson,
+            pinOrder: pinOrder,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

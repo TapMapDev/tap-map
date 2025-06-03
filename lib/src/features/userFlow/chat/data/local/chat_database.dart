@@ -80,10 +80,10 @@ class ChatDatabase extends _$ChatDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 1) {
-          // Добавляем новые столбцы в таблицу Messages
-          await m.addColumn(messages, messages.commentsCount);
-          await m.addColumn(messages, messages.reactionsJson);
-          await m.addColumn(messages, messages.pinOrder);
+          // Используем правильный синтаксис для добавления столбцов
+          await m.addColumn(messages, messages.commentsCount as GeneratedColumn<Object>);
+          await m.addColumn(messages, messages.reactionsJson as GeneratedColumn<Object>);
+          await m.addColumn(messages, messages.pinOrder as GeneratedColumn<Object>);
         }
       },
     );
@@ -115,6 +115,12 @@ class ChatDatabase extends _$ChatDatabase {
       final count = await (delete(chats)..where((c) => c.chatId.equals(chatId))).go();
       return count > 0;
     });
+  }
+
+  // Метод для обновления информации о закрепленном сообщении в чате
+  Future<void> updateChatPinnedMessage(int chatId, int messageId) async {
+    await (update(chats)..where((t) => t.chatId.equals(chatId)))
+        .write(ChatsCompanion(pinnedMessageId: Value(messageId)));
   }
 
   // Методы для работы с сообщениями

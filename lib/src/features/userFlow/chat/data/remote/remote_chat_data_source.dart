@@ -72,7 +72,7 @@ class RemoteChatDataSource implements ChatDataSource {
             final List<dynamic> pinnedMessagesData = responseData['pinned_messages'];
             final pinnedMessages = pinnedMessagesData.map((json) {
               // Создаем объект сообщения с флагом isPinned
-              final messageJson = {...json};
+              final Map<String, dynamic> messageJson = <String, dynamic>{...json};
               messageJson['is_pinned'] = true;
               return MessageModel.fromJson(messageJson);
             }).toList();
@@ -324,7 +324,7 @@ class RemoteChatDataSource implements ChatDataSource {
           final List<dynamic> pinnedMessagesData = responseData['pinned_messages'];
           final messages = pinnedMessagesData.map((json) {
             // Создаем объект сообщения с флагом isPinned
-            final messageJson = {...json};
+            final messageJson = <String, dynamic>{...json};
             messageJson['is_pinned'] = true;
             return MessageModel.fromJson(messageJson);
           }).toList();

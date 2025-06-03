@@ -502,19 +502,15 @@ class LocalChatDataSource implements ChatDataSource {
     }
   }
   
-  Map<String, dynamic>? _decodeReactions(String? encodedReactions) {
-    if (encodedReactions == null || encodedReactions.isEmpty) {
+  Map<String, dynamic>? _decodeReactions(String? reactionsJson) {
+    if (reactionsJson == null || reactionsJson.isEmpty) {
       return null;
     }
     
     try {
-      final dynamic decoded = jsonDecode(encodedReactions);
-      if (decoded is Map) {
-        return Map<String, dynamic>.from(decoded);
-      }
-      return null;
+      return jsonDecode(reactionsJson) as Map<String, dynamic>;
     } catch (e) {
-      print('❌ Ошибка декодирования реакций: $e');
+      print('❌ LocalChatDataSource: Ошибка при декодировании реакций: $e');
       return null;
     }
   }
