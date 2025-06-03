@@ -52,6 +52,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SetReplyToMessageEvent>(_onSetReplyToMessage);
     on<SetForwardFromMessageEvent>(_onSetForwardFromMessage);
     on<UpdateMessagesEvent>(_onUpdateMessages);
+    on<WebSocketMessageEditedEvent>(_onWebSocketMessageEdited);
+    on<WebSocketMessageDeletedEvent>(_onWebSocketMessageDeleted);
+    on<WebSocketPinMessageEvent>(_onWebSocketPinMessage);
+    on<WebSocketUnpinMessageEvent>(_onWebSocketUnpinMessage);
     
     // Подписываемся на события WebSocket
     _subscribeToWebSocket();
@@ -63,44 +67,94 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _webSocketSubscription = _chatWebSocketService.events.listen((event) {
       print('🔄 ChatBloc: Получено событие WebSocket: ${event.type}');
 
-      // Обрабатываем события создания и получения сообщения одинаково
-      if ((event.type == WebSocketEventType.message ||
-              event.type == WebSocketEventType.createMessage) &&
-          event.data != null) {
-        print('🔄 ChatBloc: Получено событие сообщения: ${event.data}');
-        add(NewWebSocketMessageEvent(event.data));
-      } else if (event.type == WebSocketEventType.error) {
-        print('🔄 ChatBloc: Получено событие ошибки: ${event.error}');
-        add(ChatErrorEvent(event.error ?? 'Ошибка WebSocket'));
-      } else if (event.type == WebSocketEventType.connection) {
-        // Обрабатываем изменения состояния подключения
-        final connectionState = event.data?['state'];
-        print('🔄 ChatBloc: Изменение состояния соединения: $connectionState');
-        
-        if (connectionState != null) {
-          if (connectionState.toString().contains('connected')) {
-            // Если подключение установлено успешно
-            print('🔄 ChatBloc: Состояние изменено на ПОДКЛЮЧЕНО');
-            if (state is ChatLoaded) {
-              final chatLoaded = state as ChatLoaded;
-              emit(chatLoaded.copyWith(isConnectionActive: true));
-            } else {
-              emit(const ChatConnected());
-            }
-          } else if (connectionState.toString().contains('disconnected') || 
-                    connectionState.toString().contains('error')) {
-            // Если соединение разорвано или произошла ошибка
-            print('🔄 ChatBloc: Состояние изменено на ОТКЛЮЧЕНО/ОШИБКА');
-            if (state is ChatLoaded) {
-              final chatLoaded = state as ChatLoaded;
-              emit(chatLoaded.copyWith(isConnectionActive: false));
-            } else {
-              emit(const ChatDisconnected(reason: 'Соединение разорвано'));
-            }
+      // Обрабатываем различные типы сообщений
+      switch (event.type) {
+        // Новые сообщения
+        case WebSocketEventType.message:
+        case WebSocketEventType.createMessage:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Получено новое сообщение: ${event.data}');
+            add(NewWebSocketMessageEvent(event.data));
           }
-        }
+          break;
+          
+        // Отредактированные сообщения  
+        case WebSocketEventType.editMessage:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Сообщение отредактировано: ${event.data}');
+            add(WebSocketMessageEditedEvent(event.data));
+          }
+          break;
+          
+        // Удаленные сообщения
+        case WebSocketEventType.deleteMessage:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Сообщение удалено: ${event.data}');
+            add(WebSocketMessageDeletedEvent(event.data));
+          }
+          break;
+        
+        // Закрепление сообщения  
+        case WebSocketEventType.pinMessage:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Сообщение закреплено: ${event.data}');
+            add(WebSocketPinMessageEvent(event.data));
+          }
+          break;
+          
+        // Открепление сообщения
+        case WebSocketEventType.unpinMessage:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Сообщение откреплено: ${event.data}');
+            add(WebSocketUnpinMessageEvent(event.data));
+          }
+          break;
+          
+        // Ошибки
+        case WebSocketEventType.error:
+          print('🔄 ChatBloc: Получено событие ошибки: ${event.error}');
+          add(ChatErrorEvent(event.error ?? 'Ошибка WebSocket'));
+          break;
+          
+        // События соединения
+        case WebSocketEventType.connection:
+          _handleConnectionEvent(event);
+          break;
+          
+        default:
+          // Другие типы сообщений пока не обрабатываем
+          break;
       }
     });
+  }
+  
+  /// Обработчик событий подключения
+  void _handleConnectionEvent(WebSocketEvent event) {
+    final connectionState = event.data?['state'];
+    print('🔄 ChatBloc: Изменение состояния соединения: $connectionState');
+    
+    if (connectionState != null) {
+      if (connectionState.toString().contains('connected')) {
+        // Если подключение установлено успешно
+        print('🔄 ChatBloc: Состояние изменено на ПОДКЛЮЧЕНО');
+        if (state is ChatLoaded) {
+          final chatLoaded = state as ChatLoaded;
+          emit(chatLoaded.copyWith(isConnectionActive: true));
+        } else {
+          emit(const ChatConnected());
+        }
+      } else if (connectionState.toString().contains('disconnected') || 
+                connectionState.toString().contains('error')) {
+        // Если соединение разорвано или произошла ошибка
+        print('🔄 ChatBloc: Состояние изменено на ОТКЛЮЧЕНО/ОШИБКА');
+        if (state is ChatLoaded) {
+          final chatLoaded = state as ChatLoaded;
+          emit(chatLoaded.copyWith(isConnectionActive: false));
+        } else {
+          emit(const ChatDisconnected(reason: 'Соединение разорвано'));
+        }
+      }
+    }
   }
   
   /// Обработка события загрузки списка чатов
@@ -248,9 +302,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     NewWebSocketMessageEvent event,
     Emitter<ChatState> emit,
   ) async {
-    // Обрабатываем только если у нас открыт чат
-    if (state is! ChatLoaded) return;
-    
+    // Проверяем тип текущего состояния
+    if (state is ChatLoaded) {
+      // Текущее состояние - открытый чат
+      _processMessageForCurrentChat(event, emit);
+    } else if (state is ChatsLoaded) {
+      // Текущее состояние - список чатов, обновляем его
+      _processMessageForChatsList(event, emit);
+    }
+  }
+  
+  /// Обработка сообщения для текущего открытого чата
+  Future<void> _processMessageForCurrentChat(
+    NewWebSocketMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
     final currentState = state as ChatLoaded;
     final messageData = event.message;
     
@@ -264,9 +330,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Проверяем, относится ли сообщение к текущему чату
         if (processedMessage.chatId == currentState.chat.chatId) {
           // Добавляем новое сообщение к списку
-          // Поскольку список сообщений хранится в порядке убывания времени,
-          // добавляем пришедшее сообщение в начало списка, чтобы оно
-          // отображалось последним в открытом чате.
           final updatedMessages = [processedMessage, ...currentState.messages];
           
           emit(currentState.copyWith(
@@ -304,6 +367,44 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         }).toList();
         
         emit(currentState.copyWith(messages: updatedMessages));
+      }
+    }
+  }
+  
+  /// Обработка сообщения для списка чатов (когда чат не открыт)
+  Future<void> _processMessageForChatsList(
+    NewWebSocketMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final currentState = state as ChatsLoaded;
+    final messageData = event.message;
+    
+    // Проверяем, является ли это сообщением
+    final messageType = messageData['type'];
+    if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
+      // Получаем ID чата
+      final chatId = messageData['chatId'] as int? ?? messageData['chat_id'] as int?;
+      
+      if (chatId != null) {
+        // Обновляем список чатов для отражения нового сообщения
+        final updatedChats = await _chatRepository.fetchChats();
+        
+        // Обновляем счетчик непрочитанных сообщений для чата
+        final updatedChatsWithUnreadCount = updatedChats.map((chat) {
+          if (chat.chatId == chatId) {
+            // Увеличиваем счетчик непрочитанных сообщений
+            return chat.copyWith(
+              unreadCount: (chat.unreadCount ?? 0) + 1,
+              lastMessage: messageData['text'] as String? ?? chat.lastMessage,
+              lastMessageTimestamp: DateTime.now(),
+            );
+          }
+          return chat;
+        }).toList();
+        
+        emit(ChatsLoaded(updatedChatsWithUnreadCount));
+        
+        // При необходимости можно здесь добавить локальное уведомление
       }
     }
   }
@@ -641,6 +742,134 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(currentState.copyWith(
         messages: event.messages,
       ));
+    }
+  }
+  
+  /// Обработка отредактированного сообщения от WebSocket
+  Future<void> _onWebSocketMessageEdited(
+    WebSocketMessageEditedEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final messageData = event.message;
+    
+    // Получаем ID сообщения и текст
+    final messageId = messageData['messageId'] as int?;
+    final chatId = messageData['chatId'] as int?;
+    final newText = messageData['text'] as String?;
+    
+    if (messageId != null && chatId != null && newText != null) {
+      if (state is ChatLoaded) {
+        // Если открыт чат - обновляем сообщение в нем
+        final currentState = state as ChatLoaded;
+        
+        // Проверяем, что сообщение относится к текущему чату
+        if (chatId == currentState.chat.chatId) {
+          // Обновляем сообщение в UI
+          updateMessage(messageId, newText: newText);
+        }
+      } else if (state is ChatsLoaded) {
+        // Если открыт список чатов - обновляем предпросмотр последнего сообщения
+        final chatsState = state as ChatsLoaded;
+        final updatedChats = chatsState.chats.map((chat) {
+          // Если это последнее сообщение в чате, обновляем его предпросмотр
+          if (chat.chatId == chatId && chat.lastMessageId == messageId) {
+            return chat.copyWith(
+              lastMessage: newText,
+              // Не обновляем timestamp, так как это только редактирование
+            );
+          }
+          return chat;
+        }).toList();
+        
+        emit(ChatsLoaded(updatedChats));
+      }
+    }
+  }
+  
+  /// Обработка удаленного сообщения от WebSocket
+  Future<void> _onWebSocketMessageDeleted(
+    WebSocketMessageDeletedEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final messageData = event.message;
+    
+    // Получаем ID сообщения
+    final messageId = messageData['messageId'] as int?;
+    final chatId = messageData['chatId'] as int?;
+    
+    if (messageId != null && chatId != null) {
+      if (state is ChatLoaded) {
+        // Если открыт чат - помечаем сообщение как удаленное
+        final currentState = state as ChatLoaded;
+        
+        // Проверяем, что сообщение относится к текущему чату
+        if (chatId == currentState.chat.chatId) {
+          // Помечаем сообщение как удаленное в UI
+          updateMessage(messageId, isDeleted: true);
+        }
+      } else if (state is ChatsLoaded) {
+        // Если открыт список чатов и удалено последнее сообщение - обновляем его предпросмотр
+        final chatsState = state as ChatsLoaded;
+        final updatedChats = chatsState.chats.map((chat) {
+          // Если это последнее сообщение в чате, обновляем его предпросмотр
+          if (chat.chatId == chatId && chat.lastMessageId == messageId) {
+            return chat.copyWith(
+              lastMessage: "[Сообщение удалено]",
+              // Не обновляем timestamp, так как это только изменение статуса
+            );
+          }
+          return chat;
+        }).toList();
+        
+        emit(ChatsLoaded(updatedChats));
+      }
+    }
+  }
+  
+  /// Обработка закрепленного сообщения от WebSocket
+  Future<void> _onWebSocketPinMessage(
+    WebSocketPinMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state is! ChatLoaded) return;
+    
+    final currentState = state as ChatLoaded;
+    final messageData = event.message;
+    
+    // Получаем ID сообщения и чата
+    final messageId = messageData['messageId'] as int?;
+    final chatId = messageData['chatId'] as int?;
+    
+    // Проверяем, что сообщение относится к текущему чату
+    if (messageId != null && chatId != null && chatId == currentState.chat.chatId) {
+      // Обновляем закрепленное сообщение в UI
+      updatePinnedMessage(MessageModel(
+        id: messageId,
+        chatId: chatId,
+        text: messageData['text'] as String?,
+        timestamp: messageData['timestamp'] as int?,
+      ));
+    }
+  }
+  
+  /// Обработка открепленного сообщения от WebSocket
+  Future<void> _onWebSocketUnpinMessage(
+    WebSocketUnpinMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state is! ChatLoaded) return;
+    
+    final currentState = state as ChatLoaded;
+    final messageData = event.message;
+    
+    // Получаем ID сообщения и чата
+    final messageId = messageData['messageId'] as int?;
+    final chatId = messageData['chatId'] as int?;
+    
+    // Проверяем, что сообщение относится к текущему чату
+    if (messageId != null && chatId != null && chatId == currentState.chat.chatId) {
+      // Обновляем закрепленное сообщение в UI
+      updatePinnedMessage(null);
     }
   }
   

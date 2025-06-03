@@ -56,9 +56,49 @@ class SendMessageEvent extends ChatEvent {
 
 /// Новое сообщение от WebSocket
 class NewWebSocketMessageEvent extends ChatEvent {
-  final dynamic message;
+  final Map<String, dynamic> message;
 
   const NewWebSocketMessageEvent(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Сообщение отредактировано через WebSocket
+class WebSocketMessageEditedEvent extends ChatEvent {
+  final Map<String, dynamic> message;
+
+  const WebSocketMessageEditedEvent(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Сообщение удалено через WebSocket
+class WebSocketMessageDeletedEvent extends ChatEvent {
+  final Map<String, dynamic> message;
+
+  const WebSocketMessageDeletedEvent(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Сообщение закреплено через WebSocket
+class WebSocketPinMessageEvent extends ChatEvent {
+  final Map<String, dynamic> message;
+
+  const WebSocketPinMessageEvent(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Сообщение откреплено через WebSocket
+class WebSocketUnpinMessageEvent extends ChatEvent {
+  final Map<String, dynamic> message;
+
+  const WebSocketUnpinMessageEvent(this.message);
 
   @override
   List<Object?> get props => [message];
