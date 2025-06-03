@@ -3,16 +3,39 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_database.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 
+/// Константы для работы с кэшем
+class ChatCacheConfig {
+  /// Время жизни кэша сообщений в минутах
+  static const int messageCacheTTLMinutes = 5;
+  
+  /// Префикс для ключей в SharedPreferences
+  static const String cacheKeyPrefix = 'chat_messages_cache_time_';
+}
+
 /// Реализация локального источника данных для чатов
 class LocalChatDataSource implements ChatDataSource {
   final ChatDatabase _database;
+  SharedPreferences? _prefs;
 
-  LocalChatDataSource(this._database);
+  LocalChatDataSource(this._database) {
+    _initSharedPreferences();
+  }
+  
+  /// Инициализация SharedPreferences
+  Future<void> _initSharedPreferences() async {
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      print('📂 LocalChatDataSource: SharedPreferences инициализирован');
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при инициализации SharedPreferences: $e');
+    }
+  }
 
   @override
   Future<List<ChatModel>> getChats() async {
@@ -298,23 +321,6 @@ class LocalChatDataSource implements ChatDataSource {
         '📂 LocalChatDataSource: Кэширование сообщения ${message.id} для чата $chatId');
 
     try {
-      // Попытка найти и удалить дубликаты, которые могли остаться после
-      // отправки сообщения с временным идентификатором
-      final possibleDuplicates = await (_database.select(_database.messages)
-            ..where((tbl) =>
-                tbl.chatId.equals(chatId) &
-                tbl.messageText.equals(message.text) &
-                tbl.senderUsername.equals(message.senderUsername)))
-          .get();
-
-      for (final duplicate in possibleDuplicates) {
-        final difference =
-            duplicate.createdAt.difference(message.createdAt).abs();
-        if (difference.inSeconds <= 30 && duplicate.messageId != message.id) {
-          await _database.deleteMessage(duplicate.messageId);
-        }
-      }
-
       // Преобразование attachments в JSON строку
       final String? attachmentsJson = message.attachments.isNotEmpty
           ? jsonEncode(message.attachments)
@@ -352,8 +358,10 @@ class LocalChatDataSource implements ChatDataSource {
         await _database.updateChatPinnedMessage(chatId, message.id);
       }
 
-      print(
-          '✅ LocalChatDataSource: Сообщение ${message.id} успешно кэшировано');
+      // Обновляем метку времени кэширования
+      await _saveCacheTimestamp(chatId);
+
+      print('✅ LocalChatDataSource: Сообщение ${message.id} успешно кэшировано');
     } catch (e) {
       print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения: $e');
       rethrow;
@@ -511,6 +519,67 @@ class LocalChatDataSource implements ChatDataSource {
           '❌ LocalChatDataSource: Ошибка при получении закрепленных сообщений: $e');
       return [];
     }
+  }
+
+  /// Сохранение времени последнего обновления кэша сообщений для чата
+  Future<void> _saveCacheTimestamp(int chatId) async {
+    if (_prefs == null) await _initSharedPreferences();
+    
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    await _prefs?.setInt('${ChatCacheConfig.cacheKeyPrefix}$chatId', timestamp);
+    print('📂 LocalChatDataSource: Обновлена метка времени кэша для чата $chatId: $timestamp');
+  }
+  
+  /// Получение времени последнего обновления кэша для чата
+  Future<DateTime?> getCacheTimestamp(int chatId) async {
+    if (_prefs == null) await _initSharedPreferences();
+    
+    final timestamp = _prefs?.getInt('${ChatCacheConfig.cacheKeyPrefix}$chatId');
+    if (timestamp == null) return null;
+    
+    return DateTime.fromMillisecondsSinceEpoch(timestamp);
+  }
+  
+  /// Проверка свежести кэша сообщений для чата
+  Future<bool> isCacheFresh(int chatId) async {
+    final timestamp = await getCacheTimestamp(chatId);
+    if (timestamp == null) return false;
+    
+    final now = DateTime.now();
+    final difference = now.difference(timestamp).inMinutes;
+    
+    return difference < ChatCacheConfig.messageCacheTTLMinutes;
+  }
+
+  /// Кэширование списка сообщений для чата
+  Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
+    print('📂 LocalChatDataSource: Кэширование ${messages.length} сообщений для чата $chatId');
+    
+    try {
+      for (final message in messages) {
+        await cacheMessage(chatId, message);
+      }
+      
+      // Обновляем метку времени кэширования
+      await _saveCacheTimestamp(chatId);
+      
+      print('✅ LocalChatDataSource: ${messages.length} сообщений успешно кэшированы');
+    } catch (e) {
+      print('❌ LocalChatDataSource: Ошибка при кэшировании сообщений: $e');
+      rethrow;
+    }
+  }
+
+  /// Получение кэшированных сообщений для чата с информацией о свежести кэша
+  Future<Map<String, dynamic>> getCachedMessagesWithFreshness(int chatId) async {
+    final messages = await getMessagesForChat(chatId);
+    final isFresh = await isCacheFresh(chatId);
+    
+    return {
+      'messages': messages,
+      'isFresh': isFresh,
+      'lastUpdated': await getCacheTimestamp(chatId),
+    };
   }
 
   // Вспомогательные методы для конвертации между моделями базы данных и бизнес-моделями

@@ -29,8 +29,17 @@ class RemoteChatDataSource implements ChatDataSource {
       final response = await _dioClient.get('/chat/list/');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        final chats = data.map((json) => ChatModel.fromJson(json)).toList();
+        final data = response.data;
+        List<dynamic> chatsData;
+        if (data is List) {
+          chatsData = data;
+        } else if (data is Map<String, dynamic> && data['results'] is List) {
+          chatsData = data['results'] as List<dynamic>;
+        } else {
+          throw Exception('Unexpected chat list format');
+        }
+
+        final chats = chatsData.map((json) => ChatModel.fromJson(json)).toList();
         return chats;
       }
       throw Exception('Не удалось получить список чатов: ${response.statusCode}');
