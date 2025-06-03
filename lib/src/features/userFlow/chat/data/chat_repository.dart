@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:tap_map/src/features/userFlow/chat/data/local/chat_data_source.dart';
+import 'package:tap_map/src/features/userFlow/chat/data/local/local_chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/remote/remote_chat_data_source.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/chat_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
@@ -54,83 +55,199 @@ class ChatRepository {
   }
   
   /// Получить чат и его сообщения с кэшированием
+  /// Обновлено для использования стратегии "сначала кэш, потом сервер"
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
-    print('📂 ChatRepository: Получение чата $chatId из локального хранилища');
-    final localChat = await _localChatDataSource.getChatById(chatId);
-    print('📂 ChatRepository: Чат $chatId ${localChat != null ? 'найден' : 'не найден'} в локальном хранилище');
+    print('📱 ChatRepository: Запрос чата $chatId и его сообщений');
     
-    final localMessages = await _localChatDataSource.getCachedMessagesForChat(chatId);
-    print('📂 ChatRepository: Получено ${localMessages.length} сообщений из локального хранилища для чата $chatId');
-    
-    final localPinnedId = await _localChatDataSource.getPinnedMessageId(chatId);
-    print('📂 ChatRepository: Закрепленное сообщение ID: $localPinnedId для чата $chatId из локального хранилища');
-
-    if (localChat != null && localMessages.isNotEmpty) {
-      print('📂 ChatRepository: Возвращаем данные из локального хранилища и асинхронно обновляем с сервера');
-      // Асинхронно обновляем данные с сервера
-      () async {
-        try {
-          print('📱 ChatRepository: Асинхронное обновление чата $chatId с сервера');
-          final remoteChat = await _remoteChatDataSource.getChatById(chatId);
-          final remoteMessages = await _remoteChatDataSource.getMessagesForChat(chatId);
-          final pinnedId = await _remoteChatDataSource.getPinnedMessageId(chatId);
-          print('📱 ChatRepository: Получено с сервера: чат: ${remoteChat != null}, сообщений: ${remoteMessages.length}, закрепленное ID: $pinnedId');
-
-          if (remoteChat != null) {
-            print('💾 ChatRepository: Кэширование обновленных данных чата $chatId');
-            await _localChatDataSource.cacheChat(remoteChat.copyWith(pinnedMessageId: pinnedId));
-            await _localChatDataSource.cacheMessages(chatId, remoteMessages);
-            print('💾 ChatRepository: Данные чата $chatId успешно обновлены в кэше');
-          }
-        } catch (e) {
-          print('❌ ChatRepository: Ошибка при асинхронном обновлении чата: $e');
-        }
-      }();
-
-      return {
-        'chat': localChat,
-        'messages': localMessages,
-        'pinnedMessageId': localPinnedId,
-      };
-    }
-
     try {
-      print('📱 ChatRepository: Получение чата $chatId с сервера');
-      final chat = await _remoteChatDataSource.getChatById(chatId);
-      final messages = await _remoteChatDataSource.getMessagesForChat(chatId);
-      print('📱 ChatRepository: Получено с сервера: чат: ${chat != null}, сообщений: ${messages.length}');
-
-      // Получаем ID закрепленного сообщения
-      final pinnedMessageId = await _remoteChatDataSource.getPinnedMessageId(chatId);
-      print('📱 ChatRepository: Получено закрепленное сообщение ID: $pinnedMessageId с сервера');
-
-      // Кэшируем полученные данные
-      if (chat != null) {
-        print('💾 ChatRepository: Кэширование данных чата $chatId в локальное хранилище');
-        await _localChatDataSource.cacheChat(chat.copyWith(pinnedMessageId: pinnedMessageId));
-        await _localChatDataSource.cacheMessages(chatId, messages);
-        print('💾 ChatRepository: Данные чата $chatId успешно кэшированы');
-      }
-
-      return {
-        'chat': chat,
-        'messages': messages,
-        'pinnedMessageId': pinnedMessageId,
-      };
-    } catch (e) {
-      print('❌ ChatRepository: Ошибка при получении чата с сервера: $e');
+      // Получаем чат из локальной базы данных
+      final localChat = await _localChatDataSource.getChatById(chatId);
+      final pinnedMessageId = localChat?.pinnedMessageId;
+      
+      // Получаем сообщения с использованием новой стратегии кэширования
+      final messagesResponse = await getMessagesWithCacheStrategy(chatId);
+      
+      print('📱 ChatRepository: Получено ${messagesResponse.messages.length} сообщений, источник: '
+          '${messagesResponse.fromCache ? "кэш" : "сервер"}, последнее обновление: ${messagesResponse.lastUpdated}');
+      
+      // Если у нас есть локальный чат, возвращаем его с сообщениями
       if (localChat != null) {
-        print('📂 ChatRepository: Возвращаем данные из локального хранилища после ошибки сервера');
+        // Если кэш старый, асинхронно обновляем данные чата с сервера
+        if (messagesResponse.fromCache && messagesResponse.lastUpdated != null) {
+          final cacheAge = DateTime.now().difference(messagesResponse.lastUpdated!).inMinutes;
+          
+          // Проверяем, поддерживает ли источник данных расширенные возможности кэширования
+          if (_localChatDataSource is LocalChatDataSource) {
+            final ttl = ChatCacheConfig.messageCacheTTLMinutes;
+            if (cacheAge >= ttl) {
+              _updateChatDataAsync(chatId);
+            }
+          }
+        }
+        
         return {
           'chat': localChat,
-          'messages': localMessages,
-          'pinnedMessageId': localPinnedId,
+          'messages': messagesResponse.messages,
+          'pinnedMessageId': pinnedMessageId,
+          'fromCache': messagesResponse.fromCache,
+          'lastUpdated': messagesResponse.lastUpdated,
         };
       }
-
-      print('❌ ChatRepository: Данные не найдены ни на сервере, ни в локальном хранилище');
-      throw Exception('Не удалось получить данные чата: $e');
+      
+      // Если локального чата нет, загружаем с сервера
+      print('📱 ChatRepository: Локальный чат не найден, загружаем с сервера');
+      final remoteChat = await _remoteChatDataSource.getChatById(chatId);
+      final remotePinnedId = await _remoteChatDataSource.getPinnedMessageId(chatId);
+      
+      // Кэшируем данные чата
+      if (remoteChat != null) {
+        await _localChatDataSource.cacheChat(remoteChat.copyWith(pinnedMessageId: remotePinnedId));
+      }
+      
+      return {
+        'chat': remoteChat,
+        'messages': messagesResponse.messages,
+        'pinnedMessageId': remotePinnedId,
+        'fromCache': false,
+        'lastUpdated': DateTime.now(),
+      };
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка при получении чата: $e');
+      rethrow;
     }
+  }
+  
+  /// Асинхронное обновление данных чата с сервера
+  void _updateChatDataAsync(int chatId) {
+    // Запускаем асинхронную задачу без await
+    () async {
+      try {
+        print('📱 ChatRepository: Начато фоновое обновление данных чата $chatId');
+        final remoteChat = await _remoteChatDataSource.getChatById(chatId);
+        final pinnedId = await _remoteChatDataSource.getPinnedMessageId(chatId);
+        
+        if (remoteChat != null) {
+          await _localChatDataSource.cacheChat(remoteChat.copyWith(pinnedMessageId: pinnedId));
+          print('✅ ChatRepository: Фоновое обновление данных чата $chatId завершено');
+        }
+      } catch (e) {
+        print('❌ ChatRepository: Ошибка при фоновом обновлении данных чата: $e');
+      }
+    }();
+  }
+  
+  /// Расширенная модель ответа с информацией об источнике данных
+  class MessagesResponse {
+    final List<MessageModel> messages;
+    final bool fromCache;
+    final DateTime? lastUpdated;
+    
+    MessagesResponse({
+      required this.messages,
+      required this.fromCache,
+      this.lastUpdated,
+    });
+  }
+  
+  /// Получить сообщения для чата с использованием стратегии "сначала кэш, потом сервер"
+  /// 
+  /// Возвращает объект MessagesResponse, содержащий сообщения и информацию об источнике данных
+  Future<MessagesResponse> getMessagesWithCacheStrategy(int chatId) async {
+    print('📱 ChatRepository: Получение сообщений для чата $chatId со стратегией кэширования');
+    
+    try {
+      // Проверяем, что источник данных - это LocalChatDataSource
+      if (_localChatDataSource is! LocalChatDataSource) {
+        throw Exception('Источник данных не поддерживает стратегию кэширования');
+      }
+      
+      final localSource = _localChatDataSource as LocalChatDataSource;
+      
+      // Проверяем наличие и свежесть кэша
+      final cachedData = await localSource.getCachedMessagesWithFreshness(chatId);
+      
+      final List<MessageModel> cachedMessages = cachedData['messages'];
+      final bool isCacheFresh = cachedData['isFresh'];
+      final DateTime? lastUpdated = cachedData['lastUpdated'];
+      
+      print('📱 ChatRepository: Получено ${cachedMessages.length} сообщений из кэша, '
+          'свежесть кэша: $isCacheFresh, последнее обновление: $lastUpdated');
+      
+      // Если есть кэшированные сообщения, возвращаем их немедленно
+      if (cachedMessages.isNotEmpty) {
+        // Асинхронно обновляем данные с сервера, если кэш устарел
+        if (!isCacheFresh) {
+          print('📱 ChatRepository: Кэш устарел, запускаем фоновое обновление');
+          _updateMessagesFromServerAsync(chatId);
+        }
+        
+        return MessagesResponse(
+          messages: cachedMessages,
+          fromCache: true,
+          lastUpdated: lastUpdated,
+        );
+      }
+      
+      // Если кэша нет, загружаем с сервера
+      print('📱 ChatRepository: Кэш пуст, загружаем с сервера');
+      final remoteMessages = await _remoteChatDataSource.getMessagesForChat(chatId);
+      
+      // Кэшируем полученные данные
+      await localSource.cacheMessages(chatId, remoteMessages);
+      
+      return MessagesResponse(
+        messages: remoteMessages,
+        fromCache: false,
+        lastUpdated: DateTime.now(),
+      );
+    } catch (e) {
+      print('❌ ChatRepository: Ошибка при получении сообщений: $e');
+      
+      // В случае ошибки пытаемся вернуть кэшированные данные
+      try {
+        final cachedMessages = await _localChatDataSource.getMessagesForChat(chatId);
+        print('📱 ChatRepository: Возвращаем ${cachedMessages.length} сообщений из кэша после ошибки');
+        
+        DateTime? lastUpdated;
+        if (_localChatDataSource is LocalChatDataSource) {
+          lastUpdated = await (_localChatDataSource as LocalChatDataSource).getCacheTimestamp(chatId);
+        }
+        
+        return MessagesResponse(
+          messages: cachedMessages,
+          fromCache: true,
+          lastUpdated: lastUpdated,
+        );
+      } catch (cacheError) {
+        print('❌ ChatRepository: Не удалось получить сообщения из кэша: $cacheError');
+        // Если и кэш недоступен, возвращаем пустой список
+        return MessagesResponse(
+          messages: [],
+          fromCache: false,
+        );
+      }
+    }
+  }
+  
+  /// Асинхронное обновление сообщений с сервера без блокировки UI
+  void _updateMessagesFromServerAsync(int chatId) {
+    // Запускаем асинхронную задачу без await
+    () async {
+      try {
+        print('📱 ChatRepository: Начато фоновое обновление сообщений чата $chatId');
+        final remoteMessages = await _remoteChatDataSource.getMessagesForChat(chatId);
+        print('📱 ChatRepository: Получено ${remoteMessages.length} сообщений с сервера');
+        
+        // Проверяем, что источник данных - это LocalChatDataSource
+        if (_localChatDataSource is LocalChatDataSource) {
+          // Кэшируем полученные данные
+          await (_localChatDataSource as LocalChatDataSource).cacheMessages(chatId, remoteMessages);
+          print('✅ ChatRepository: Фоновое обновление сообщений чата $chatId завершено');
+        }
+      } catch (e) {
+        print('❌ ChatRepository: Ошибка при фоновом обновлении сообщений: $e');
+      }
+    }();
   }
   
   /// Получить только чат по ID (метод для обратной совместимости)
@@ -144,13 +261,11 @@ class ChatRepository {
   }
   
   /// Получить сообщения для чата (метод для обратной совместимости)
+  /// Теперь использует стратегию "сначала кэш, потом сервер"
   Future<List<MessageModel>> getMessages(int chatId) async {
-    try {
-      final result = await fetchChatWithMessages(chatId);
-      return result['messages'] as List<MessageModel>;
-    } catch (e) {
-      return [];
-    }
+    print('📱 ChatRepository: Вызов getMessages с новой стратегией кэширования');
+    final response = await getMessagesWithCacheStrategy(chatId);
+    return response.messages;
   }
   
   /// Создать новый чат
