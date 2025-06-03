@@ -356,11 +356,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         print('🔄 ChatBloc: Добавляем новое сообщение в чат ${processedMessage.chatId}, ID: ${processedMessage.id}');
         print('🔄 ChatBloc: Кол-во сообщений до: ${currentState.messages.length}, после: ${updatedMessages.length}');
         
-        // Создаем новое состояние с обновленным списком сообщений
+        // Создаем новое состояние с обновленным списком сообщений и временной меткой
         final newState = currentState.copyWith(
-          messages: updatedMessages
+          messages: updatedMessages,
+          lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
         );
         
+        print('🔄 ChatBloc: Обновляем состояние с lastUpdated: ${newState.lastUpdated}');
         emit(newState);
         
         _chatWebSocketService.readMessage(chatId: processedMessage.chatId, messageId: processedMessage.id);
@@ -375,10 +377,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           int.parse(chatId.toString()) == currentState.chat.chatId) {
         final isUserTyping = isTyping.toString().toLowerCase() == 'true';
         emit(currentState.copyWith(
-          isTyping: isUserTyping
+          isUserTyping: isUserTyping, // Исправляем поле на isUserTyping
+          typingUsername: isUserTyping ? username.toString() : null, // Добавляем имя печатающего пользователя
+          lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
         ));
       }
-    } else if (messageType == 'read') {
+    } else if (messageType == 'read' || messageType == 'read_message') {
       final chatId = messageData['chat_id'];
       
       if (chatId != null && int.parse(chatId.toString()) == currentState.chat.chatId) {
@@ -387,7 +391,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           return message.copyWith(isRead: true);
         }).toList();
         
-        emit(currentState.copyWith(messages: updatedMessages));
+        emit(currentState.copyWith(
+          messages: updatedMessages,
+          lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
+        ));
       }
     }
   }

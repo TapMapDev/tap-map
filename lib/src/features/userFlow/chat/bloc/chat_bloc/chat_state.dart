@@ -59,20 +59,26 @@ class ChatLoaded extends ChatState {
   final List<MessageModel> messages;
   final bool isConnectionActive;
   final bool isTyping;
+  final bool isUserTyping;
+  final String? typingUsername;
   final MessageModel? replyToMessage;
   final MessageModel? forwardFromMessage;
   final Set<String> typingUsers;
   final MessageModel? pinnedMessage;
+  final DateTime? lastUpdated;
   
   const ChatLoaded({
     required this.chat,
     required this.messages,
     this.isConnectionActive = false,
     this.isTyping = false,
+    this.isUserTyping = false,
+    this.typingUsername,
     this.replyToMessage,
     this.forwardFromMessage,
     this.typingUsers = const {},
     this.pinnedMessage,
+    this.lastUpdated,
   });
   
   /// Создать новое состояние на основе текущего
@@ -81,6 +87,8 @@ class ChatLoaded extends ChatState {
     List<MessageModel>? messages,
     bool? isConnectionActive,
     bool? isTyping,
+    bool? isUserTyping,
+    String? typingUsername,
     MessageModel? replyToMessage,
     bool clearReplyToMessage = false,
     MessageModel? forwardFromMessage,
@@ -88,21 +96,25 @@ class ChatLoaded extends ChatState {
     Set<String>? typingUsers,
     MessageModel? pinnedMessage,
     bool clearPinnedMessage = false,
+    DateTime? lastUpdated,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
       isConnectionActive: isConnectionActive ?? this.isConnectionActive,
       isTyping: isTyping ?? this.isTyping,
+      isUserTyping: isUserTyping ?? this.isUserTyping,
+      typingUsername: typingUsername,
       replyToMessage: clearReplyToMessage ? null : replyToMessage ?? this.replyToMessage,
       forwardFromMessage: clearForwardFromMessage ? null : forwardFromMessage ?? this.forwardFromMessage,
       typingUsers: typingUsers ?? this.typingUsers,
       pinnedMessage: clearPinnedMessage ? null : pinnedMessage ?? this.pinnedMessage,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
   
   @override
-  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, replyToMessage, forwardFromMessage, typingUsers, pinnedMessage];
+  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, isUserTyping, typingUsername, replyToMessage, forwardFromMessage, typingUsers, pinnedMessage, lastUpdated];
 }
 
 //

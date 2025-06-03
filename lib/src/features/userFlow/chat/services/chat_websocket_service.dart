@@ -160,10 +160,10 @@ class ChatWebSocketService {
   Stream? _broadcastStream;
   
   // Параметры для переподключения
-  static const int _maxReconnectAttempts = 5;
+  static const int _maxReconnectAttempts = 10; // Увеличиваем максимальное число попыток
   static const Duration _reconnectDelay = Duration(seconds: 3);
-  static const Duration _pingInterval = Duration(seconds: 30);
-  static const Duration _pingTimeout = Duration(seconds: 10);
+  static const Duration _pingInterval = Duration(seconds: 45); // Увеличиваем интервал пинга
+  static const Duration _pingTimeout = Duration(seconds: 20); // Увеличиваем таймаут ожидания ответа на пинг
   
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
@@ -314,9 +314,19 @@ class ChatWebSocketService {
       return;
     }
     
+    // Рассчитываем задержку с экспоненциальным увеличением
+    // base * 2^attempt с ограничением в 60 секунд
+    final backoffSeconds = min(
+      pow(2, _reconnectAttempts - 1) * _reconnectDelay.inSeconds, 
+      60
+    ).toInt();
+    final reconnectDelay = Duration(seconds: backoffSeconds);
+    
+    print('🌐 WebSocket: Попытка переподключения №$_reconnectAttempts через $backoffSeconds секунд');
+    
     connect().then((success) {
       if (!success && !_isManuallyDisconnected) {
-        _reconnectTimer = Timer(_reconnectDelay, _attemptReconnect);
+        _reconnectTimer = Timer(reconnectDelay, _attemptReconnect);
       } else {
         _reconnectAttempts = 0;
       }
