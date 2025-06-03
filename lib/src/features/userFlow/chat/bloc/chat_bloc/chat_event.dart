@@ -78,15 +78,6 @@ class ChatErrorEvent extends ChatEvent {
 // СОБЫТИЯ ДЛЯ РАБОТЫ С WEBSOCKET
 //
 
-/// Подключиться к чату
-class ConnectToChatEvent extends ChatEvent {
-  const ConnectToChatEvent();
-}
-
-/// Отключиться от чата
-class DisconnectFromChatEvent extends ChatEvent {
-  const DisconnectFromChatEvent();
-}
 
 /// Отправить статус печати
 class SendTypingEvent extends ChatEvent {

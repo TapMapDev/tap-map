@@ -38,8 +38,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ChatErrorEvent>(_onChatError);
     
     // События для WebSocket
-    on<ConnectToChatEvent>(_onConnectToChat);
-    on<DisconnectFromChatEvent>(_onDisconnectFromChat);
     on<SendTypingEvent>(_onSendTyping);
     
     // События для работы с сообщениями
@@ -317,41 +315,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ));
   }
   
-  /// Обработка события подключения к чату
-  Future<void> _onConnectToChat(
-    ConnectToChatEvent event,
-    Emitter<ChatState> emit,
-  ) async {
-    try {
-      print('🔄 ChatBloc: Подключаемся к чату');
-      final success = await _chatWebSocketService.connect();
-      print('🔄 ChatBloc: Результат подключения к WebSocket: ${success ? "успешно" : "неудачно"}');
-      
-      if (success) {
-        emit(const ChatConnected());
-      } else {
-        emit(const ChatDisconnected(reason: 'Не удалось подключиться к WebSocket'));
-      }
-    } catch (e) {
-      print('🔄 ChatBloc: Ошибка при подключении к чату: $e');
-      emit(ChatError(message: e.toString()));
-    }
-  }
-  
-  /// Обработка события отключения от чата
-  void _onDisconnectFromChat(
-    DisconnectFromChatEvent event,
-    Emitter<ChatState> emit,
-  ) {
-    _chatRepository.disconnectFromChat();
-    
-    if (state is ChatLoaded) {
-      final chatLoaded = state as ChatLoaded;
-      emit(chatLoaded.copyWith(isConnectionActive: false));
-    } else {
-      emit(const ChatDisconnected());
-    }
-  }
   
   /// Обработка события отправки статуса печати
   void _onSendTyping(
