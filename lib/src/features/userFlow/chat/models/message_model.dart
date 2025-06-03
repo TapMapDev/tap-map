@@ -23,6 +23,9 @@ class MessageModel extends Equatable {
   final bool isTyping;
   final int? senderUserId;
   final bool isMe;
+  final int? commentsCount;
+  final Map<String, dynamic>? reactionsSummary;
+  final int? pinOrder;
 
   const MessageModel({
     required this.id,
@@ -40,11 +43,16 @@ class MessageModel extends Equatable {
     this.isTyping = false,
     this.senderUserId,
     this.isMe = false,
+    this.commentsCount,
+    this.reactionsSummary,
+    this.pinOrder,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     final editedAt = json['edited_at'] as String?;
-    final senderUserId = json['user_id'] as int?;
+    final senderUserId = json['sender_id'] ?? json['user_id'] as int?;
+    final isPinned = json['is_pinned'] as bool? ?? json['pin_order'] != null;
+
     return MessageModel(
       id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
       chatId: json['chat'] as int? ?? 0,
@@ -56,20 +64,45 @@ class MessageModel extends Equatable {
       editedAt: editedAt != null ? DateTime.parse(editedAt) : null,
       replyToId: json['reply_to_id'] as int?,
       forwardedFromId: json['forwarded_from_id'] as int?,
-      attachments: (json['attachments'] as List<dynamic>?)
-              ?.map((e) => {
-                    'url': e['url'] as String? ?? '',
-                    'content_type': e['content_type'] as String? ?? '',
-                  })
-              .toList() ??
-          [],
+      attachments: _parseAttachments(json['attachments']),
       type: _parseMessageType(json['type'] as String?),
-      isPinned: json['is_pinned'] as bool? ?? false,
+      isPinned: isPinned,
       isRead: json['is_read'] as bool? ?? false,
       isTyping: json['is_typing'] as bool? ?? false,
       senderUserId: senderUserId,
       isMe: false,
+      commentsCount: json['comments_count'] as int?,
+      reactionsSummary: json['reactions_summary'] is Map
+          ? (json['reactions_summary'] as Map<String, dynamic>)
+          : null,
+      pinOrder: json['pin_order'] as int?,
     );
+  }
+
+  static List<Map<String, String>> _parseAttachments(dynamic attachments) {
+    if (attachments == null) {
+      return [];
+    }
+
+    // Если attachments - это Map, преобразуем его в список с одним элементом
+    if (attachments is Map) {
+      return [{
+        'url': attachments['url'] as String? ?? '',
+        'content_type': attachments['content_type'] as String? ?? '',
+      }];
+    }
+
+    // Если attachments - это List, маппим элементы
+    if (attachments is List) {
+      return attachments
+          .map((e) => {
+                'url': e['url'] as String? ?? '',
+                'content_type': e['content_type'] as String? ?? '',
+              })
+          .toList();
+    }
+
+    return [];
   }
 
   static MessageType _parseMessageType(String? type) {
@@ -100,7 +133,9 @@ class MessageModel extends Equatable {
       'is_pinned': isPinned,
       'is_read': isRead,
       'is_typing': isTyping,
-
+      'comments_count': commentsCount,
+      'reactions_summary': reactionsSummary,
+      'pin_order': pinOrder,
     };
   }
 
@@ -120,6 +155,9 @@ class MessageModel extends Equatable {
     bool? isTyping,
     int? senderUserId,
     bool? isMe,
+    int? commentsCount,
+    Map<String, dynamic>? reactionsSummary,
+    int? pinOrder,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -137,6 +175,9 @@ class MessageModel extends Equatable {
       isTyping: isTyping ?? this.isTyping,
       senderUserId: senderUserId ?? this.senderUserId,
       isMe: isMe ?? this.isMe,
+      commentsCount: commentsCount ?? this.commentsCount,
+      reactionsSummary: reactionsSummary ?? this.reactionsSummary,
+      pinOrder: pinOrder ?? this.pinOrder,
     );
   }
 
@@ -157,6 +198,9 @@ class MessageModel extends Equatable {
         isTyping,
         senderUserId,
         isMe,
+        commentsCount,
+        reactionsSummary,
+        pinOrder,
       ];
 
   static MessageModel empty() {

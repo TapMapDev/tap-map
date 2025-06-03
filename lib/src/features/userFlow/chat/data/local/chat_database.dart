@@ -41,6 +41,10 @@ class Messages extends Table {
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
   BoolColumn get isMe => boolean().withDefault(const Constant(false))();
+  // Новые поля из обновленного API
+  IntColumn get commentsCount => integer().nullable()();
+  TextColumn get reactionsJson => text().nullable()();
+  IntColumn get pinOrder => integer().nullable()();
 }
 
 // Таблица для кэширования файлов, прикрепленных к сообщениям
@@ -66,7 +70,7 @@ class ChatDatabase extends _$ChatDatabase {
   }
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -75,7 +79,12 @@ class ChatDatabase extends _$ChatDatabase {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Будем добавлять миграции по мере развития базы данных
+        if (from == 1) {
+          // Добавляем новые столбцы в таблицу Messages
+          await m.addColumn(messages, messages.commentsCount);
+          await m.addColumn(messages, messages.reactionsJson);
+          await m.addColumn(messages, messages.pinOrder);
+        }
       },
     );
   }

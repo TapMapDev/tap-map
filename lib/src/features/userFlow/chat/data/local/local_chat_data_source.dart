@@ -50,7 +50,7 @@ class LocalChatDataSource implements ChatDataSource {
     print('📂 LocalChatDataSource: Получение сообщений для чата $chatId из локальной базы данных');
     final messages = await _database.getMessagesForChat(chatId);
     print('📂 LocalChatDataSource: Получено ${messages.length} сообщений для чата $chatId из локальной базы данных');
-    return messages.map(_mapMessageToModel).toList();
+    return messages.map(_messageEntityToModel).toList();
   }
   
   @override
@@ -59,7 +59,7 @@ class LocalChatDataSource implements ChatDataSource {
     return _database.watchMessagesForChat(chatId).map(
       (messages) {
         print('📂 LocalChatDataSource: Обновление сообщений чата $chatId, получено ${messages.length} сообщений');
-        return messages.map(_mapMessageToModel).toList();
+        return messages.map(_messageEntityToModel).toList();
       },
     );
   }
@@ -105,15 +105,15 @@ class LocalChatDataSource implements ChatDataSource {
         MessagesCompanion(
           messageId: Value(messageId),
           chatId: Value(chatId),
-          messageText: Value(text), // Обновлено с text на messageText
+          messageText: Value(text), 
           senderUsername: Value(message.senderUsername),
           senderUserId: Value(message.senderUserId),
           createdAt: Value(message.createdAt),
           editedAt: Value(DateTime.now()),
           replyToId: Value(message.replyToId),
           forwardedFromId: Value(message.forwardedFromId),
-          attachmentsJson: Value(message.attachmentsJson), // Обновлено с attachments на attachmentsJson
-          messageType: Value(message.messageType), // Обновлено с type на messageType
+          attachmentsJson: Value(message.attachmentsJson), 
+          messageType: Value(message.messageType), 
           isPinned: Value(message.isPinned),
           isRead: Value(message.isRead),
           isMe: Value(message.isMe),
@@ -133,15 +133,15 @@ class LocalChatDataSource implements ChatDataSource {
         MessagesCompanion(
           messageId: Value(messageId),
           chatId: Value(chatId),
-          messageText: Value(message.messageText), // Обновлено с text на messageText
+          messageText: Value(message.messageText), 
           senderUsername: Value(message.senderUsername),
           senderUserId: Value(message.senderUserId),
           createdAt: Value(message.createdAt),
           editedAt: Value(message.editedAt),
           replyToId: Value(message.replyToId),
           forwardedFromId: Value(message.forwardedFromId),
-          attachmentsJson: Value(message.attachmentsJson), // Обновлено с attachments на attachmentsJson
-          messageType: Value(message.messageType), // Обновлено с type на messageType
+          attachmentsJson: Value(message.attachmentsJson), 
+          messageType: Value(message.messageType), 
           isPinned: const Value(true),
           isRead: Value(message.isRead),
           isMe: Value(message.isMe),
@@ -179,15 +179,15 @@ class LocalChatDataSource implements ChatDataSource {
         MessagesCompanion(
           messageId: Value(messageId),
           chatId: Value(chatId),
-          messageText: Value(message.messageText), // Обновлено с text на messageText
+          messageText: Value(message.messageText), 
           senderUsername: Value(message.senderUsername),
           senderUserId: Value(message.senderUserId),
           createdAt: Value(message.createdAt),
           editedAt: Value(message.editedAt),
           replyToId: Value(message.replyToId),
           forwardedFromId: Value(message.forwardedFromId),
-          attachmentsJson: Value(message.attachmentsJson), // Обновлено с attachments на attachmentsJson
-          messageType: Value(message.messageType), // Обновлено с type на messageType
+          attachmentsJson: Value(message.attachmentsJson), 
+          messageType: Value(message.messageType), 
           isPinned: const Value(false),
           isRead: Value(message.isRead),
           isMe: Value(message.isMe),
@@ -243,22 +243,7 @@ class LocalChatDataSource implements ChatDataSource {
     
     for (final message in messages) {
       try {
-        await _database.insertMessage(
-          MessagesCompanion(
-            messageId: Value(message.id),
-            chatId: Value(chatId),
-            messageText: Value(message.text), // Обновлено с text на messageText
-            senderUsername: Value(message.senderUsername),
-            senderUserId: Value(message.senderUserId),
-            createdAt: Value(message.createdAt),
-            editedAt: Value(message.editedAt),
-            replyToId: Value(message.replyToId),
-            forwardedFromId: Value(message.forwardedFromId),
-            attachmentsJson: Value(_encodeAttachments(message.attachments)), // Обновлено с attachments на attachmentsJson
-            messageType: Value(message.type.toString().split('.').last), // Обновлено с type на messageType
-            isRead: Value(message.isRead),
-          ),
-        );
+        await cacheMessage(chatId, message);
         successCount++;
       } catch (e) {
         print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения ${message.id}: $e');
@@ -270,27 +255,50 @@ class LocalChatDataSource implements ChatDataSource {
   
   @override
   Future<void> cacheMessage(int chatId, MessageModel message) async {
-    print('📂 LocalChatDataSource: Кэширование сообщения с ID ${message.id} для чата $chatId');
+    print('📂 LocalChatDataSource: Кэширование сообщения ${message.id} для чата $chatId');
+    
     try {
+      // Преобразование attachments в JSON строку
+      final String? attachmentsJson = message.attachments.isNotEmpty
+          ? jsonEncode(message.attachments)
+          : null;
+
+      // Преобразование reactions в JSON строку
+      final String? reactionsJson = message.reactionsSummary != null
+          ? jsonEncode(message.reactionsSummary)
+          : null;
+      
+      // Вставка сообщения в базу данных
       await _database.insertMessage(
         MessagesCompanion(
           messageId: Value(message.id),
           chatId: Value(chatId),
           messageText: Value(message.text),
           senderUsername: Value(message.senderUsername),
-          senderUserId: Value(message.senderUserId),
           createdAt: Value(message.createdAt),
           editedAt: Value(message.editedAt),
           replyToId: Value(message.replyToId),
           forwardedFromId: Value(message.forwardedFromId),
-          attachmentsJson: Value(_encodeAttachments(message.attachments)),
+          attachmentsJson: Value(attachmentsJson),
           messageType: Value(message.type.toString().split('.').last),
+          isPinned: Value(message.isPinned),
           isRead: Value(message.isRead),
+          senderUserId: Value(message.senderUserId),
+          commentsCount: Value(message.commentsCount),
+          reactionsJson: Value(reactionsJson),
+          pinOrder: Value(message.pinOrder),
         ),
       );
-      print('📂 LocalChatDataSource: Сообщение с ID ${message.id} успешно кэшировано');
+
+      // Если сообщение закреплено, обновляем информацию о чате
+      if (message.isPinned) {
+        await _database.updateChatPinnedMessage(chatId, message.id);
+      }
+      
+      print('✅ LocalChatDataSource: Сообщение ${message.id} успешно кэшировано');
     } catch (e) {
-      print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения ${message.id}: $e');
+      print('❌ LocalChatDataSource: Ошибка при кэшировании сообщения: $e');
+      rethrow;
     }
   }
 
@@ -395,7 +403,7 @@ class LocalChatDataSource implements ChatDataSource {
         return null;
       }
       print('📂 LocalChatDataSource: Сообщение $messageId найдено в кэше');
-      return _mapMessageToModel(message);
+      return _messageEntityToModel(message);
     } catch (e) {
       print('❌ LocalChatDataSource: Ошибка при получении сообщения по ID: $e');
       return null;
@@ -440,24 +448,25 @@ class LocalChatDataSource implements ChatDataSource {
     );
   }
   
-  MessageModel _mapMessageToModel(Message message) {
-    final attachments = _decodeAttachments(message.attachmentsJson); // Обновлено с attachments на attachmentsJson
-    
+  MessageModel _messageEntityToModel(Message message) {
     return MessageModel(
       id: message.messageId,
       chatId: message.chatId,
-      text: message.messageText, // Обновлено с text на messageText
+      text: message.messageText,
       senderUsername: message.senderUsername,
-      senderUserId: message.senderUserId,
       createdAt: message.createdAt,
       editedAt: message.editedAt,
       replyToId: message.replyToId,
       forwardedFromId: message.forwardedFromId,
-      attachments: attachments,
-      type: _parseMessageType(message.messageType), // Обновлено с type на messageType
+      attachments: _decodeAttachments(message.attachmentsJson),
+      type: _parseMessageType(message.messageType),
       isPinned: message.isPinned,
       isRead: message.isRead,
-      isMe: message.isMe,
+      senderUserId: message.senderUserId,
+      isMe: false, 
+      commentsCount: message.commentsCount,
+      reactionsSummary: _decodeReactions(message.reactionsJson),
+      pinOrder: message.pinOrder,
     );
   }
   
@@ -490,6 +499,23 @@ class LocalChatDataSource implements ChatDataSource {
     } catch (e) {
       print('❌ Ошибка декодирования вложений: $e');
       return [];
+    }
+  }
+  
+  Map<String, dynamic>? _decodeReactions(String? encodedReactions) {
+    if (encodedReactions == null || encodedReactions.isEmpty) {
+      return null;
+    }
+    
+    try {
+      final dynamic decoded = jsonDecode(encodedReactions);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Ошибка декодирования реакций: $e');
+      return null;
     }
   }
   

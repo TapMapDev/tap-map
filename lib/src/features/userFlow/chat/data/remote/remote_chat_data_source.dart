@@ -58,13 +58,56 @@ class RemoteChatDataSource implements ChatDataSource {
     try {
       final response = await _dioClient.get('/chat/$chatId/messages/');
       if (response.statusCode == 200) {
-        final List<dynamic> messagesData = response.data;
-        final messages = messagesData.map((json) => MessageModel.fromJson(json)).toList();
-        return messages;
+        // Проверяем формат данных
+        if (response.data is Map<String, dynamic>) {
+          // Новый формат ответа: объект с полями results и pinned_messages
+          final Map<String, dynamic> responseData = response.data;
+          
+          // Получаем обычные сообщения
+          final List<dynamic> messagesData = responseData['results'] ?? [];
+          final messages = messagesData.map((json) => MessageModel.fromJson(json)).toList();
+          
+          // Получаем и кэшируем закрепленные сообщения, если они есть
+          if (responseData.containsKey('pinned_messages') && responseData['pinned_messages'] != null) {
+            final List<dynamic> pinnedMessagesData = responseData['pinned_messages'];
+            final pinnedMessages = pinnedMessagesData.map((json) {
+              // Создаем объект сообщения с флагом isPinned
+              final messageJson = {...json};
+              messageJson['is_pinned'] = true;
+              return MessageModel.fromJson(messageJson);
+            }).toList();
+            
+            // Кэшируем закрепленные сообщения
+            for (var message in pinnedMessages) {
+              _savePinnedMessage(chatId, message);
+            }
+          }
+          
+          return messages;
+        } else {
+          // Старый формат ответа: просто массив сообщений
+          final List<dynamic> messagesData = response.data;
+          final messages = messagesData.map((json) => MessageModel.fromJson(json)).toList();
+          return messages;
+        }
       }
       throw Exception('Не удалось получить сообщения чата: ${response.statusCode}');
     } catch (e) {
       throw Exception('Не удалось получить сообщения чата: $e');
+    }
+  }
+
+  // Сохранить закрепленное сообщение в SharedPreferences
+  void _savePinnedMessage(int chatId, MessageModel message) {
+    final key = '${_pinnedMessageKey}${chatId}_${message.id}';
+    _prefs.setString(key, jsonEncode(message.toJson()));
+    
+    // Сохраняем список ID закрепленных сообщений для этого чата
+    final pinnedIdsKey = '${_pinnedMessageKey}${chatId}_ids';
+    final pinnedIds = _prefs.getStringList(pinnedIdsKey) ?? [];
+    if (!pinnedIds.contains(message.id.toString())) {
+      pinnedIds.add(message.id.toString());
+      _prefs.setStringList(pinnedIdsKey, pinnedIds);
     }
   }
 
@@ -269,21 +312,52 @@ class RemoteChatDataSource implements ChatDataSource {
   Future<List<MessageModel>> getPinnedMessages(int chatId) async {
     try {
       print('📱 RemoteChatDataSource: Запрос закрепленных сообщений для чата $chatId');
-      final response = await _dioClient.client.get('/chat/$chatId/messages/pinned/');
       
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+      // Сначала попробуем получить закрепленные сообщения из новой структуры API
+      final response = await _dioClient.get('/chat/$chatId/messages/');
+      
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final Map<String, dynamic> responseData = response.data;
+        
+        // Проверяем наличие поля pinned_messages в новом формате ответа
+        if (responseData.containsKey('pinned_messages') && responseData['pinned_messages'] != null) {
+          final List<dynamic> pinnedMessagesData = responseData['pinned_messages'];
+          final messages = pinnedMessagesData.map((json) {
+            // Создаем объект сообщения с флагом isPinned
+            final messageJson = {...json};
+            messageJson['is_pinned'] = true;
+            return MessageModel.fromJson(messageJson);
+          }).toList();
+          
+          print('📱 RemoteChatDataSource: Получено ${messages.length} закрепленных сообщений для чата $chatId из нового API');
+          
+          // Кэшируем сообщения
+          for (final message in messages) {
+            await cacheMessage(chatId, message);
+            _savePinnedMessage(chatId, message);
+          }
+          
+          return messages;
+        }
+      }
+      
+      // Если не удалось получить из нового формата, попробуем использовать старый эндпоинт
+      final fallbackResponse = await _dioClient.client.get('/chat/$chatId/messages/pinned/');
+      
+      if (fallbackResponse.statusCode == 200) {
+        final List<dynamic> data = fallbackResponse.data;
         final messages = data.map((json) => MessageModel.fromJson(json)).toList();
-        print('📱 RemoteChatDataSource: Получено ${messages.length} закрепленных сообщений для чата $chatId');
+        print('📱 RemoteChatDataSource: Получено ${messages.length} закрепленных сообщений для чата $chatId из старого API');
         
         // Кэшируем сообщения
         for (final message in messages) {
           await cacheMessage(chatId, message);
+          _savePinnedMessage(chatId, message);
         }
         
         return messages;
       } else {
-        print('❌ RemoteChatDataSource: Сервер вернул код ${response.statusCode} при запросе закрепленных сообщений');
+        print('❌ RemoteChatDataSource: Сервер вернул код ${fallbackResponse.statusCode} при запросе закрепленных сообщений');
         return [];
       }
     } catch (e) {
