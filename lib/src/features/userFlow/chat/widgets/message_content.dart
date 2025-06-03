@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/video_player_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageContent extends StatelessWidget {
   final MessageModel message;
@@ -157,7 +158,7 @@ class MessageContent extends StatelessWidget {
   }
 
   void _openFile(BuildContext context, String url) {
-    // TODO: Implement file opening functionality
+    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   void _showFullScreenImage(BuildContext context, String imageUrl) {
