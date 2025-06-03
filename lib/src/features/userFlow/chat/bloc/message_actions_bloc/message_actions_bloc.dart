@@ -189,15 +189,17 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
         text: event.text,
       );
 
-      if (success) {
+      if (success == true) {
         // Обновляем UI через ChatBloc с новым текстом
         _chatBloc.updateMessage(event.messageId, newText: event.text);
         
-        emit(const MessageActionSuccess(
+        emit(MessageActionSuccess(
           actionType: MessageActionType.edit,
+          chatId: event.chatId,
+          messageId: event.messageId,
         ));
       } else {
-        emit(const MessageActionFailure(
+        emit(MessageActionFailure(
           actionType: MessageActionType.edit,
           message: 'Не удалось отредактировать сообщение',
         ));

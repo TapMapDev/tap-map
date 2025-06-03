@@ -8,6 +8,19 @@ import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 
+/// Расширенная модель ответа с информацией об источнике данных
+class MessagesResponse {
+  final List<MessageModel> messages;
+  final bool fromCache;
+  final DateTime? lastUpdated;
+  
+  MessagesResponse({
+    required this.messages,
+    required this.fromCache,
+    this.lastUpdated,
+  });
+}
+
 /// Новая реализация репозитория чатов с поддержкой кэширования
 class ChatRepository {
   final RemoteChatDataSource _remoteChatDataSource;
@@ -134,19 +147,6 @@ class ChatRepository {
         print('❌ ChatRepository: Ошибка при фоновом обновлении данных чата: $e');
       }
     }();
-  }
-  
-  /// Расширенная модель ответа с информацией об источнике данных
-  class MessagesResponse {
-    final List<MessageModel> messages;
-    final bool fromCache;
-    final DateTime? lastUpdated;
-    
-    MessagesResponse({
-      required this.messages,
-      required this.fromCache,
-      this.lastUpdated,
-    });
   }
   
   /// Получить сообщения для чата с использованием стратегии "сначала кэш, потом сервер"

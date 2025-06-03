@@ -650,9 +650,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final currentState = state as ChatLoaded;
       final updatedMessages = currentState.messages.map((message) {
         if (message.id == messageId) {
+          // Если сообщение отмечено как удаленное, используем пустой текст
+          // так как в MessageModel нет поля isDeleted
           return message.copyWith(
-            text: newText ?? message.text,
-            isDeleted: isDeleted ?? message.isDeleted,
+            text: isDeleted == true ? '[Сообщение удалено]' : (newText ?? message.text),
           );
         }
         return message;
