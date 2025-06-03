@@ -462,46 +462,30 @@ class ChatRepository {
   }
 
   /// Обработать входящее сообщение из WebSocket и обогатить его данными о пользователе
-  Future<MessageModel?> processWebSocketMessage(Map<String, dynamic> messageData) async {
+  MessageModel? processWebSocketMessage(Map<String, dynamic> messageData) {
     try {
-      final senderId = messageData['sender_id'] as int?;
+      print('📩 ChatRepository: Processing WebSocket message: $messageData');
+      
+      final int? senderId = messageData['sender_id'] ?? messageData['user_id'];
       if (senderId == null) {
-        print('❌ ChatRepository: No sender_id in message data');
+        print('❌ ChatRepository: No sender_id or user_id in message data');
         return null;
       }
 
-      final user = await _userRepository.getUserById(senderId);
-      if (user.username == null) {
+      final user = _userRepository.getUserById(senderId);
+      if (user == null) {
         print('❌ ChatRepository: No username for sender_id: $senderId');
         return null;
       }
-      
-      // Проверка на корректность формата attachments
-      final attachments = messageData['attachments'];
-      dynamic processedAttachments = attachments;
-      
-      // Если attachments - это Map, преобразуем его в List
-      if (attachments is Map) {
-        processedAttachments = [attachments];
-      } else if (attachments != null && !(attachments is List)) {
-        // Если это не List и не Map, то создаем пустой список
-        processedAttachments = [];
-      }
-      
-      final messageDataWithCorrectAttachments = {
-        ...messageData,
-        'attachments': processedAttachments,
-        'sender_username': user.username,
-      };
 
-      final newMessage = MessageModel.fromJson(messageDataWithCorrectAttachments);
+      final newMessage = MessageModel.fromJson({
+        ...messageData,
+        'sender_username': user.username,
+      });
 
       print('📨 ChatRepository: Processed message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
       
-      print('💾 ChatRepository: Кэширование сообщения в локальное хранилище');
-      // Кэшируем сообщение
-      await _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
-      print('💾 ChatRepository: Сообщение успешно кэшировано');
+      _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
       
       return newMessage;
     } catch (e) {
