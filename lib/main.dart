@@ -62,15 +62,12 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _connectionBloc = getIt.get<ConnectionBloc>();
-    // Удаляем автоматическое подключение к WebSocket при запуске приложения
-    // _connectionBloc.add(const ConnectEvent());
+    _connectionBloc.add(const ConnectEvent());
   }
 
   @override
   void dispose() {
-    // Не нужно отключаться при закрытии приложения, так как соединение
-    // будет управляться через BottomNavbar
-    // _connectionBloc.add(const DisconnectEvent());
+    _connectionBloc.add(const DisconnectEvent());
     super.dispose();
   }
 
