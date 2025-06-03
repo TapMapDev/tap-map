@@ -14,11 +14,14 @@ class Chats extends Table {
   // ID чата с сервера
   IntColumn get chatId => integer().unique()();
   TextColumn get chatName => text()();
+  TextColumn get chatPhoto => text().nullable()();
   TextColumn get lastMessageText => text().nullable()();
   TextColumn get lastMessageSenderUsername => text().nullable()();
   DateTimeColumn get lastMessageCreatedAt => dateTime().nullable()();
   IntColumn get unreadCount => integer().withDefault(const Constant(0))();
   IntColumn get pinnedMessageId => integer().nullable()();
+  BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
+  IntColumn get pinOrder => integer().nullable()();
   DateTimeColumn get updatedAt => dateTime()();
 }
 
@@ -70,7 +73,7 @@ class ChatDatabase extends _$ChatDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -79,11 +82,15 @@ class ChatDatabase extends _$ChatDatabase {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from == 1) {
-          // Используем правильный синтаксис для добавления столбцов
+        if (from <= 1) {
           await m.addColumn(messages, messages.commentsCount as GeneratedColumn<Object>);
           await m.addColumn(messages, messages.reactionsJson as GeneratedColumn<Object>);
           await m.addColumn(messages, messages.pinOrder as GeneratedColumn<Object>);
+        }
+        if (from <= 2) {
+          await m.addColumn(chats, chats.chatPhoto as GeneratedColumn<Object>);
+          await m.addColumn(chats, chats.isPinned as GeneratedColumn<Object>);
+          await m.addColumn(chats, chats.pinOrder as GeneratedColumn<Object>);
         }
       },
     );

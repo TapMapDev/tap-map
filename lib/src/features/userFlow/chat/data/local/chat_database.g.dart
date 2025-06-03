@@ -30,6 +30,12 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
   late final GeneratedColumn<String> chatName = GeneratedColumn<String>(
       'chat_name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chatPhotoMeta =
+      const VerificationMeta('chatPhoto');
+  @override
+  late final GeneratedColumn<String> chatPhoto = GeneratedColumn<String>(
+      'chat_photo', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _lastMessageTextMeta =
       const VerificationMeta('lastMessageText');
   @override
@@ -62,6 +68,22 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
   late final GeneratedColumn<int> pinnedMessageId = GeneratedColumn<int>(
       'pinned_message_id', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _isPinnedMeta =
+      const VerificationMeta('isPinned');
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+      'is_pinned', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_pinned" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _pinOrderMeta =
+      const VerificationMeta('pinOrder');
+  @override
+  late final GeneratedColumn<int> pinOrder = GeneratedColumn<int>(
+      'pin_order', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _updatedAtMeta =
       const VerificationMeta('updatedAt');
   @override
@@ -73,11 +95,14 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
         id,
         chatId,
         chatName,
+        chatPhoto,
         lastMessageText,
         lastMessageSenderUsername,
         lastMessageCreatedAt,
         unreadCount,
         pinnedMessageId,
+        isPinned,
+        pinOrder,
         updatedAt
       ];
   @override
@@ -104,6 +129,10 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
           chatName.isAcceptableOrUnknown(data['chat_name']!, _chatNameMeta));
     } else if (isInserting) {
       context.missing(_chatNameMeta);
+    }
+    if (data.containsKey('chat_photo')) {
+      context.handle(_chatPhotoMeta,
+          chatPhoto.isAcceptableOrUnknown(data['chat_photo']!, _chatPhotoMeta));
     }
     if (data.containsKey('last_message_text')) {
       context.handle(
@@ -136,6 +165,14 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
           pinnedMessageId.isAcceptableOrUnknown(
               data['pinned_message_id']!, _pinnedMessageIdMeta));
     }
+    if (data.containsKey('is_pinned')) {
+      context.handle(_isPinnedMeta,
+          isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta));
+    }
+    if (data.containsKey('pin_order')) {
+      context.handle(_pinOrderMeta,
+          pinOrder.isAcceptableOrUnknown(data['pin_order']!, _pinOrderMeta));
+    }
     if (data.containsKey('updated_at')) {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
@@ -157,6 +194,8 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
           .read(DriftSqlType.int, data['${effectivePrefix}chat_id'])!,
       chatName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}chat_name'])!,
+      chatPhoto: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}chat_photo']),
       lastMessageText: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}last_message_text']),
       lastMessageSenderUsername: attachedDatabase.typeMapping.read(
@@ -169,6 +208,10 @@ class $ChatsTable extends Chats with TableInfo<$ChatsTable, Chat> {
           .read(DriftSqlType.int, data['${effectivePrefix}unread_count'])!,
       pinnedMessageId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}pinned_message_id']),
+      isPinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_pinned'])!,
+      pinOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}pin_order']),
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
     );
@@ -184,21 +227,27 @@ class Chat extends DataClass implements Insertable<Chat> {
   final int id;
   final int chatId;
   final String chatName;
+  final String? chatPhoto;
   final String? lastMessageText;
   final String? lastMessageSenderUsername;
   final DateTime? lastMessageCreatedAt;
   final int unreadCount;
   final int? pinnedMessageId;
+  final bool isPinned;
+  final int? pinOrder;
   final DateTime updatedAt;
   const Chat(
       {required this.id,
       required this.chatId,
       required this.chatName,
+      this.chatPhoto,
       this.lastMessageText,
       this.lastMessageSenderUsername,
       this.lastMessageCreatedAt,
       required this.unreadCount,
       this.pinnedMessageId,
+      required this.isPinned,
+      this.pinOrder,
       required this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -206,6 +255,9 @@ class Chat extends DataClass implements Insertable<Chat> {
     map['id'] = Variable<int>(id);
     map['chat_id'] = Variable<int>(chatId);
     map['chat_name'] = Variable<String>(chatName);
+    if (!nullToAbsent || chatPhoto != null) {
+      map['chat_photo'] = Variable<String>(chatPhoto);
+    }
     if (!nullToAbsent || lastMessageText != null) {
       map['last_message_text'] = Variable<String>(lastMessageText);
     }
@@ -220,6 +272,10 @@ class Chat extends DataClass implements Insertable<Chat> {
     if (!nullToAbsent || pinnedMessageId != null) {
       map['pinned_message_id'] = Variable<int>(pinnedMessageId);
     }
+    map['is_pinned'] = Variable<bool>(isPinned);
+    if (!nullToAbsent || pinOrder != null) {
+      map['pin_order'] = Variable<int>(pinOrder);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -229,6 +285,9 @@ class Chat extends DataClass implements Insertable<Chat> {
       id: Value(id),
       chatId: Value(chatId),
       chatName: Value(chatName),
+      chatPhoto: chatPhoto == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chatPhoto),
       lastMessageText: lastMessageText == null && nullToAbsent
           ? const Value.absent()
           : Value(lastMessageText),
@@ -243,6 +302,10 @@ class Chat extends DataClass implements Insertable<Chat> {
       pinnedMessageId: pinnedMessageId == null && nullToAbsent
           ? const Value.absent()
           : Value(pinnedMessageId),
+      isPinned: Value(isPinned),
+      pinOrder: pinOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pinOrder),
       updatedAt: Value(updatedAt),
     );
   }
@@ -254,6 +317,7 @@ class Chat extends DataClass implements Insertable<Chat> {
       id: serializer.fromJson<int>(json['id']),
       chatId: serializer.fromJson<int>(json['chatId']),
       chatName: serializer.fromJson<String>(json['chatName']),
+      chatPhoto: serializer.fromJson<String?>(json['chatPhoto']),
       lastMessageText: serializer.fromJson<String?>(json['lastMessageText']),
       lastMessageSenderUsername:
           serializer.fromJson<String?>(json['lastMessageSenderUsername']),
@@ -261,6 +325,8 @@ class Chat extends DataClass implements Insertable<Chat> {
           serializer.fromJson<DateTime?>(json['lastMessageCreatedAt']),
       unreadCount: serializer.fromJson<int>(json['unreadCount']),
       pinnedMessageId: serializer.fromJson<int?>(json['pinnedMessageId']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
+      pinOrder: serializer.fromJson<int?>(json['pinOrder']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -271,6 +337,7 @@ class Chat extends DataClass implements Insertable<Chat> {
       'id': serializer.toJson<int>(id),
       'chatId': serializer.toJson<int>(chatId),
       'chatName': serializer.toJson<String>(chatName),
+      'chatPhoto': serializer.toJson<String?>(chatPhoto),
       'lastMessageText': serializer.toJson<String?>(lastMessageText),
       'lastMessageSenderUsername':
           serializer.toJson<String?>(lastMessageSenderUsername),
@@ -278,6 +345,8 @@ class Chat extends DataClass implements Insertable<Chat> {
           serializer.toJson<DateTime?>(lastMessageCreatedAt),
       'unreadCount': serializer.toJson<int>(unreadCount),
       'pinnedMessageId': serializer.toJson<int?>(pinnedMessageId),
+      'isPinned': serializer.toJson<bool>(isPinned),
+      'pinOrder': serializer.toJson<int?>(pinOrder),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -286,16 +355,20 @@ class Chat extends DataClass implements Insertable<Chat> {
           {int? id,
           int? chatId,
           String? chatName,
+          Value<String?> chatPhoto = const Value.absent(),
           Value<String?> lastMessageText = const Value.absent(),
           Value<String?> lastMessageSenderUsername = const Value.absent(),
           Value<DateTime?> lastMessageCreatedAt = const Value.absent(),
           int? unreadCount,
           Value<int?> pinnedMessageId = const Value.absent(),
+          bool? isPinned,
+          Value<int?> pinOrder = const Value.absent(),
           DateTime? updatedAt}) =>
       Chat(
         id: id ?? this.id,
         chatId: chatId ?? this.chatId,
         chatName: chatName ?? this.chatName,
+        chatPhoto: chatPhoto.present ? chatPhoto.value : this.chatPhoto,
         lastMessageText: lastMessageText.present
             ? lastMessageText.value
             : this.lastMessageText,
@@ -309,6 +382,8 @@ class Chat extends DataClass implements Insertable<Chat> {
         pinnedMessageId: pinnedMessageId.present
             ? pinnedMessageId.value
             : this.pinnedMessageId,
+        isPinned: isPinned ?? this.isPinned,
+        pinOrder: pinOrder.present ? pinOrder.value : this.pinOrder,
         updatedAt: updatedAt ?? this.updatedAt,
       );
   Chat copyWithCompanion(ChatsCompanion data) {
@@ -316,6 +391,7 @@ class Chat extends DataClass implements Insertable<Chat> {
       id: data.id.present ? data.id.value : this.id,
       chatId: data.chatId.present ? data.chatId.value : this.chatId,
       chatName: data.chatName.present ? data.chatName.value : this.chatName,
+      chatPhoto: data.chatPhoto.present ? data.chatPhoto.value : this.chatPhoto,
       lastMessageText: data.lastMessageText.present
           ? data.lastMessageText.value
           : this.lastMessageText,
@@ -330,6 +406,8 @@ class Chat extends DataClass implements Insertable<Chat> {
       pinnedMessageId: data.pinnedMessageId.present
           ? data.pinnedMessageId.value
           : this.pinnedMessageId,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      pinOrder: data.pinOrder.present ? data.pinOrder.value : this.pinOrder,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -340,11 +418,14 @@ class Chat extends DataClass implements Insertable<Chat> {
           ..write('id: $id, ')
           ..write('chatId: $chatId, ')
           ..write('chatName: $chatName, ')
+          ..write('chatPhoto: $chatPhoto, ')
           ..write('lastMessageText: $lastMessageText, ')
           ..write('lastMessageSenderUsername: $lastMessageSenderUsername, ')
           ..write('lastMessageCreatedAt: $lastMessageCreatedAt, ')
           ..write('unreadCount: $unreadCount, ')
           ..write('pinnedMessageId: $pinnedMessageId, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('pinOrder: $pinOrder, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -355,11 +436,14 @@ class Chat extends DataClass implements Insertable<Chat> {
       id,
       chatId,
       chatName,
+      chatPhoto,
       lastMessageText,
       lastMessageSenderUsername,
       lastMessageCreatedAt,
       unreadCount,
       pinnedMessageId,
+      isPinned,
+      pinOrder,
       updatedAt);
   @override
   bool operator ==(Object other) =>
@@ -368,11 +452,14 @@ class Chat extends DataClass implements Insertable<Chat> {
           other.id == this.id &&
           other.chatId == this.chatId &&
           other.chatName == this.chatName &&
+          other.chatPhoto == this.chatPhoto &&
           other.lastMessageText == this.lastMessageText &&
           other.lastMessageSenderUsername == this.lastMessageSenderUsername &&
           other.lastMessageCreatedAt == this.lastMessageCreatedAt &&
           other.unreadCount == this.unreadCount &&
           other.pinnedMessageId == this.pinnedMessageId &&
+          other.isPinned == this.isPinned &&
+          other.pinOrder == this.pinOrder &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -380,32 +467,41 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
   final Value<int> id;
   final Value<int> chatId;
   final Value<String> chatName;
+  final Value<String?> chatPhoto;
   final Value<String?> lastMessageText;
   final Value<String?> lastMessageSenderUsername;
   final Value<DateTime?> lastMessageCreatedAt;
   final Value<int> unreadCount;
   final Value<int?> pinnedMessageId;
+  final Value<bool> isPinned;
+  final Value<int?> pinOrder;
   final Value<DateTime> updatedAt;
   const ChatsCompanion({
     this.id = const Value.absent(),
     this.chatId = const Value.absent(),
     this.chatName = const Value.absent(),
+    this.chatPhoto = const Value.absent(),
     this.lastMessageText = const Value.absent(),
     this.lastMessageSenderUsername = const Value.absent(),
     this.lastMessageCreatedAt = const Value.absent(),
     this.unreadCount = const Value.absent(),
     this.pinnedMessageId = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.pinOrder = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   ChatsCompanion.insert({
     this.id = const Value.absent(),
     required int chatId,
     required String chatName,
+    this.chatPhoto = const Value.absent(),
     this.lastMessageText = const Value.absent(),
     this.lastMessageSenderUsername = const Value.absent(),
     this.lastMessageCreatedAt = const Value.absent(),
     this.unreadCount = const Value.absent(),
     this.pinnedMessageId = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.pinOrder = const Value.absent(),
     required DateTime updatedAt,
   })  : chatId = Value(chatId),
         chatName = Value(chatName),
@@ -414,17 +510,21 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
     Expression<int>? id,
     Expression<int>? chatId,
     Expression<String>? chatName,
+    Expression<String>? chatPhoto,
     Expression<String>? lastMessageText,
     Expression<String>? lastMessageSenderUsername,
     Expression<DateTime>? lastMessageCreatedAt,
     Expression<int>? unreadCount,
     Expression<int>? pinnedMessageId,
+    Expression<bool>? isPinned,
+    Expression<int>? pinOrder,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (chatId != null) 'chat_id': chatId,
       if (chatName != null) 'chat_name': chatName,
+      if (chatPhoto != null) 'chat_photo': chatPhoto,
       if (lastMessageText != null) 'last_message_text': lastMessageText,
       if (lastMessageSenderUsername != null)
         'last_message_sender_username': lastMessageSenderUsername,
@@ -432,6 +532,8 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
         'last_message_created_at': lastMessageCreatedAt,
       if (unreadCount != null) 'unread_count': unreadCount,
       if (pinnedMessageId != null) 'pinned_message_id': pinnedMessageId,
+      if (isPinned != null) 'is_pinned': isPinned,
+      if (pinOrder != null) 'pin_order': pinOrder,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -440,22 +542,28 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
       {Value<int>? id,
       Value<int>? chatId,
       Value<String>? chatName,
+      Value<String?>? chatPhoto,
       Value<String?>? lastMessageText,
       Value<String?>? lastMessageSenderUsername,
       Value<DateTime?>? lastMessageCreatedAt,
       Value<int>? unreadCount,
       Value<int?>? pinnedMessageId,
+      Value<bool>? isPinned,
+      Value<int?>? pinOrder,
       Value<DateTime>? updatedAt}) {
     return ChatsCompanion(
       id: id ?? this.id,
       chatId: chatId ?? this.chatId,
       chatName: chatName ?? this.chatName,
+      chatPhoto: chatPhoto ?? this.chatPhoto,
       lastMessageText: lastMessageText ?? this.lastMessageText,
       lastMessageSenderUsername:
           lastMessageSenderUsername ?? this.lastMessageSenderUsername,
       lastMessageCreatedAt: lastMessageCreatedAt ?? this.lastMessageCreatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
       pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
+      isPinned: isPinned ?? this.isPinned,
+      pinOrder: pinOrder ?? this.pinOrder,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -471,6 +579,9 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
     }
     if (chatName.present) {
       map['chat_name'] = Variable<String>(chatName.value);
+    }
+    if (chatPhoto.present) {
+      map['chat_photo'] = Variable<String>(chatPhoto.value);
     }
     if (lastMessageText.present) {
       map['last_message_text'] = Variable<String>(lastMessageText.value);
@@ -489,6 +600,12 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
     if (pinnedMessageId.present) {
       map['pinned_message_id'] = Variable<int>(pinnedMessageId.value);
     }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
+    if (pinOrder.present) {
+      map['pin_order'] = Variable<int>(pinOrder.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -501,11 +618,14 @@ class ChatsCompanion extends UpdateCompanion<Chat> {
           ..write('id: $id, ')
           ..write('chatId: $chatId, ')
           ..write('chatName: $chatName, ')
+          ..write('chatPhoto: $chatPhoto, ')
           ..write('lastMessageText: $lastMessageText, ')
           ..write('lastMessageSenderUsername: $lastMessageSenderUsername, ')
           ..write('lastMessageCreatedAt: $lastMessageCreatedAt, ')
           ..write('unreadCount: $unreadCount, ')
           ..write('pinnedMessageId: $pinnedMessageId, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('pinOrder: $pinOrder, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -1821,22 +1941,28 @@ typedef $$ChatsTableCreateCompanionBuilder = ChatsCompanion Function({
   Value<int> id,
   required int chatId,
   required String chatName,
+  Value<String?> chatPhoto,
   Value<String?> lastMessageText,
   Value<String?> lastMessageSenderUsername,
   Value<DateTime?> lastMessageCreatedAt,
   Value<int> unreadCount,
   Value<int?> pinnedMessageId,
+  Value<bool> isPinned,
+  Value<int?> pinOrder,
   required DateTime updatedAt,
 });
 typedef $$ChatsTableUpdateCompanionBuilder = ChatsCompanion Function({
   Value<int> id,
   Value<int> chatId,
   Value<String> chatName,
+  Value<String?> chatPhoto,
   Value<String?> lastMessageText,
   Value<String?> lastMessageSenderUsername,
   Value<DateTime?> lastMessageCreatedAt,
   Value<int> unreadCount,
   Value<int?> pinnedMessageId,
+  Value<bool> isPinned,
+  Value<int?> pinOrder,
   Value<DateTime> updatedAt,
 });
 
@@ -1857,6 +1983,9 @@ class $$ChatsTableFilterComposer extends Composer<_$ChatDatabase, $ChatsTable> {
   ColumnFilters<String> get chatName => $composableBuilder(
       column: $table.chatName, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get chatPhoto => $composableBuilder(
+      column: $table.chatPhoto, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get lastMessageText => $composableBuilder(
       column: $table.lastMessageText,
       builder: (column) => ColumnFilters(column));
@@ -1875,6 +2004,12 @@ class $$ChatsTableFilterComposer extends Composer<_$ChatDatabase, $ChatsTable> {
   ColumnFilters<int> get pinnedMessageId => $composableBuilder(
       column: $table.pinnedMessageId,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+      column: $table.isPinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get pinOrder => $composableBuilder(
+      column: $table.pinOrder, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
@@ -1898,6 +2033,9 @@ class $$ChatsTableOrderingComposer
   ColumnOrderings<String> get chatName => $composableBuilder(
       column: $table.chatName, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get chatPhoto => $composableBuilder(
+      column: $table.chatPhoto, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get lastMessageText => $composableBuilder(
       column: $table.lastMessageText,
       builder: (column) => ColumnOrderings(column));
@@ -1916,6 +2054,12 @@ class $$ChatsTableOrderingComposer
   ColumnOrderings<int> get pinnedMessageId => $composableBuilder(
       column: $table.pinnedMessageId,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+      column: $table.isPinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get pinOrder => $composableBuilder(
+      column: $table.pinOrder, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
@@ -1939,6 +2083,9 @@ class $$ChatsTableAnnotationComposer
   GeneratedColumn<String> get chatName =>
       $composableBuilder(column: $table.chatName, builder: (column) => column);
 
+  GeneratedColumn<String> get chatPhoto =>
+      $composableBuilder(column: $table.chatPhoto, builder: (column) => column);
+
   GeneratedColumn<String> get lastMessageText => $composableBuilder(
       column: $table.lastMessageText, builder: (column) => column);
 
@@ -1953,6 +2100,12 @@ class $$ChatsTableAnnotationComposer
 
   GeneratedColumn<int> get pinnedMessageId => $composableBuilder(
       column: $table.pinnedMessageId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<int> get pinOrder =>
+      $composableBuilder(column: $table.pinOrder, builder: (column) => column);
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -1984,44 +2137,56 @@ class $$ChatsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> chatId = const Value.absent(),
             Value<String> chatName = const Value.absent(),
+            Value<String?> chatPhoto = const Value.absent(),
             Value<String?> lastMessageText = const Value.absent(),
             Value<String?> lastMessageSenderUsername = const Value.absent(),
             Value<DateTime?> lastMessageCreatedAt = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
             Value<int?> pinnedMessageId = const Value.absent(),
+            Value<bool> isPinned = const Value.absent(),
+            Value<int?> pinOrder = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
               ChatsCompanion(
             id: id,
             chatId: chatId,
             chatName: chatName,
+            chatPhoto: chatPhoto,
             lastMessageText: lastMessageText,
             lastMessageSenderUsername: lastMessageSenderUsername,
             lastMessageCreatedAt: lastMessageCreatedAt,
             unreadCount: unreadCount,
             pinnedMessageId: pinnedMessageId,
+            isPinned: isPinned,
+            pinOrder: pinOrder,
             updatedAt: updatedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int chatId,
             required String chatName,
+            Value<String?> chatPhoto = const Value.absent(),
             Value<String?> lastMessageText = const Value.absent(),
             Value<String?> lastMessageSenderUsername = const Value.absent(),
             Value<DateTime?> lastMessageCreatedAt = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
             Value<int?> pinnedMessageId = const Value.absent(),
+            Value<bool> isPinned = const Value.absent(),
+            Value<int?> pinOrder = const Value.absent(),
             required DateTime updatedAt,
           }) =>
               ChatsCompanion.insert(
             id: id,
             chatId: chatId,
             chatName: chatName,
+            chatPhoto: chatPhoto,
             lastMessageText: lastMessageText,
             lastMessageSenderUsername: lastMessageSenderUsername,
             lastMessageCreatedAt: lastMessageCreatedAt,
             unreadCount: unreadCount,
             pinnedMessageId: pinnedMessageId,
+            isPinned: isPinned,
+            pinOrder: pinOrder,
             updatedAt: updatedAt,
           ),
           withReferenceMapper: (p0) => p0
