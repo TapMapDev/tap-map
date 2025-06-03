@@ -172,8 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    // Удаляем вызов отключения от WebSocket, так как теперь это делается в BottomNavbar
-    // _chatBloc.add(const DisconnectFromChatEvent());
+    // Соединением WebSocket теперь управляет глобальный ConnectionBloc
     super.dispose();
   }
 
