@@ -348,50 +348,43 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Обработка разных типов сообщений
     final messageType = messageData['type'];
     if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
-      // Обработка нового сообщения
       final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
-      
-      if (processedMessage != null) {
-        // Проверяем, относится ли сообщение к текущему чату
-        if (processedMessage.chatId == currentState.chat.chatId) {
-          // Добавляем новое сообщение к списку
-          final updatedMessages = [processedMessage, ...currentState.messages];
-          
-          emit(currentState.copyWith(
-            messages: updatedMessages,
-          ));
-          
-          // Отмечаем сообщение как прочитанное
-          _chatWebSocketService.readMessage(
-            chatId: processedMessage.chatId,
-            messageId: processedMessage.id,
-          );
-          
-          // Сбрасываем счетчик непрочитанных сообщений для этого чата
-          _chatRepository.resetUnreadCount(processedMessage.chatId);
-        }
+      if (processedMessage != null && processedMessage.chatId == currentState.chat.chatId) {
+        // Создаем полностью новый список сообщений для гарантии обновления состояния
+        final updatedMessages = List<MessageModel>.from([processedMessage, ...currentState.messages]);
+        
+        print('🔄 ChatBloc: Добавляем новое сообщение в чат ${processedMessage.chatId}, ID: ${processedMessage.id}');
+        print('🔄 ChatBloc: Кол-во сообщений до: ${currentState.messages.length}, после: ${updatedMessages.length}');
+        
+        // Создаем новое состояние с обновленным списком сообщений
+        final newState = currentState.copyWith(
+          messages: updatedMessages
+        );
+        
+        emit(newState);
+        
+        _chatWebSocketService.readMessage(chatId: processedMessage.chatId, messageId: processedMessage.id);
+        _chatRepository.resetUnreadCount(processedMessage.chatId);
       }
-    } else if (messageData['type'] == 'typing') {
-      // Обработка статуса печати
-      final chatId = messageData['chatId'] as int?;
-      final userId = messageData['userId'] as int?;
-      final isTyping = messageData['isTyping'] as bool? ?? false;
+    } else if (messageType == 'typing') {
+      final chatId = messageData['chat_id'];
+      final isTyping = messageData['is_typing'];
+      final username = messageData['username'];
       
-      if (chatId != null && userId != null && chatId == currentState.chat.chatId) {
-        emit(currentState.copyWith(isTyping: isTyping));
+      if (chatId != null && isTyping != null && username != null && 
+          int.parse(chatId.toString()) == currentState.chat.chatId) {
+        final isUserTyping = isTyping.toString().toLowerCase() == 'true';
+        emit(currentState.copyWith(
+          isTyping: isUserTyping
+        ));
       }
-    } else if (messageData['type'] == 'read') {
-      // Обработка статуса прочтения
-      final chatId = messageData['chatId'] as int?;
-      final messageId = messageData['messageId'] as int?;
+    } else if (messageType == 'read') {
+      final chatId = messageData['chat_id'];
       
-      if (chatId != null && messageId != null && chatId == currentState.chat.chatId) {
-        // Обновляем статус прочтения сообщения
+      if (chatId != null && int.parse(chatId.toString()) == currentState.chat.chatId) {
+        // Отмечаем все сообщения как прочитанные
         final updatedMessages = currentState.messages.map((message) {
-          if (message.id == messageId) {
-            return message.copyWith(isRead: true);
-          }
-          return message;
+          return message.copyWith(isRead: true);
         }).toList();
         
         emit(currentState.copyWith(messages: updatedMessages));
