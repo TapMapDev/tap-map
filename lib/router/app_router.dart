@@ -153,6 +153,13 @@ final GoRouter appRouter = GoRouter(
                     return MajorMap(openPointId: id);
                   },
                 ),
+                GoRoute(
+                  path: 'event/:eventId',
+                  builder: (context, state) {
+                    final id = state.pathParameters['eventId']!;
+                    return MajorMap(openEventId: id);
+                  },
+                ),
               ],
             ),
           ],
