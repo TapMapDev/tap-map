@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/chat/models/message_model.dart';
 import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart';
@@ -11,12 +12,15 @@ import 'message_actions_state.dart';
 class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
   final ChatRepository _chatRepository;
   final ChatWebSocketService _chatWebSocketService;
+  final ChatBloc _chatBloc;
 
   MessageActionsBloc({
     required ChatRepository chatRepository,
     required ChatWebSocketService chatWebSocketService,
+    required ChatBloc chatBloc,
   })  : _chatRepository = chatRepository,
         _chatWebSocketService = chatWebSocketService,
+        _chatBloc = chatBloc,
         super(MessageActionInitial()) {
     // Регистрация обработчиков событий
     on<PinMessageAction>(_onPinMessage);
@@ -135,6 +139,9 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
         }
       }
 
+      // Обновляем UI через ChatBloc
+      _chatBloc.updateMessage(event.messageId, isDeleted: true);
+
       // В любом случае эмитим успех для локального удаления
       emit(MessageActionSuccess(
         actionType: MessageActionType.delete,
@@ -176,31 +183,25 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
     try {
       emit(const MessageActionLoading(MessageActionType.edit));
 
-      final isEditedViaWebSocket = _chatWebSocketService != null;
-      
-      if (isEditedViaWebSocket) {
-        // Редактирование через WebSocket
-        _chatWebSocketService.editMessage(
-          chatId: event.chatId,
-          messageId: event.messageId,
-          text: event.text,
-        );
-      } else {
-        // Редактирование через API
-        await _chatRepository.editMessage(
-          chatId: event.chatId,
-          messageId: event.messageId,
-          text: event.text,
-        );
-      }
-
-      emit(MessageActionSuccess(
-        actionType: MessageActionType.edit,
+      final success = await _chatRepository.editMessage(
         chatId: event.chatId,
         messageId: event.messageId,
-        newText: event.text,
-        timestamp: DateTime.now(),
-      ));
+        newText: event.newText,
+      );
+
+      if (success) {
+        // Обновляем UI через ChatBloc с новым текстом
+        _chatBloc.updateMessage(event.messageId, newText: event.newText);
+        
+        emit(const MessageActionSuccess(
+          actionType: MessageActionType.edit,
+        ));
+      } else {
+        emit(const MessageActionFailure(
+          actionType: MessageActionType.edit,
+          message: 'Не удалось отредактировать сообщение',
+        ));
+      }
     } catch (e) {
       emit(MessageActionFailure(
         actionType: MessageActionType.edit,

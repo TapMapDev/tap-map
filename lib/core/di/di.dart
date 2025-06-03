@@ -156,6 +156,7 @@ Future<void> setup() async {
     () => MessageActionsBloc(
       chatRepository: getIt<ChatRepository>(),
       chatWebSocketService: getIt<ChatWebSocketService>(),
+      chatBloc: getIt<ChatBloc>(),
     ),
   );
 

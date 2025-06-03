@@ -644,6 +644,36 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
   
+  /// Публичный метод для обновления сообщения в состоянии блока
+  void updateMessage(int messageId, {String? newText, bool? isDeleted}) {
+    if (state is ChatLoaded) {
+      final currentState = state as ChatLoaded;
+      final updatedMessages = currentState.messages.map((message) {
+        if (message.id == messageId) {
+          return message.copyWith(
+            text: newText ?? message.text,
+            isDeleted: isDeleted ?? message.isDeleted,
+          );
+        }
+        return message;
+      }).toList();
+      
+      emit(currentState.copyWith(messages: updatedMessages));
+    }
+  }
+  
+  /// Публичный метод для удаления сообщения из состояния блока
+  void removeMessage(int messageId) {
+    if (state is ChatLoaded) {
+      final currentState = state as ChatLoaded;
+      final updatedMessages = currentState.messages.where(
+        (message) => message.id != messageId
+      ).toList();
+      
+      emit(currentState.copyWith(messages: updatedMessages));
+    }
+  }
+  
   @override
   Future<void> close() {
     _webSocketSubscription?.cancel();
