@@ -106,7 +106,7 @@ class RemoteChatDataSource implements ChatDataSource {
     }
   }
 
-  // Сохранить закрепленное сообщение в SharedPreferences
+  /// Сохранение закрепленного сообщения в кэше
   void _savePinnedMessage(int chatId, MessageModel message) {
     final key = '${_pinnedMessageKey}${chatId}_${message.id}';
     _prefs.setString(key, jsonEncode(message.toJson()));
@@ -146,22 +146,13 @@ class RemoteChatDataSource implements ChatDataSource {
   @override
   Future<void> markChatAsRead(int chatId) async {
     try {
-      // Получаем сообщения чата
-      final messages = await getMessagesForChat(chatId);
-      
+      // Проверяем, инициализирован ли WebSocket сервис
       if (_webSocketService == null) {
         throw Exception('ChatWebSocketService не инициализирован');
       }
       
-      // Отмечаем каждое непрочитанное сообщение через WebSocket
-      for (final message in messages) {
-        if (!message.isRead) {
-          _webSocketService!.readMessage(
-            chatId: chatId,
-            messageId: message.id,
-          );
-        }
-      }
+      // Отправляем одно событие для пометки всех сообщений как прочитанных
+      _webSocketService?.sendReadAllMessages(chatId);
     } catch (e) {
       throw Exception('Не удалось отметить чат как прочитанный: $e');
     }
@@ -272,38 +263,6 @@ class RemoteChatDataSource implements ChatDataSource {
     );
   }
 
-  @override
-  Future<bool> markMessageAsReadApi({
-    required int chatId,
-    required int messageId,
-  }) async {
-    try {
-      final response = await _dioClient.post(
-        '/chat/$chatId/message/$messageId/read/',
-      );
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('❌ RemoteChatDataSource: Не удалось отметить сообщение как прочитанное: $e');
-      return false;
-    }
-  }
-
-  @override
-  Future<bool> markAllMessagesAsRead(int chatId) async {
-    try {
-      final response = await _dioClient.post(
-        '/chat/$chatId/read_all/',
-      );
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('❌ RemoteChatDataSource: Не удалось отметить все сообщения как прочитанные: $e');
-      return false;
-    }
-  }
-
-  // Вспомогательный метод для определения типа сообщения на основе вложений
   MessageType _getMessageType(List<Map<String, String>>? attachments) {
     if (attachments == null || attachments.isEmpty) {
       return MessageType.text;
@@ -472,13 +431,13 @@ class RemoteChatDataSource implements ChatDataSource {
         print('📌 RemoteChatDataSource: Найден закрепленный ID в кэше: $cachedId');
         return cachedId;
       }
-      
+
       // Если нет в кэше, делаем запрос на сервер
       final response = await _dioClient.client.get('/chat/$chatId/');
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final pinnedMessageId = data['pinned_message_id'] as int?;
-        
+
         if (pinnedMessageId != null) {
           print('📌 RemoteChatDataSource: Получен закрепленный ID с сервера: $pinnedMessageId');
           // Сохраняем в кэш для будущих запросов
@@ -486,7 +445,7 @@ class RemoteChatDataSource implements ChatDataSource {
         } else {
           print('📌 RemoteChatDataSource: Нет закрепленного сообщения для чата $chatId');
         }
-        
+
         return pinnedMessageId;
       }
       return null;
@@ -527,14 +486,22 @@ class RemoteChatDataSource implements ChatDataSource {
     }
   }
 
+  /// Загрузка медиафайла через HTTP
+  @override
+  Future<void> downloadMediaFile(String url) async {
+    // Сам процесс загрузки выполняется в LocalChatDataSource
+    // RemoteChatDataSource лишь предоставляет URL
+    // Здесь можно добавить какую-то логику относительно загрузки
+  }
+
   // Методы для работы с кэшированием - в удаленном источнике не реализованы
-  
+
   @override
   Future<List<MessageModel>> getCachedMessagesForChat(int chatId) async {
     // Возвращаем пустой список, так как удаленный источник не имеет кэша
     return [];
   }
-  
+
   @override
   Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
     // Ничего не делаем, т.к. удаленный источник не кэширует
@@ -554,24 +521,24 @@ class RemoteChatDataSource implements ChatDataSource {
   Future<void> cacheChats(List<ChatModel> chats) async {
     // Удаленный источник не кэширует данные
   }
-  
+
   @override
   Future<void> cacheMediaFile(String url, String localPath, String contentType) async {
     // Ничего не делаем, т.к. удаленный источник не кэширует
   }
-  
+
   @override
   Future<String?> getMediaFilePath(String url) async {
     // Удаленный источник не хранит локальные пути к файлам
     return null;
   }
-  
+
   @override
   Stream<List<ChatModel>> watchChats() {
     // Удаленный источник не поддерживает наблюдение за данными
     throw UnimplementedError('Метод не реализован для удаленного источника');
   }
-  
+
   @override
   Stream<List<MessageModel>> watchMessages(int chatId) {
     // Удаленный источник не поддерживает наблюдение за данными
