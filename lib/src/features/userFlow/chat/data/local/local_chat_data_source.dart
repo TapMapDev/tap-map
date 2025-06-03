@@ -354,7 +354,7 @@ class LocalChatDataSource implements ChatDataSource {
           isPinned: Value(message.isPinned),
           isRead: Value(message.isRead),
           senderUserId: Value(message.senderUserId),
-          isMe: false,
+          isMe: Value(false),
           commentsCount: Value(message.commentsCount),
           reactionsJson: Value(reactionsJson),
           pinOrder: Value(message.pinOrder),

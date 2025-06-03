@@ -74,7 +74,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.createMessage:
           if (event.data != null) {
             print('🔄 ChatBloc: Получено новое сообщение: ${event.data}');
-            add(NewWebSocketMessageEvent(event.data));
+            add(NewWebSocketMessageEvent(Map<String, dynamic>.from(event.data!)));
           }
           break;
           
@@ -82,7 +82,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.editMessage:
           if (event.data != null) {
             print('🔄 ChatBloc: Сообщение отредактировано: ${event.data}');
-            add(WebSocketMessageEditedEvent(event.data));
+            add(WebSocketMessageEditedEvent(Map<String, dynamic>.from(event.data!)));
           }
           break;
           
@@ -90,7 +90,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.deleteMessage:
           if (event.data != null) {
             print('🔄 ChatBloc: Сообщение удалено: ${event.data}');
-            add(WebSocketMessageDeletedEvent(event.data));
+            add(WebSocketMessageDeletedEvent(Map<String, dynamic>.from(event.data!)));
           }
           break;
         
@@ -98,7 +98,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.pinMessage:
           if (event.data != null) {
             print('🔄 ChatBloc: Сообщение закреплено: ${event.data}');
-            add(WebSocketPinMessageEvent(event.data));
+            add(WebSocketPinMessageEvent(Map<String, dynamic>.from(event.data!)));
           }
           break;
           
@@ -106,7 +106,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.unpinMessage:
           if (event.data != null) {
             print('🔄 ChatBloc: Сообщение откреплено: ${event.data}');
-            add(WebSocketUnpinMessageEvent(event.data));
+            add(WebSocketUnpinMessageEvent(Map<String, dynamic>.from(event.data!)));
           }
           break;
           
@@ -120,7 +120,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         case WebSocketEventType.readAll:
           if (event.data != null) {
             print('🔄 ChatBloc: Получено событие прочтения всех сообщений: ${event.data}');
-            _handleReadAllMessages(event.data);
+            _handleReadAllMessages(Map<String, dynamic>.from(event.data!));
           }
           break;
           
