@@ -472,11 +472,23 @@ class LocalChatDataSource implements ChatDataSource {
     }
     
     try {
-      final List<dynamic> decoded = jsonDecode(encodedAttachments);
-      return decoded
-          .map((item) => Map<String, String>.from(item as Map))
-          .toList();
-    } catch (_) {
+      final dynamic decoded = jsonDecode(encodedAttachments);
+      
+      // Обработка когда encodedAttachments - это Map, а не List
+      if (decoded is Map) {
+        return [Map<String, String>.from(decoded)];
+      }
+      
+      // Стандартная обработка для List
+      if (decoded is List) {
+        return decoded
+            .map((item) => Map<String, String>.from(item as Map))
+            .toList();
+      }
+      
+      return [];
+    } catch (e) {
+      print('❌ Ошибка декодирования вложений: $e');
       return [];
     }
   }

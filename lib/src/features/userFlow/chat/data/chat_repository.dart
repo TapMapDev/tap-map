@@ -475,11 +475,26 @@ class ChatRepository {
         print('❌ ChatRepository: No username for sender_id: $senderId');
         return null;
       }
-
-      final newMessage = MessageModel.fromJson({
+      
+      // Проверка на корректность формата attachments
+      final attachments = messageData['attachments'];
+      dynamic processedAttachments = attachments;
+      
+      // Если attachments - это Map, преобразуем его в List
+      if (attachments is Map) {
+        processedAttachments = [attachments];
+      } else if (attachments != null && !(attachments is List)) {
+        // Если это не List и не Map, то создаем пустой список
+        processedAttachments = [];
+      }
+      
+      final messageDataWithCorrectAttachments = {
         ...messageData,
+        'attachments': processedAttachments,
         'sender_username': user.username,
-      });
+      };
+
+      final newMessage = MessageModel.fromJson(messageDataWithCorrectAttachments);
 
       print('📨 ChatRepository: Processed message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
       
