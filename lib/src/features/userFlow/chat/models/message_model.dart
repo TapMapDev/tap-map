@@ -55,7 +55,7 @@ class MessageModel extends Equatable {
 
     return MessageModel(
       id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-      chatId: json['chat_id'] as int? ?? json['chat'] as int? ?? 0,
+      chatId: _parseChatId(json),
       text: json['text'] as String? ?? '',
       senderUsername: json['sender_username'] as String? ?? 'Unknown',
       createdAt: json['created_at'] != null
@@ -86,10 +86,12 @@ class MessageModel extends Equatable {
 
     // Если attachments - это Map, преобразуем его в список с одним элементом
     if (attachments is Map) {
-      return [{
-        'url': attachments['url'] as String? ?? '',
-        'content_type': attachments['content_type'] as String? ?? '',
-      }];
+      return [
+        {
+          'url': attachments['url'] as String? ?? '',
+          'content_type': attachments['content_type'] as String? ?? '',
+        }
+      ];
     }
 
     // Если attachments - это List, маппим элементы
@@ -103,6 +105,14 @@ class MessageModel extends Equatable {
     }
 
     return [];
+  }
+
+  /// Извлекает идентификатор чата из JSON, поддерживая разные ключи и типы
+  static int _parseChatId(Map<String, dynamic> json) {
+    final dynamic raw = json['chat'] ?? json['chat_id'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw) ?? 0;
+    return 0;
   }
 
   static MessageType _parseMessageType(String? type) {
