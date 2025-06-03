@@ -186,12 +186,12 @@ class MessageActionsBloc extends Bloc<MessageActionEvent, MessageActionState> {
       final success = await _chatRepository.editMessage(
         chatId: event.chatId,
         messageId: event.messageId,
-        newText: event.newText,
+        text: event.text,
       );
 
       if (success) {
         // Обновляем UI через ChatBloc с новым текстом
-        _chatBloc.updateMessage(event.messageId, newText: event.newText);
+        _chatBloc.updateMessage(event.messageId, newText: event.text);
         
         emit(const MessageActionSuccess(
           actionType: MessageActionType.edit,

@@ -311,6 +311,9 @@ class LocalChatDataSource implements ChatDataSource {
       }
     }
 
+    // Обновляем метку времени кэширования
+    await _saveCacheTimestamp(chatId);
+
     print(
         '📂 LocalChatDataSource: Успешно кэшировано $successCount из ${messages.length} сообщений для чата $chatId');
   }
@@ -549,25 +552,6 @@ class LocalChatDataSource implements ChatDataSource {
     final difference = now.difference(timestamp).inMinutes;
     
     return difference < ChatCacheConfig.messageCacheTTLMinutes;
-  }
-
-  /// Кэширование списка сообщений для чата
-  Future<void> cacheMessages(int chatId, List<MessageModel> messages) async {
-    print('📂 LocalChatDataSource: Кэширование ${messages.length} сообщений для чата $chatId');
-    
-    try {
-      for (final message in messages) {
-        await cacheMessage(chatId, message);
-      }
-      
-      // Обновляем метку времени кэширования
-      await _saveCacheTimestamp(chatId);
-      
-      print('✅ LocalChatDataSource: ${messages.length} сообщений успешно кэшированы');
-    } catch (e) {
-      print('❌ LocalChatDataSource: Ошибка при кэшировании сообщений: $e');
-      rethrow;
-    }
   }
 
   /// Получение кэшированных сообщений для чата с информацией о свежести кэша
