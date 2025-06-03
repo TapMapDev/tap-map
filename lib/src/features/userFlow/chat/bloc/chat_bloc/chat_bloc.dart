@@ -62,8 +62,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     print('🔄 ChatBloc: Подписываемся на события WebSocket');
     _webSocketSubscription = _chatWebSocketService.events.listen((event) {
       print('🔄 ChatBloc: Получено событие WebSocket: ${event.type}');
-      
-      if (event.type == WebSocketEventType.message && event.data != null) {
+
+      // Обрабатываем события создания и получения сообщения одинаково
+      if ((event.type == WebSocketEventType.message ||
+              event.type == WebSocketEventType.createMessage) &&
+          event.data != null) {
         print('🔄 ChatBloc: Получено событие сообщения: ${event.data}');
         add(NewWebSocketMessageEvent(event.data));
       } else if (event.type == WebSocketEventType.error) {
@@ -252,7 +255,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final messageData = event.message;
     
     // Обработка разных типов сообщений
-    if (messageData['type'] == 'message') {
+    final messageType = messageData['type'];
+    if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
       // Обработка нового сообщения
       final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
       
