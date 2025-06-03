@@ -605,11 +605,47 @@ class ChatRepository {
       print('📨 ChatRepository: Processed message - id: ${newMessage.id}, sender: ${newMessage.senderUsername}, text: ${newMessage.text}');
       
       await _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
-      
+
+      // Обновляем информацию о чате
+      await _updateChatFromMessage(newMessage);
+
       return newMessage;
     } catch (e) {
       print('❌ ChatRepository: Error processing WebSocket message: $e');
       return null;
+    }
+  }
+
+  /// Обновить информацию о чате на основе нового сообщения
+  Future<void> _updateChatFromMessage(MessageModel message) async {
+    try {
+      final existingChat = await _localChatDataSource.getChatById(message.chatId);
+      ChatModel? chat;
+
+      if (existingChat != null) {
+        chat = existingChat.copyWith(
+          lastMessageText: message.text,
+          lastMessageSenderUsername: message.senderUsername,
+          lastMessageCreatedAt: message.createdAt,
+          unreadCount: existingChat.unreadCount + 1,
+        );
+      } else {
+        final remoteChat = await _remoteChatDataSource.getChatById(message.chatId);
+        if (remoteChat != null) {
+          chat = remoteChat.copyWith(
+            lastMessageText: message.text,
+            lastMessageSenderUsername: message.senderUsername,
+            lastMessageCreatedAt: message.createdAt,
+            unreadCount: 1,
+          );
+        }
+      }
+
+      if (chat != null) {
+        await _localChatDataSource.cacheChat(chat);
+      }
+    } catch (e) {
+      print('❌ ChatRepository: Не удалось обновить чат: $e');
     }
   }
 
