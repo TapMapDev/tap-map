@@ -529,47 +529,6 @@ class LocalChatDataSource implements ChatDataSource {
     }
   }
 
-  @override
-  Future<bool> markMessageAsRead({
-    required int chatId,
-    required int messageId,
-  }) async {
-    try {
-      print('📂 LocalChatDataSource: Отметка сообщения $messageId в чате $chatId как прочитанного');
-      // Обновляем статус сообщения в базе данных
-      await _database.updateMessage(chatId, messageId, isRead: true);
-      print('📂 LocalChatDataSource: Сообщение $messageId в чате $chatId отмечено как прочитанное');
-      return true;
-    } catch (e) {
-      print('❌ LocalChatDataSource: Ошибка при отметке сообщения как прочитанного: $e');
-      return false;
-    }
-  }
-
-  @override
-  Future<bool> markAllMessagesAsRead(int chatId) async {
-    try {
-      print('📂 LocalChatDataSource: Отметка всех сообщений чата $chatId как прочитанных');
-      
-      // Обновляем статус всех сообщений в базе данных
-      await _database.markMessagesAsRead(chatId);
-      
-      // Обновляем счетчик непрочитанных сообщений в чате
-      await _database.updateChat(
-        chatId,
-        ChatsCompanion(
-          unreadCount: const Value(0),
-        ),
-      );
-      
-      print('📂 LocalChatDataSource: Все сообщения чата $chatId отмечены как прочитанные');
-      return true;
-    } catch (e) {
-      print('❌ LocalChatDataSource: Ошибка при отметке всех сообщений как прочитанных: $e');
-      return false;
-    }
-  }
-
   /// Сохранение времени последнего обновления кэша сообщений для чата
   Future<void> _saveCacheTimestamp(int chatId) async {
     if (_prefs == null) await _initSharedPreferences();

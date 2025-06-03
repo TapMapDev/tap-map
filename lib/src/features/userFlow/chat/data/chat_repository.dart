@@ -279,13 +279,17 @@ class ChatRepository {
   /// Отметить чат как прочитанный
   Future<void> markChatAsRead(int chatId) async {
     try {
-      // Отмечаем на сервере
-      await _remoteChatDataSource.markChatAsRead(chatId);
-      // И в локальном кэше
+      // Отмечаем в локальном кэше
       await _localChatDataSource.markChatAsRead(chatId);
+      
+      // Отправляем событие прочтения через WebSocket
+      try {
+        _webSocketService.sendReadAllMessages(chatId);
+      } catch (e) {
+        print('❌ ChatRepository: Не удалось отправить WebSocket-событие о прочтении: $e');
+      }
     } catch (e) {
-      // В случае ошибки отмечаем только в локальном кэше
-      await _localChatDataSource.markChatAsRead(chatId);
+      print('❌ ChatRepository: Ошибка при отметке чата как прочитанного: $e');
       rethrow;
     }
   }
@@ -726,12 +730,12 @@ class ChatRepository {
         // Сохраняем обновленный чат в локальной базе
         await _localChatDataSource.cacheChat(updatedChat);
         
-        // Отправляем запрос на сервер для синхронизации
+        // Отправляем сообщение о прочтении через WebSocket
         try {
-          await _remoteChatDataSource.markAllMessagesAsRead(chatId);
+          // Отправка события прочтения через WebSocket вместо HTTP-запроса
+          _webSocketService.sendReadAllMessages(chatId);
         } catch (e) {
-          print('❌ ChatRepository: Не удалось отметить все сообщения как прочитанные на сервере: $e');
-          // Ошибка синхронизации с сервером не должна влиять на локальные изменения
+          print('❌ ChatRepository: Не удалось отправить WebSocket-событие о прочтении: $e');
         }
         
         print('✅ ChatRepository: Счетчик непрочитанных сообщений для чата $chatId сброшен');

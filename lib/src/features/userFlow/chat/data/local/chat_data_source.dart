@@ -77,13 +77,4 @@ abstract class ChatDataSource {
   
   /// Получить локальный путь к медиафайлу
   Future<String?> getMediaFilePath(String url);
-  
-  /// Отметить сообщение как прочитанное
-  Future<bool> markMessageAsRead({
-    required int chatId,
-    required int messageId,
-  });
-  
-  /// Отметить все сообщения чата как прочитанные
-  Future<bool> markAllMessagesAsRead(int chatId);
 }

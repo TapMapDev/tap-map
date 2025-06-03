@@ -712,6 +712,25 @@ class ChatWebSocketService {
       _channel!.sink.add(jsonMessage);
     });
   }
+  
+  /// Отметить все сообщения в чате как прочитанные
+  void sendReadAllMessages(int chatId) {
+    // Проверяем, установлено ли имя пользователя
+    if (_currentUsername == null) {
+      print('❌ WebSocket: Ошибка при отправке статуса прочтения - имя пользователя не установлено');
+      return;
+    }
+    
+    _reconnectAndExecute(() {
+      final message = {
+        'type': 'read_all',
+        'chat_id': chatId,
+      };
+      
+      print('📤 WebSocket: Отправка статуса прочтения всех сообщений в чате $chatId');
+      _channel!.sink.add(jsonEncode(message));
+    });
+  }
 
   /// Переподключение и выполнение функции
   void _reconnectAndExecute(Function action) {
