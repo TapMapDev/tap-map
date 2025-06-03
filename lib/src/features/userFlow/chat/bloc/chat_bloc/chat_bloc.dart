@@ -375,10 +375,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       
       if (chatId != null && isTyping != null && username != null && 
           int.parse(chatId.toString()) == currentState.chat.chatId) {
-        final isUserTyping = isTyping.toString().toLowerCase() == 'true';
+        final isUserTypingValue = isTyping.toString().toLowerCase() == 'true';
         emit(currentState.copyWith(
-          isUserTyping: isUserTyping, // Исправляем поле на isUserTyping
-          typingUsername: isUserTyping ? username.toString() : null, // Добавляем имя печатающего пользователя
+          isTyping: isUserTypingValue,
+          typingUsername: isUserTypingValue ? username.toString() : null,
           lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
         ));
       }

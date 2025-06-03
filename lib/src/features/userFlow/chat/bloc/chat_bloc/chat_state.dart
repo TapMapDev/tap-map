@@ -59,7 +59,6 @@ class ChatLoaded extends ChatState {
   final List<MessageModel> messages;
   final bool isConnectionActive;
   final bool isTyping;
-  final bool isUserTyping;
   final String? typingUsername;
   final MessageModel? replyToMessage;
   final MessageModel? forwardFromMessage;
@@ -72,7 +71,6 @@ class ChatLoaded extends ChatState {
     required this.messages,
     this.isConnectionActive = false,
     this.isTyping = false,
-    this.isUserTyping = false,
     this.typingUsername,
     this.replyToMessage,
     this.forwardFromMessage,
@@ -87,7 +85,6 @@ class ChatLoaded extends ChatState {
     List<MessageModel>? messages,
     bool? isConnectionActive,
     bool? isTyping,
-    bool? isUserTyping,
     String? typingUsername,
     MessageModel? replyToMessage,
     bool clearReplyToMessage = false,
@@ -103,7 +100,6 @@ class ChatLoaded extends ChatState {
       messages: messages ?? this.messages,
       isConnectionActive: isConnectionActive ?? this.isConnectionActive,
       isTyping: isTyping ?? this.isTyping,
-      isUserTyping: isUserTyping ?? this.isUserTyping,
       typingUsername: typingUsername,
       replyToMessage: clearReplyToMessage ? null : replyToMessage ?? this.replyToMessage,
       forwardFromMessage: clearForwardFromMessage ? null : forwardFromMessage ?? this.forwardFromMessage,
@@ -114,7 +110,7 @@ class ChatLoaded extends ChatState {
   }
   
   @override
-  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, isUserTyping, typingUsername, replyToMessage, forwardFromMessage, typingUsers, pinnedMessage, lastUpdated];
+  List<Object?> get props => [chat, messages, isConnectionActive, isTyping, typingUsername, replyToMessage, forwardFromMessage, typingUsers, pinnedMessage, lastUpdated];
 }
 
 //
