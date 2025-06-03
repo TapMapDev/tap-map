@@ -580,7 +580,15 @@ class ChatRepository {
     try {
       print('📩 ChatRepository: Processing WebSocket message: $messageData');
       
+      // Извлекаем chatId и проверяем его валидность
+      final int? chatId = messageData['chat_id'] as int? ?? messageData['chat'] as int?;
       final int? senderId = messageData['sender_id'] ?? messageData['user_id'];
+      
+      if (chatId == null || chatId <= 0) {
+        print('❌ ChatRepository: Невалидный ID чата в сообщении: $chatId');
+        return null;
+      }
+      
       if (senderId == null) {
         print('❌ ChatRepository: No sender_id or user_id in message data');
         return null;
