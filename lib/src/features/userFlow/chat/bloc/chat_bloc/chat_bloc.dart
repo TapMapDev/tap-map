@@ -842,13 +842,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     // Проверяем, что сообщение относится к текущему чату
     if (messageId != null && chatId != null && chatId == currentState.chat.chatId) {
-      // Обновляем закрепленное сообщение в UI
-      updatePinnedMessage(MessageModel(
-        id: messageId,
-        chatId: chatId,
-        text: messageData['text'] as String?,
-        timestamp: messageData['timestamp'] as int?,
-      ));
+      // Загружаем данные закрепляемого сообщения из репозитория
+      final pinnedMessage = await _chatRepository.getMessageById(chatId, messageId);
+      if (pinnedMessage != null) {
+        // Обновляем закрепленное сообщение в UI
+        updatePinnedMessage(pinnedMessage);
+      }
     }
   }
   
