@@ -12,7 +12,8 @@ enum WebSocketEventType {
   editMessage,
   deleteMessage,
   typing,
-  updateLocation,
+  read,
+  readAll,
   readMessage,
   addReaction,
   removeReaction,
@@ -69,11 +70,14 @@ class WebSocketEventData {
       case 'typing':
         type = WebSocketEventType.typing;
         break;
-      case 'update_location':
-        type = WebSocketEventType.updateLocation;
-        break;
       case 'read_message':
         type = WebSocketEventType.readMessage;
+        break;
+      case 'read':
+        type = WebSocketEventType.read;
+        break;
+      case 'read_all':
+        type = WebSocketEventType.readAll;
         break;
       case 'add_reaction':
         type = WebSocketEventType.addReaction;

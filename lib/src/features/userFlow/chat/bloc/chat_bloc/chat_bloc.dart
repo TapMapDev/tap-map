@@ -116,6 +116,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           add(ChatErrorEvent(event.error ?? 'Ошибка WebSocket'));
           break;
           
+        // Прочитанные сообщения (все сообщения в чате)
+        case WebSocketEventType.readAll:
+          if (event.data != null) {
+            print('🔄 ChatBloc: Получено событие прочтения всех сообщений: ${event.data}');
+            _handleReadAllMessages(event.data);
+          }
+          break;
+          
         // События соединения
         case WebSocketEventType.connection:
           _handleConnectionEvent(event);
@@ -152,6 +160,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           emit(chatLoaded.copyWith(isConnectionActive: false));
         } else {
           emit(const ChatDisconnected(reason: 'Соединение разорвано'));
+        }
+      }
+    }
+  }
+  
+  /// Обработка события прочтения всех сообщений в чате
+  void _handleReadAllMessages(Map<String, dynamic> eventData) {
+    final chatId = eventData['chatId'] as int?;
+    if (chatId != null) {
+      if (state is ChatLoaded) {
+        final currentState = state as ChatLoaded;
+        if (currentState.chat.chatId == chatId) {
+          // Обновляем статус прочтения всех сообщений в чате
+          final updatedMessages = currentState.messages.map((message) {
+            return message.copyWith(isRead: true);
+          }).toList();
+          emit(currentState.copyWith(messages: updatedMessages));
         }
       }
     }
