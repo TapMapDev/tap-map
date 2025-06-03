@@ -26,8 +26,9 @@ import 'package:tap_map/src/features/userFlow/map/point_detail/bloc/point_detail
 
 class MajorMap extends StatefulWidget {
   final String? openPointId;
+  final String? openEventId;
 
-  const MajorMap({super.key, this.openPointId});
+  const MajorMap({super.key, this.openPointId, this.openEventId});
 
   @override
   State<MajorMap> createState() => _MajorMapState();
@@ -61,6 +62,7 @@ class _MajorMapState extends State<MajorMap> {
   bool _isDisposed = false; // Добавляем флаг для отслеживания состояния виджета
   bool _wasInactive = false; // Флаг для отслеживания неактивного состояния
   bool _initialPointHandled = false;
+  bool _initialEventHandled = false;
 
   @override
   void initState() {
@@ -394,6 +396,12 @@ class _MajorMapState extends State<MajorMap> {
     if (!_initialPointHandled && widget.openPointId != null) {
       _initialPointHandled = true;
       _openPointById(widget.openPointId!);
+    }
+
+    // Открываем событие из диплинка, если нужно
+    if (!_initialEventHandled && widget.openEventId != null) {
+      _initialEventHandled = true;
+      _openEventById(widget.openEventId!);
     }
   }
 
@@ -876,6 +884,36 @@ class _MajorMapState extends State<MajorMap> {
     }
 
     _showPointDetails(pointId);
+  }
+
+  Future<void> _openEventById(String eventId) async {
+    if (mapboxMapController != null) {
+      try {
+        // TODO: use events source when available
+        final features = await mapboxMapController!.querySourceFeatures(
+          'places_source',
+          mp.SourceQueryOptions(
+            sourceLayerIds: ['mylayer'],
+            filter: '["==",["get","id"],"$eventId"]',
+          ),
+        );
+
+        if (features.isNotEmpty) {
+          final data =
+              features.first?.queriedFeature.feature as Map<dynamic, dynamic>?;
+          final geom = data?['geometry'] as Map<dynamic, dynamic>?;
+          final coords = geom?['coordinates'] as List<dynamic>?;
+          if (coords != null && coords.length >= 2) {
+            await _centerMapOnPoint(
+              mp.Position(coords[0] as double, coords[1] as double),
+            );
+          }
+        }
+      } catch (_) {}
+    }
+
+    // TODO: open event details bottom sheet
+    _showPointDetails(eventId);
   }
 
 

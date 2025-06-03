@@ -11,6 +11,7 @@ class AppRoutes {
   static const String shareProfile = '/share_profile';
   static const String listChat = '/chat';
   static const String mapPoint = '/map/:pointId';
+  static const String mapEvent = '/map/event/:eventId';
   static const String publicProfile = '/users/:username';
   static const String chat = '/chat/:userId/:username';
 }
