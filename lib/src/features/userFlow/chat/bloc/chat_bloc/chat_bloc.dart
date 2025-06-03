@@ -387,24 +387,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       
       if (chatId != null) {
         // Обновляем список чатов для отражения нового сообщения
+        // Репозиторий уже обновляет счетчик непрочитанных сообщений
         final updatedChats = await _chatRepository.fetchChats();
-        
-        // Обновляем счетчик непрочитанных сообщений для чата
-        final updatedChatsWithUnreadCount = updatedChats.map((chat) {
-          if (chat.chatId == chatId) {
-            // Увеличиваем счетчик непрочитанных сообщений
-            return chat.copyWith(
-              unreadCount: (chat.unreadCount ?? 0) + 1,
-              lastMessage: messageData['text'] as String? ?? chat.lastMessage,
-              lastMessageTimestamp: DateTime.now(),
-            );
-          }
-          return chat;
-        }).toList();
-        
-        emit(ChatsLoaded(updatedChatsWithUnreadCount));
-        
-        // При необходимости можно здесь добавить локальное уведомление
+        emit(ChatsLoaded(updatedChats));
       }
     }
   }
