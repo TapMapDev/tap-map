@@ -19,7 +19,8 @@ import 'package:tap_map/src/features/userFlow/chat/widgets/message_input.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/scrollbottom.dart';
 import 'package:tap_map/src/features/userFlow/chat/widgets/typing_indicator.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart' as chat;
+import 'package:tap_map/src/features/userFlow/chat/services/chat_websocket_service.dart'
+    as chat;
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -330,7 +331,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
                         // Если загрузились данные чата и есть закрепленное сообщение, показываем его
-                        if (state is ChatLoaded && state.pinnedMessage != null) {
+                        if (state is ChatLoaded &&
+                            state.pinnedMessage != null) {
                           return Container(
                             padding: const EdgeInsets.all(8.0),
                             color: Colors.amber.withOpacity(0.2),
@@ -368,6 +370,28 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: BlocBuilder<ChatBloc, ChatState>(
                         builder: (context, state) {
                           if (state is ChatLoading) {
+                            if (state.currentMessages != null &&
+                                state.currentMessages!.isNotEmpty) {
+                              final messages = state.currentMessages!;
+                              return ListView.builder(
+                                controller: _scrollController,
+                                reverse: true,
+                                itemCount: messages.length,
+                                itemBuilder: (context, index) {
+                                  final message = messages[index];
+                                  final isMe = message.senderUsername ==
+                                      _currentUsername;
+                                  return ChatBubble(
+                                    message: message,
+                                    isMe: isMe,
+                                    onLongPress: () =>
+                                        _showMessageActions(message),
+                                    messages: messages,
+                                    currentUsername: _currentUsername ?? '',
+                                  );
+                                },
+                              );
+                            }
                             return const Center(
                                 child: CircularProgressIndicator());
                           }
