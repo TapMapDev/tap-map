@@ -362,7 +362,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           ));
           
           // Отмечаем сообщение как прочитанное
-          _chatRepository.markMessageAsRead(
+          _chatWebSocketService.readMessage(
             chatId: processedMessage.chatId,
             messageId: processedMessage.id,
           );
@@ -531,7 +531,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     try {
       // Отмечаем сообщение как прочитанное
-      _chatRepository.markMessageAsRead(
+      _chatWebSocketService.readMessage(
         chatId: event.chatId,
         messageId: event.messageId,
       );

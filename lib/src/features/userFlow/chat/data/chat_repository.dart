@@ -583,11 +583,6 @@ class ChatRepository {
     _webSocketService.sendTyping(chatId: chatId, isTyping: isTyping);
   }
 
-  /// Отметить сообщение как прочитанное
-  void markMessageAsRead({required int chatId, required int messageId}) {
-    _webSocketService.readMessage(chatId: chatId, messageId: messageId);
-  }
-
   /// Обработать входящее сообщение из WebSocket и обогатить его данными о пользователе
   Future<MessageModel?> processWebSocketMessage(Map<String, dynamic> messageData) async {
     try {
