@@ -218,7 +218,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Получаем обновленные сообщения и состояние чата
       if (message != null) {
         print('🌐 ChatBloc: Сообщение успешно отправлено');
-        final updatedMessages = [...currentState.messages, message];
+        // В локальном хранилище сообщения отсортированы по убыванию времени
+        // (самое новое первое), поэтому для корректного отображения в
+        // ListView.reverse мы добавляем новое сообщение в начало списка.
+        final updatedMessages = [message, ...currentState.messages];
         
         emit(currentState.copyWith(
           messages: updatedMessages,
@@ -259,7 +262,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Проверяем, относится ли сообщение к текущему чату
         if (processedMessage.chatId == currentState.chat.chatId) {
           // Добавляем новое сообщение к списку
-          final updatedMessages = [...currentState.messages, processedMessage];
+          // Поскольку список сообщений хранится в порядке убывания времени,
+          // добавляем пришедшее сообщение в начало списка, чтобы оно
+          // отображалось последним в открытом чате.
+          final updatedMessages = [processedMessage, ...currentState.messages];
           
           emit(currentState.copyWith(
             messages: updatedMessages,
