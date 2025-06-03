@@ -536,6 +536,11 @@ class ChatRepository {
       
       print('📱 ChatRepository: Получено ${pinnedMessages.length} закрепленных сообщений с сервера');
       
+      // Обеспечиваем кэширование сообщений
+      for (var message in pinnedMessages) {
+        await _localChatDataSource.cacheMessage(chatId, message);
+      }
+      
       return pinnedMessages;
     } catch (e) {
       print('❌ ChatRepository: Ошибка при получении закрепленных сообщений: $e');

@@ -340,7 +340,8 @@ class RemoteChatDataSource implements ChatDataSource {
           return messages;
         }
       }
-      
+
+      // TODO remove later after test
       // Если не удалось получить из нового формата, попробуем использовать старый эндпоинт
       final fallbackResponse = await _dioClient.client.get('/chat/$chatId/messages/pinned/');
       
@@ -360,6 +361,7 @@ class RemoteChatDataSource implements ChatDataSource {
         print('❌ RemoteChatDataSource: Сервер вернул код ${fallbackResponse.statusCode} при запросе закрепленных сообщений');
         return [];
       }
+      // TODO remove
     } catch (e) {
       print('❌ RemoteChatDataSource: Ошибка при получении закрепленных сообщений: $e');
       return [];

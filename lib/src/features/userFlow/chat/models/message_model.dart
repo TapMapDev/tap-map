@@ -50,7 +50,7 @@ class MessageModel extends Equatable {
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     final editedAt = json['edited_at'] as String?;
-    final senderUserId = json['sender_id'] ?? json['user_id'] as int?;
+    final senderUserId = (json['sender_id'] ?? json['user_id']) as int?;
     final isPinned = json['is_pinned'] as bool? ?? json['pin_order'] != null;
 
     return MessageModel(
