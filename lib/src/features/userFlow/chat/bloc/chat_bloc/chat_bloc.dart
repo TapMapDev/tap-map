@@ -129,7 +129,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
   
   /// Обработчик событий подключения
-  void _handleConnectionEvent(WebSocketEvent event) {
+  void _handleConnectionEvent(WebSocketEventData event) {
     final connectionState = event.data?['state'];
     print('🔄 ChatBloc: Изменение состояния соединения: $connectionState');
     
@@ -341,6 +341,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             chatId: processedMessage.chatId,
             messageId: processedMessage.id,
           );
+          
+          // Сбрасываем счетчик непрочитанных сообщений для этого чата
+          _chatRepository.resetUnreadCount(processedMessage.chatId);
         }
       }
     } else if (messageData['type'] == 'typing') {
@@ -386,8 +389,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final chatId = messageData['chatId'] as int? ?? messageData['chat_id'] as int?;
       
       if (chatId != null) {
+        // Обрабатываем новое сообщение в репозитории
+        final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
+        
         // Обновляем список чатов для отражения нового сообщения
-        // Репозиторий уже обновляет счетчик непрочитанных сообщений
         final updatedChats = await _chatRepository.fetchChats();
         emit(ChatsLoaded(updatedChats));
       }
@@ -757,10 +762,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final chatsState = state as ChatsLoaded;
         final updatedChats = chatsState.chats.map((chat) {
           // Если это последнее сообщение в чате, обновляем его предпросмотр
-          if (chat.chatId == chatId && chat.lastMessageId == messageId) {
+          if (chat.chatId == chatId) {
             return chat.copyWith(
-              lastMessage: newText,
-              // Не обновляем timestamp, так как это только редактирование
+              lastMessageText: newText,
             );
           }
           return chat;
@@ -797,10 +801,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final chatsState = state as ChatsLoaded;
         final updatedChats = chatsState.chats.map((chat) {
           // Если это последнее сообщение в чате, обновляем его предпросмотр
-          if (chat.chatId == chatId && chat.lastMessageId == messageId) {
+          if (chat.chatId == chatId) {
             return chat.copyWith(
-              lastMessage: "[Сообщение удалено]",
-              // Не обновляем timestamp, так как это только изменение статуса
+              lastMessageText: "[Сообщение удалено]",
             );
           }
           return chat;

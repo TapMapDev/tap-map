@@ -272,6 +272,37 @@ class RemoteChatDataSource implements ChatDataSource {
     );
   }
 
+  @override
+  Future<bool> markMessageAsReadApi({
+    required int chatId,
+    required int messageId,
+  }) async {
+    try {
+      final response = await _dioClient.post(
+        '/chat/$chatId/message/$messageId/read/',
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ RemoteChatDataSource: Не удалось отметить сообщение как прочитанное: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> markAllMessagesAsRead(int chatId) async {
+    try {
+      final response = await _dioClient.post(
+        '/chat/$chatId/read_all/',
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ RemoteChatDataSource: Не удалось отметить все сообщения как прочитанные: $e');
+      return false;
+    }
+  }
+
   // Вспомогательный метод для определения типа сообщения на основе вложений
   MessageType _getMessageType(List<Map<String, String>>? attachments) {
     if (attachments == null || attachments.isEmpty) {

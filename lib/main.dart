@@ -111,6 +111,7 @@ class _MyAppState extends State<MyApp> {
             create: (context) => MessageActionsBloc(
               chatRepository: getIt.get<ChatRepository>(),
               chatWebSocketService: getIt.get<ChatWebSocketService>(),
+              chatBloc: context.read<ChatBloc>(),
             ),
           ),
           BlocProvider(

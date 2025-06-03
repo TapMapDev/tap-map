@@ -713,4 +713,31 @@ class ChatRepository {
       print('❌ ChatRepository: Ошибка при асинхронном обновлении закрепленных сообщений: $e');
     }
   }
+
+  /// Сбрасывает счетчик непрочитанных сообщений для указанного чата
+  Future<void> resetUnreadCount(int chatId) async {
+    try {
+      final existingChat = await _localChatDataSource.getChatById(chatId);
+      
+      if (existingChat != null && existingChat.unreadCount > 0) {
+        // Создаем копию чата с обнуленным счетчиком
+        final updatedChat = existingChat.copyWith(unreadCount: 0);
+        
+        // Сохраняем обновленный чат в локальной базе
+        await _localChatDataSource.cacheChat(updatedChat);
+        
+        // Отправляем запрос на сервер для синхронизации
+        try {
+          await _remoteChatDataSource.markAllMessagesAsRead(chatId);
+        } catch (e) {
+          print('❌ ChatRepository: Не удалось отметить все сообщения как прочитанные на сервере: $e');
+          // Ошибка синхронизации с сервером не должна влиять на локальные изменения
+        }
+        
+        print('✅ ChatRepository: Счетчик непрочитанных сообщений для чата $chatId сброшен');
+      }
+    } catch (e) {
+      print('❌ ChatRepository: Не удалось сбросить счетчик непрочитанных сообщений: $e');
+    }
+  }
 }
