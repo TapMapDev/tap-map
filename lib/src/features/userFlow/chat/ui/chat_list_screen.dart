@@ -80,7 +80,11 @@ class _ChatListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        child: Text(chat.chatName[0].toUpperCase()),
+        backgroundImage:
+            chat.chatPhoto != null ? NetworkImage(chat.chatPhoto!) : null,
+        child: chat.chatPhoto == null
+            ? Text(chat.chatName[0].toUpperCase())
+            : null,
       ),
       title: Text(chat.chatName),
       subtitle: Text(

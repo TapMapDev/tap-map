@@ -19,9 +19,15 @@ class LocalChatDataSource implements ChatDataSource {
     print(
         '📂 LocalChatDataSource: Получение всех чатов из локальной базы данных');
     final chats = await _database.getAllChats();
-    print(
-        '📂 LocalChatDataSource: Получено ${chats.length} чатов из локальной базы данных');
-    return chats.map(_mapChatToModel).toList();
+    print('📂 LocalChatDataSource: Получено ${chats.length} чатов из локальной базы данных');
+    final models = chats.map(_mapChatToModel).toList();
+    models.sort((a, b) {
+      if (a.isPinned == b.isPinned) {
+        return (a.pinOrder ?? 0).compareTo(b.pinOrder ?? 0);
+      }
+      return a.isPinned ? -1 : 1;
+    });
+    return models;
   }
 
   @override
@@ -29,9 +35,15 @@ class LocalChatDataSource implements ChatDataSource {
     print('📂 LocalChatDataSource: Настройка наблюдения за списком чатов');
     return _database.watchAllChats().map(
       (chats) {
-        print(
-            '📂 LocalChatDataSource: Обновление списка чатов, получено ${chats.length} чатов');
-        return chats.map(_mapChatToModel).toList();
+        print('📂 LocalChatDataSource: Обновление списка чатов, получено ${chats.length} чатов');
+        final models = chats.map(_mapChatToModel).toList();
+        models.sort((a, b) {
+          if (a.isPinned == b.isPinned) {
+            return (a.pinOrder ?? 0).compareTo(b.pinOrder ?? 0);
+          }
+          return a.isPinned ? -1 : 1;
+        });
+        return models;
       },
     );
   }
@@ -356,11 +368,14 @@ class LocalChatDataSource implements ChatDataSource {
         ChatsCompanion(
           chatId: Value(chat.chatId),
           chatName: Value(chat.chatName),
+          chatPhoto: Value(chat.chatPhoto),
           lastMessageText: Value(chat.lastMessageText),
           lastMessageSenderUsername: Value(chat.lastMessageSenderUsername),
           lastMessageCreatedAt: Value(chat.lastMessageCreatedAt),
           unreadCount: Value(chat.unreadCount),
           pinnedMessageId: Value(chat.pinnedMessageId),
+          isPinned: Value(chat.isPinned),
+          pinOrder: Value(chat.pinOrder),
           updatedAt: Value(DateTime.now()),
         ),
       );
@@ -504,11 +519,14 @@ class LocalChatDataSource implements ChatDataSource {
     return ChatModel(
       chatId: chat.chatId,
       chatName: chat.chatName,
+      chatPhoto: chat.chatPhoto,
       lastMessageText: chat.lastMessageText,
       lastMessageSenderUsername: chat.lastMessageSenderUsername,
       lastMessageCreatedAt: chat.lastMessageCreatedAt,
       unreadCount: chat.unreadCount,
       pinnedMessageId: chat.pinnedMessageId,
+      isPinned: chat.isPinned,
+      pinOrder: chat.pinOrder,
     );
   }
 

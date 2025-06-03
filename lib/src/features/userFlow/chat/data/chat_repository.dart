@@ -35,7 +35,15 @@ class ChatRepository {
       await _localChatDataSource.cacheChats(remoteChats);
       print('💾 ChatRepository: Чаты успешно кэшированы');
 
-      return remoteChats;
+      final sorted = List<ChatModel>.from(remoteChats)
+        ..sort((a, b) {
+          if (a.isPinned == b.isPinned) {
+            return (a.pinOrder ?? 0).compareTo(b.pinOrder ?? 0);
+          }
+          return a.isPinned ? -1 : 1;
+        });
+
+      return sorted;
     } catch (e) {
       print('❌ ChatRepository: Ошибка при получении чатов с сервера: $e');
       print('📂 ChatRepository: Получение чатов из локального хранилища');

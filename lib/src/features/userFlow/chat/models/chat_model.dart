@@ -3,26 +3,33 @@ import 'package:equatable/equatable.dart';
 class ChatModel extends Equatable {
   final int chatId;
   final String chatName;
+  final String? chatPhoto;
   final String? lastMessageText;
   final String? lastMessageSenderUsername;
   final DateTime? lastMessageCreatedAt;
   final int unreadCount;
   final int? pinnedMessageId;
+  final bool isPinned;
+  final int? pinOrder;
 
   const ChatModel({
     required this.chatId,
     required this.chatName,
+    this.chatPhoto,
     this.lastMessageText,
     this.lastMessageSenderUsername,
     this.lastMessageCreatedAt,
     this.unreadCount = 0,
     this.pinnedMessageId,
+    this.isPinned = false,
+    this.pinOrder,
   });
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
       chatId: json['id'] as int? ?? json['chat_id'] as int? ?? 0,
       chatName: json['chat_name'] as String? ?? 'Unknown Chat',
+      chatPhoto: json['chat_photo'] as String?,
       lastMessageText: json['last_message_text'] as String?,
       lastMessageSenderUsername:
           json['last_message_sender_username'] as String?,
@@ -31,27 +38,35 @@ class ChatModel extends Equatable {
           : null,
       unreadCount: json['unread_count'] as int? ?? 0,
       pinnedMessageId: json['pinned_message_id'] as int?,
+      isPinned: json['is_pinned'] as bool? ?? false,
+      pinOrder: json['pin_order'] as int?,
     );
   }
 
   ChatModel copyWith({
     int? chatId,
     String? chatName,
+    String? chatPhoto,
     String? lastMessageText,
     String? lastMessageSenderUsername,
     DateTime? lastMessageCreatedAt,
     int? unreadCount,
     int? pinnedMessageId,
+    bool? isPinned,
+    int? pinOrder,
   }) {
     return ChatModel(
       chatId: chatId ?? this.chatId,
       chatName: chatName ?? this.chatName,
+      chatPhoto: chatPhoto ?? this.chatPhoto,
       lastMessageText: lastMessageText ?? this.lastMessageText,
       lastMessageSenderUsername:
           lastMessageSenderUsername ?? this.lastMessageSenderUsername,
       lastMessageCreatedAt: lastMessageCreatedAt ?? this.lastMessageCreatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
       pinnedMessageId: pinnedMessageId ?? this.pinnedMessageId,
+      isPinned: isPinned ?? this.isPinned,
+      pinOrder: pinOrder ?? this.pinOrder,
     );
   }
 
@@ -64,5 +79,8 @@ class ChatModel extends Equatable {
         lastMessageCreatedAt,
         unreadCount,
         pinnedMessageId,
+        chatPhoto,
+        isPinned,
+        pinOrder,
       ];
 }
