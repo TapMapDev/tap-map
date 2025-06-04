@@ -230,7 +230,9 @@ class RemoteChatDataSource implements ChatDataSource {
       }
 
       // Создаем локальное представление сообщения с временным ID
-      final temporaryId = DateTime.now().millisecondsSinceEpoch;
+      // Используем отрицательное значение, чтобы легко отличить его от
+      // реального ID, полученного от сервера
+      final temporaryId = -DateTime.now().millisecondsSinceEpoch;
       final message = MessageModel(
         id: temporaryId,
         text: text,
@@ -240,6 +242,8 @@ class RemoteChatDataSource implements ChatDataSource {
         createdAt: DateTime.now(),
         senderUsername: username,
         isRead: false,
+        // Помечаем сообщение как отправленное текущим пользователем
+        isMe: true,
         type: _getMessageType(attachments),
         attachments: attachments ?? [],
       );
