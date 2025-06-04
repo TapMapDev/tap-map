@@ -1,5 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tap_map/core/websocket/websocket_service.dart';
+import 'package:tap_map/src/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 
 part 'delete_message_event.dart';
@@ -7,11 +10,19 @@ part 'delete_message_state.dart';
 
 class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
   final ChatRepository _chatRepository;
+  WebSocketService? _webSocketService;
 
-  DeleteMessageBloc({required ChatRepository chatRepository})
-      : _chatRepository = chatRepository,
+  DeleteMessageBloc({
+    required ChatRepository chatRepository,
+    WebSocketService? webSocketService,
+  })  : _chatRepository = chatRepository,
+        _webSocketService = webSocketService,
         super(DeleteMessageInitial()) {
     on<DeleteMessageRequest>(_onDeleteMessageRequest);
+  }
+
+  void setWebSocketService(WebSocketService? webSocketService) {
+    _webSocketService = webSocketService;
   }
 
   Future<void> _onDeleteMessageRequest(
@@ -20,6 +31,13 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
   ) async {
     try {
       emit(DeleteMessageLoading());
+
+      if (_webSocketService == null && event.context != null) {
+        try {
+          final chatBloc = BlocProvider.of<ChatBloc>(event.context!);
+          _webSocketService = chatBloc.webSocketService;
+        } catch (_) {}
+      }
 
       // Проверяем, является ли сообщение новым (созданным менее 5 секунд назад)
       final currentTime = DateTime.now().millisecondsSinceEpoch;
@@ -46,6 +64,14 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
         }
       } else {
         print('DeleteMessageBloc: Skipping API delete for new message');
+      }
+
+      if (_webSocketService != null) {
+        _webSocketService!.deleteMessage(
+          chatId: event.chatId,
+          messageId: event.messageId,
+          action: event.action,
+        );
       }
 
       // В любом случае эмитим успех для локального удаления

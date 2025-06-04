@@ -325,6 +325,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         }
         return;
       }
+
+      if (type == 'delete_message') {
+        final messageId = messageData['message_id'] as int?;
+        if (messageId == null) {
+          return;
+        }
+
+        final updatedMessages =
+            currentState.messages.where((m) => m.id != messageId).toList();
+
+        emit(currentState.copyWith(messages: updatedMessages));
+
+        return;
+      }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
       emit(ChatError(e.toString()));
