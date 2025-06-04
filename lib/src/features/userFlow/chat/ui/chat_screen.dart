@@ -37,9 +37,11 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageModel? _forwardFrom;
   bool _isTyping = false;
   Timer? _typingTimer;
+  Timer? _typingTimeoutTimer; // Таймер для отслеживания паузы в печати
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
+  DateTime _lastTypeTime = DateTime.now();  // Последнее время фактического ввода
 
   @override
   void initState() {
@@ -151,16 +153,29 @@ class _ChatScreenState extends State<ChatScreen> {
   void _startTypingTimer() {
     _stopTypingTimer(); // Сначала очищаем, чтобы не было дублей
     
-    // Создаем новый таймер с периодичностью 5 секунд (немного меньше, чем таймаут на сервере)
+    // Создаем таймер для проверки активности ввода каждые 5 секунд
     _typingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_isTyping) {
-        print('📱 ChatScreen: Обновление статуса печати (периодическое)');
+      final now = DateTime.now();
+      final timeSinceLastType = now.difference(_lastTypeTime);
+      
+      // Если с момента последней активности прошло больше 3 секунд - считаем что печать остановлена
+      if (timeSinceLastType.inSeconds > 3) {
+        if (_isTyping) {
+          print('📱 ChatScreen: Пауза в печати более 3 секунд - сброс статуса печати');
+          _isTyping = false;
+          _chatBloc.add(SendTyping(
+            chatId: widget.chatId,
+            isTyping: false,
+          ));
+          _stopTypingTimer();
+        }
+      } else if (_isTyping) {
+        // Отправляем только если активно печатает
+        print('📱 ChatScreen: Обновление статуса печати (активная печать)');
         _chatBloc.add(SendTyping(
           chatId: widget.chatId,
           isTyping: true,
         ));
-      } else {
-        _stopTypingTimer();
       }
     });
   }
@@ -168,6 +183,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _stopTypingTimer() {
     _typingTimer?.cancel();
     _typingTimer = null;
+    _typingTimeoutTimer?.cancel();
+    _typingTimeoutTimer = null;
   }
 
   @override
@@ -507,6 +524,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _messageController,
                       onSend: _sendMessage,
                       onChanged: (text) {
+                        _lastTypeTime = DateTime.now();
                         if (!_isTyping && text.isNotEmpty) {
                           // Пользователь начал печатать
                           _isTyping = true;
