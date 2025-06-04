@@ -23,6 +23,15 @@ class ChatRepository {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         final chats = data.map((json) => ChatModel.fromJson(json)).toList();
+
+        chats.sort((a, b) {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          final aOrder = a.pinOrder ?? 0;
+          final bOrder = b.pinOrder ?? 0;
+          return aOrder.compareTo(bOrder);
+        });
+
         return chats;
       }
       throw Exception('Failed to fetch chats: ${response.statusCode}');
