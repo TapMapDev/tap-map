@@ -301,6 +301,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           emit(currentState.copyWith(messages: updatedMessages));
         }
         return;
+      } else if (type == 'message_edited') {
+        // Обрабатываем сообщение об отредактированном сообщении
+        final chatId = messageData['chat_id'] as int?;
+        final messageId = messageData['message_id'] as int?;
+        final newText = messageData['text'] as String?;
+        final editedAtStr = messageData['edited_at'] as String?;
+        final editedAt =
+            editedAtStr != null ? DateTime.parse(editedAtStr) : DateTime.now();
+
+        print('📝 ChatBloc: Обработка отредактированного сообщения - id: $messageId, новый текст: $newText');
+
+        if (messageId != null && newText != null && currentState.chat.chatId == chatId) {
+          final updatedMessages = currentState.messages.map((m) {
+            if (m.id == messageId) {
+              print('📝 ChatBloc: Обновление сообщения $messageId с текстом "$newText"');
+              return m.copyWith(text: newText, editedAt: editedAt);
+            }
+            return m;
+          }).toList();
+
+          emit(currentState.copyWith(messages: updatedMessages));
+        }
+        return;
       }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
