@@ -133,7 +133,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       _messageController.clear();
       
-      // Явно сбрасываем статус печати при отправке сообщения
+      // Сбрасываем статус печати при отправке сообщения
       if (_isTyping) {
         print('📱 ChatScreen: Сброс статуса печати при отправке сообщения');
         _isTyping = false;
@@ -141,6 +141,7 @@ class _ChatScreenState extends State<ChatScreen> {
           chatId: widget.chatId,
           isTyping: false,
         ));
+        _stopTypingTimer();
       }
       
       _scrollToBottom();
@@ -148,8 +149,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startTypingTimer() {
-    _typingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _stopTypingTimer(); // Сначала очищаем, чтобы не было дублей
+    
+    // Создаем новый таймер с периодичностью 5 секунд (немного меньше, чем таймаут на сервере)
+    _typingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_isTyping) {
+        print('📱 ChatScreen: Обновление статуса печати (периодическое)');
         _chatBloc.add(SendTyping(
           chatId: widget.chatId,
           isTyping: true,
@@ -163,11 +168,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void _stopTypingTimer() {
     _typingTimer?.cancel();
     _typingTimer = null;
-  }
-
-  void _restartTypingTimer() {
-    _stopTypingTimer();
-    _startTypingTimer();
   }
 
   @override
@@ -508,26 +508,29 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSend: _sendMessage,
                       onChanged: (text) {
                         if (!_isTyping && text.isNotEmpty) {
+                          // Пользователь начал печатать
                           _isTyping = true;
+                          print('📱 ChatScreen: Пользователь начал печатать');
                           _chatBloc.add(SendTyping(
                             chatId: widget.chatId,
                             isTyping: true,
                           ));
                           
-                          // Установка периодического обновления статуса печати
+                          // Запускаем периодическое обновление статуса печати
                           _startTypingTimer();
                         } else if (_isTyping && text.isEmpty) {
+                          // Пользователь стер весь текст
                           _isTyping = false;
+                          print('📱 ChatScreen: Пользователь стер весь текст');
                           _chatBloc.add(SendTyping(
                             chatId: widget.chatId,
                             isTyping: false,
                           ));
-                          // Останавливаем таймер, так как печать прекратилась
+                          
+                          // Останавливаем таймер обновления статуса
                           _stopTypingTimer();
-                        } else if (_isTyping && text.isNotEmpty) {
-                          // Если пользователь всё ещё печатает, обновляем таймер
-                          _restartTypingTimer();
                         }
+                        // Третье условие больше не нужно, так как таймер сам отправит обновления
                       },
                       onFileSelected: (file) {
                         final fileToUpload = File(file.path!);
