@@ -40,15 +40,6 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
         } catch (_) {}
       }
 
-      // Проверяем, является ли сообщение новым (созданным менее 5 секунд назад)
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final messageTime = event.messageId;
-      final isNewMessage = currentTime - messageTime < 5000;
-
-      print(
-          'DeleteMessageBloc: Message time: $messageTime, Current time: $currentTime, Diff: ${currentTime - messageTime}ms');
-      print('DeleteMessageBloc: Is new message: $isNewMessage');
-
       // Используем только WebSocket для удаления сообщений
       print('DeleteMessageBloc: Using WebSocket for message deletion');
       if (_webSocketService != null) {
