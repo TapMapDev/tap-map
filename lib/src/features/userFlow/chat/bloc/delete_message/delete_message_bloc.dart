@@ -49,30 +49,17 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
           'DeleteMessageBloc: Message time: $messageTime, Current time: $currentTime, Diff: ${currentTime - messageTime}ms');
       print('DeleteMessageBloc: Is new message: $isNewMessage');
 
-      if (!isNewMessage) {
-        // Если сообщение не новое, пытаемся удалить через API
-        print('DeleteMessageBloc: Deleting message through API');
-        try {
-          await _chatRepository.deleteMessage(
-            event.chatId,
-            event.messageId,
-            event.action,
-          );
-          print('DeleteMessageBloc: API delete successful');
-        } catch (e) {
-          print('DeleteMessageBloc: API delete failed: $e');
-          // Даже если API удаление не удалось, продолжаем с локальным удалением
-        }
-      } else {
-        print('DeleteMessageBloc: Skipping API delete for new message');
-      }
-
+      // Используем только WebSocket для удаления сообщений
+      print('DeleteMessageBloc: Using WebSocket for message deletion');
       if (_webSocketService != null) {
         _webSocketService!.deleteMessage(
           chatId: event.chatId,
           messageId: event.messageId,
           action: event.action,
         );
+        print('DeleteMessageBloc: WebSocket delete message sent');
+      } else {
+        print('DeleteMessageBloc: WebSocketService is null, cannot delete via WebSocket');
       }
 
       // В любом случае эмитим успех для локального удаления
