@@ -109,7 +109,7 @@ class MessageModel extends Equatable {
 
   /// Извлекает идентификатор чата из JSON, поддерживая разные ключи и типы
   static int _parseChatId(Map<String, dynamic> json) {
-    final dynamic raw = json['chat'] ?? json['chat_id'];
+    final dynamic raw = json['chat'] ?? json['chat_id'] ?? json['id'] ?? json['chatId'];
     if (raw is int) return raw;
     if (raw is String) return int.tryParse(raw) ?? 0;
     return 0;

@@ -27,7 +27,11 @@ class ChatModel extends Equatable {
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
-      chatId: json['id'] as int? ?? json['chat_id'] as int? ?? 0,
+      chatId: json['id'] as int? ??
+          json['chat_id'] as int? ??
+          json['chat'] as int? ??
+          json['chatId'] as int? ??
+          0,
       chatName: json['chat_name'] as String? ?? 'Unknown Chat',
       chatPhoto: json['chat_photo'] as String? ??
           json['chat_photo_url'] as String? ??
