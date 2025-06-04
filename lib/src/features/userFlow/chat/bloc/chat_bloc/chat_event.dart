@@ -185,3 +185,7 @@ class UploadFile extends ChatEvent {
   @override
   List<Object?> get props => [file, caption];
 }
+
+class AutoResetTypingStatus extends ChatEvent {
+  const AutoResetTypingStatus();
+}

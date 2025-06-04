@@ -24,6 +24,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final UserRepository _userRepository;
   WebSocketService? _webSocketService;
   StreamSubscription? _wsSubscription;
+  Timer? _typingResetTimer;
 
   // Добавляем геттер для доступа к WebSocketService
   WebSocketService? get webSocketService => _webSocketService;
@@ -49,6 +50,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<UploadFile>(_onUploadFile);
     on<SendTyping>(_onSendTyping);
     on<LocalMessageEdited>(_onLocalMessageEdited);
+    on<AutoResetTypingStatus>(_onAutoResetTypingStatus);
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
@@ -232,6 +234,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (type == 'message' || type == 'new_message') {
         final senderId = messageData['sender_id'] as int?;
+        
+        // Сбрасываем статус "печатает..." при получении любого сообщения
+        // Это решает проблему "зависшего" индикатора
+        if (currentState.isOtherUserTyping) {
+          print('⌨️ ChatBloc: Сброс статуса печати, получено новое сообщение');
+          emit(currentState.copyWith(isOtherUserTyping: false));
+        }
+        
         if (senderId == null) {
           print('❌ ChatBloc: No sender_id in message data');
           return;
@@ -381,11 +391,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           
           // Для безопасности: если кто-то начал печатать, через 10 секунд сбрасываем статус
           if (isTyping) {
-            Future.delayed(const Duration(seconds: 10), () {
-              final state = this.state;
-              if (state is ChatLoaded && state.isOtherUserTyping) {
-                print('⌨️ ChatBloc: Автоматический сброс статуса печати (таймаут)');
-                emit(state.copyWith(isOtherUserTyping: false));
+            _typingResetTimer?.cancel();
+            _typingResetTimer = Timer(const Duration(seconds: 10), () {
+              if (!isClosed) {
+                final currentState = state;
+                if (currentState is ChatLoaded && currentState.isOtherUserTyping) {
+                  print('⌨️ ChatBloc: Автоматический сброс статуса печати (таймаут)');
+                  add(const AutoResetTypingStatus());
+                }
               }
             });
           }
@@ -402,10 +415,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatError(event.message));
   }
 
+  void _onAutoResetTypingStatus(
+    AutoResetTypingStatus event,
+    Emitter<ChatState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is ChatLoaded) {
+      emit(currentState.copyWith(isOtherUserTyping: false));
+    }
+  }
+
   @override
   Future<void> close() {
     _wsSubscription?.cancel();
     _webSocketService?.disconnect();
+    _typingResetTimer?.cancel();
     return super.close();
   }
 

@@ -131,6 +131,17 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       _messageController.clear();
+      
+      // Явно сбрасываем статус печати при отправке сообщения
+      if (_isTyping) {
+        print('📱 ChatScreen: Сброс статуса печати при отправке сообщения');
+        _isTyping = false;
+        _chatBloc.add(SendTyping(
+          chatId: widget.chatId,
+          isTyping: false,
+        ));
+      }
+      
       _scrollToBottom();
     }
   }
