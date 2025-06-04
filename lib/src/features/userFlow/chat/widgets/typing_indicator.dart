@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class TypingIndicator extends StatelessWidget {
-  final Set<String> typingUsers;
+  final bool isTyping;
 
   const TypingIndicator({
     super.key,
-    required this.typingUsers,
+    required this.isTyping,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (typingUsers.isEmpty) {
+    if (!isTyping) {
       return const SizedBox.shrink();
     }
 
@@ -33,7 +33,7 @@ class TypingIndicator extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _getTypingText(typingUsers),
+              "печатает...",
               style: TextStyle(
                 color: textColor,
                 fontSize: 12,
@@ -44,16 +44,5 @@ class TypingIndicator extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getTypingText(Set<String> users) {
-    if (users.isEmpty) return '';
-    if (users.length == 1) {
-      return '${users.first} печатает...';
-    }
-    if (users.length == 2) {
-      return '${users.first} и ${users.last} печатают...';
-    }
-    return 'Несколько пользователей печатают...';
   }
 }

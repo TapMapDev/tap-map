@@ -373,32 +373,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             print('⌨️ ChatBloc: Это собственное событие typing, игнорируем');
             return;
           }
-
-          print('⌨️ ChatBloc: Пользователь $userId ${isTyping ? "печатает" : "перестал печатать"}');
-
-          // Обновляем список печатающих пользователей
-          final Set<String> updatedTypingUsers = Set<String>.from(currentState.typingUsers);
-
+          
+          print('⌨️ ChatBloc: Пользователь ${isTyping ? "начал печатать" : "перестал печатать"}');
+          
+          // Обновляем состояние индикатора печати
+          emit(currentState.copyWith(isOtherUserTyping: isTyping));
+          
+          // Для безопасности: если кто-то начал печатать, через 10 секунд сбрасываем статус
           if (isTyping) {
-            updatedTypingUsers.add("печатает...");
-
-            // Для безопасности: устанавливаем таймаут автоматического сброса статуса печати
-            // Это нужно на случай, если событие isTyping:false не придет или потеряется
             Future.delayed(const Duration(seconds: 10), () {
-              // Проверяем, что пользователь все еще находится в списке печатающих
-              // и текущее состояние все еще загружено
               final state = this.state;
-              if (state is ChatLoaded && state.typingUsers.contains("печатает...")) {
+              if (state is ChatLoaded && state.isOtherUserTyping) {
                 print('⌨️ ChatBloc: Автоматический сброс статуса печати (таймаут)');
-                final updatedTypingUsers = Set<String>.from(state.typingUsers)..remove("печатает...");
-                emit(state.copyWith(typingUsers: updatedTypingUsers));
+                emit(state.copyWith(isOtherUserTyping: false));
               }
             });
-          } else {
-            updatedTypingUsers.remove("печатает...");
           }
-
-          emit(currentState.copyWith(typingUsers: updatedTypingUsers));
         }
         return;
       }

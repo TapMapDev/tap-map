@@ -332,16 +332,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
-                        if (state is ChatLoaded &&
-                            state.typingUsers.isNotEmpty) {
-                          final otherTypingUsers = state.typingUsers
-                              .where((username) => username != _currentUsername)
-                              .toSet();
-
-                          if (otherTypingUsers.isNotEmpty) {
-                            return TypingIndicator(
-                                typingUsers: otherTypingUsers);
-                          }
+                        if (state is ChatLoaded && state.isOtherUserTyping) {
+                          return TypingIndicator(isTyping: true);
                         }
                         return const SizedBox.shrink();
                       },
