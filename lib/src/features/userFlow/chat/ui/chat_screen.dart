@@ -36,6 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _currentUserId;
   MessageModel? _forwardFrom;
   bool _isTyping = false;
+  Timer? _typingTimer;
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
@@ -146,11 +147,35 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _startTypingTimer() {
+    _typingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_isTyping) {
+        _chatBloc.add(SendTyping(
+          chatId: widget.chatId,
+          isTyping: true,
+        ));
+      } else {
+        _stopTypingTimer();
+      }
+    });
+  }
+
+  void _stopTypingTimer() {
+    _typingTimer?.cancel();
+    _typingTimer = null;
+  }
+
+  void _restartTypingTimer() {
+    _stopTypingTimer();
+    _startTypingTimer();
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
     _chatBloc.add(DisconnectFromChat());
+    _stopTypingTimer();
     super.dispose();
   }
 
@@ -488,12 +513,20 @@ class _ChatScreenState extends State<ChatScreen> {
                             chatId: widget.chatId,
                             isTyping: true,
                           ));
+                          
+                          // Установка периодического обновления статуса печати
+                          _startTypingTimer();
                         } else if (_isTyping && text.isEmpty) {
                           _isTyping = false;
                           _chatBloc.add(SendTyping(
                             chatId: widget.chatId,
                             isTyping: false,
                           ));
+                          // Останавливаем таймер, так как печать прекратилась
+                          _stopTypingTimer();
+                        } else if (_isTyping && text.isNotEmpty) {
+                          // Если пользователь всё ещё печатает, обновляем таймер
+                          _restartTypingTimer();
                         }
                       },
                       onFileSelected: (file) {
