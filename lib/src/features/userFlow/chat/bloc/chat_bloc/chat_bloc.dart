@@ -357,6 +357,37 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           emit(currentState.copyWith(messages: updatedMessages));
         }
         return;
+      } else if (type == 'typing') {
+        // Обрабатываем уведомление о печатании сообщения
+        final chatId = messageData['chat_id'] as int?;
+        final isTyping = messageData['is_typing'] as bool?;
+        final senderId = messageData['sender_id'] as int?;
+        
+        if (chatId != null && isTyping != null && senderId != null && currentState.chat.chatId == chatId) {
+          try {
+            // Получаем информацию о пользователе, который печатает
+            final user = await _userRepository.getUserById(senderId);
+            final username = user.username;
+            
+            if (username != null && username != _currentUsername) {
+              print('⌨️ ChatBloc: Пользователь $username ${isTyping ? "печатает" : "перестал печатать"}');
+              
+              // Обновляем список печатающих пользователей
+              final Set<String> updatedTypingUsers = Set<String>.from(currentState.typingUsers);
+              
+              if (isTyping) {
+                updatedTypingUsers.add(username);
+              } else {
+                updatedTypingUsers.remove(username);
+              }
+              
+              emit(currentState.copyWith(typingUsers: updatedTypingUsers));
+            }
+          } catch (e) {
+            print('❌ ChatBloc: Ошибка при получении информации о печатающем пользователе: $e');
+          }
+        }
+        return;
       }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
