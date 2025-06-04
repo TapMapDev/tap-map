@@ -339,6 +339,25 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
         return;
       }
+
+      if (type == 'message_deleted') {
+        // Обрабатываем сообщение об удалении сообщения
+        final chatId = messageData['chat_id'] as int?;
+        final messageId = messageData['message_id'] as int?;
+        final action = messageData['action'] as String?;
+        final deletedBy = messageData['deleted_by'] as int?;
+        
+        print('📝 ChatBloc: Обработка удаленного сообщения - id: $messageId, action: $action, deletedBy: $deletedBy');
+        
+        if (messageId != null && currentState.chat.chatId == chatId) {
+          print('📝 ChatBloc: Удаление сообщения $messageId из списка сообщений');
+          final updatedMessages = 
+              currentState.messages.where((m) => m.id != messageId).toList();
+              
+          emit(currentState.copyWith(messages: updatedMessages));
+        }
+        return;
+      }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
       emit(ChatError(e.toString()));
