@@ -30,14 +30,13 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatBloc _chatBloc;
-  final _messageController = TextEditingController();
-  final _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String? _currentUsername;
   int? _currentUserId;
   MessageModel? _forwardFrom;
   bool _isTyping = false;
   Timer? _typingTimer;
-  Timer? _typingTimeoutTimer; // Таймер для отслеживания паузы в печати
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
@@ -183,8 +182,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void _stopTypingTimer() {
     _typingTimer?.cancel();
     _typingTimer = null;
-    _typingTimeoutTimer?.cancel();
-    _typingTimeoutTimer = null;
   }
 
   @override
