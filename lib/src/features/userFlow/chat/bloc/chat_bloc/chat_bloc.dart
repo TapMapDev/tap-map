@@ -373,42 +373,32 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             print('⌨️ ChatBloc: Это собственное событие typing, игнорируем');
             return;
           }
-          
-          try {
-            // Получаем информацию о пользователе, который печатает
-            final user = await _userRepository.getUserById(userId);
-            final username = user.username;
-            
-            if (username != null) {
-              print('⌨️ ChatBloc: Пользователь $username ${isTyping ? "печатает" : "перестал печатать"}');
-              
-              // Обновляем список печатающих пользователей
-              final Set<String> updatedTypingUsers = Set<String>.from(currentState.typingUsers);
-              
-              if (isTyping) {
-                updatedTypingUsers.add(username);
-                
-                // Для безопасности: устанавливаем таймаут автоматического сброса статуса печати
-                // Это нужно на случай, если событие isTyping:false не придет или потеряется
-                Future.delayed(const Duration(seconds: 10), () {
-                  // Проверяем, что пользователь все еще находится в списке печатающих
-                  // и текущее состояние все еще загружено
-                  final state = this.state;
-                  if (state is ChatLoaded && state.typingUsers.contains(username)) {
-                    print('⌨️ ChatBloc: Автоматический сброс статуса печати для $username (таймаут)');
-                    final updatedTypingUsers = Set<String>.from(state.typingUsers)..remove(username);
-                    emit(state.copyWith(typingUsers: updatedTypingUsers));
-                  }
-                });
-              } else {
-                updatedTypingUsers.remove(username);
+
+          print('⌨️ ChatBloc: Пользователь $userId ${isTyping ? "печатает" : "перестал печатать"}');
+
+          // Обновляем список печатающих пользователей
+          final Set<String> updatedTypingUsers = Set<String>.from(currentState.typingUsers);
+
+          if (isTyping) {
+            updatedTypingUsers.add(_currentUsername);
+
+            // Для безопасности: устанавливаем таймаут автоматического сброса статуса печати
+            // Это нужно на случай, если событие isTyping:false не придет или потеряется
+            Future.delayed(const Duration(seconds: 10), () {
+              // Проверяем, что пользователь все еще находится в списке печатающих
+              // и текущее состояние все еще загружено
+              final state = this.state;
+              if (state is ChatLoaded && state.typingUsers.contains(_currentUsername)) {
+                print('⌨️ ChatBloc: Автоматический сброс статуса печати для $_currentUsername (таймаут)');
+                final updatedTypingUsers = Set<String>.from(state.typingUsers)..remove(_currentUsername);
+                emit(state.copyWith(typingUsers: updatedTypingUsers));
               }
-              
-              emit(currentState.copyWith(typingUsers: updatedTypingUsers));
-            }
-          } catch (e) {
-            print('❌ ChatBloc: Ошибка при получении информации о печатающем пользователе: $e');
+            });
+          } else {
+            updatedTypingUsers.remove(_currentUsername);
           }
+
+          emit(currentState.copyWith(typingUsers: updatedTypingUsers));
         }
         return;
       }
