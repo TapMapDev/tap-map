@@ -29,6 +29,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   WebSocketService? get webSocketService => _webSocketService;
 
   String? _currentUsername;
+  int? _currentUserId; // Добавляем ID текущего пользователя
   SendMessageUseCase? _sendMessageUseCase;
 
   ChatBloc({
@@ -134,6 +135,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       final user = await _userRepository.getCurrentUser();
       _currentUsername = user.username;
+      _currentUserId = user.id; // Обновляем ID текущего пользователя
 
       _webSocketService = WebSocketService(jwtToken: token);
       _webSocketService!.connect();
@@ -361,15 +363,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Обрабатываем уведомление о печатании сообщения
         final chatId = messageData['chat_id'] as int?;
         final isTyping = messageData['is_typing'] as bool?;
-        final senderId = messageData['sender_id'] as int?;
+        final userId = messageData['user_id'] as int?;
         
-        if (chatId != null && isTyping != null && senderId != null && currentState.chat.chatId == chatId) {
+        print('⌨️ ChatBloc: Получено событие typing - chatId: $chatId, userId: $userId, isTyping: $isTyping');
+        
+        if (chatId != null && isTyping != null && userId != null && currentState.chat.chatId == chatId) {
+          // Проверяем, не является ли это нашим собственным событием
+          if (userId == _currentUserId) {
+            print('⌨️ ChatBloc: Это собственное событие typing, игнорируем');
+            return;
+          }
+          
           try {
             // Получаем информацию о пользователе, который печатает
-            final user = await _userRepository.getUserById(senderId);
+            final user = await _userRepository.getUserById(userId);
             final username = user.username;
             
-            if (username != null && username != _currentUsername) {
+            if (username != null) {
               print('⌨️ ChatBloc: Пользователь $username ${isTyping ? "печатает" : "перестал печатать"}');
               
               // Обновляем список печатающих пользователей
@@ -377,6 +387,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               
               if (isTyping) {
                 updatedTypingUsers.add(username);
+                
+                // Для безопасности: устанавливаем таймаут автоматического сброса статуса печати
+                // Это нужно на случай, если событие isTyping:false не придет или потеряется
+                Future.delayed(const Duration(seconds: 10), () {
+                  // Проверяем, что пользователь все еще находится в списке печатающих
+                  // и текущее состояние все еще загружено
+                  final state = this.state;
+                  if (state is ChatLoaded && state.typingUsers.contains(username)) {
+                    print('⌨️ ChatBloc: Автоматический сброс статуса печати для $username (таймаут)');
+                    final updatedTypingUsers = Set<String>.from(state.typingUsers)..remove(username);
+                    emit(state.copyWith(typingUsers: updatedTypingUsers));
+                  }
+                });
               } else {
                 updatedTypingUsers.remove(username);
               }
