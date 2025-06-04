@@ -547,14 +547,14 @@ class _ChatScreenState extends State<ChatScreen> {
               context.read<ReplyBloc>().add(SetReplyTo(message));
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.forward),
-            title: const Text('Переслать'),
-            onTap: () {
-              Navigator.pop(context);
-              _showChatSelectionDialog(message);
-            },
-          ),
+          // ListTile(
+          //   leading: const Icon(Icons.forward),
+          //   title: const Text('Переслать'),
+          //   onTap: () {
+          //     Navigator.pop(context);
+          //     _showChatSelectionDialog(message);
+          //   },
+          // ),
           if (message.senderUsername == _currentUsername) ...[
             ListTile(
               leading: const Icon(Icons.edit),
@@ -612,6 +612,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // Функции пересылки сообщений временно отключены
+  /*
   void _forwardMessageToChat(MessageModel message, int targetChatId) {
     _chatBloc.add(SendMessage(
       chatId: targetChatId,
@@ -668,4 +670,5 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
   }
+  */
 }
