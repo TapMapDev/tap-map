@@ -24,13 +24,13 @@ class MessagesResponse {
 /// Новая реализация репозитория чатов с поддержкой кэширования
 class ChatRepository {
   final RemoteChatDataSource _remoteChatDataSource;
-  final ChatDataSource _localChatDataSource;
+  final LocalChatDataSource _localChatDataSource;
   final ChatWebSocketService _webSocketService;
   final UserRepository _userRepository;
 
   ChatRepository({
     required RemoteChatDataSource remoteChatDataSource,
-    required ChatDataSource localChatDataSource,
+    required LocalChatDataSource localChatDataSource,
     required ChatWebSocketService webSocketService,
     required UserRepository userRepository,
   })  : _remoteChatDataSource = remoteChatDataSource,
