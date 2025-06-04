@@ -302,15 +302,21 @@ class ChatRepository {
   
   /// Удалить сообщение
   Future<bool> deleteMessage({
-    required int chatId, 
-    required int messageId, 
+    required int chatId,
+    required int messageId,
     required bool deleteForAll
   }) async {
     try {
-      final action = deleteForAll ? 'all' : 'for_me';
-      // Удаляем на сервере
-      await _remoteChatDataSource.deleteMessage(chatId, messageId, action);
-      // И в локальном кэше
+      final action = deleteForAll ? 'for_all' : 'for_me';
+
+      // Отправляем удаление через WebSocket
+      _webSocketService.deleteMessage(
+        chatId: chatId,
+        messageId: messageId,
+        action: action,
+      );
+
+      // Обновляем локальный кэш
       await _localChatDataSource.deleteMessage(chatId, messageId, action);
       return true;
     } catch (e) {
@@ -329,16 +335,23 @@ class ChatRepository {
   
   /// Редактировать сообщение
   Future<MessageModel?> editMessage({
-    required int chatId, 
-    required int messageId, 
+    required int chatId,
+    required int messageId,
     required String text
   }) async {
     try {
-      // Редактируем на сервере
-      final editedMessage = await _remoteChatDataSource.editMessage(chatId, messageId, text);
-      // И в локальном кэше
+      // Отправляем через WebSocket
+      _webSocketService.editMessage(
+        chatId: chatId,
+        messageId: messageId,
+        text: text,
+      );
+
+      // Обновляем локальный кэш
       await _localChatDataSource.editMessage(chatId, messageId, text);
-      return editedMessage;
+
+      // Возвращаем обновленное сообщение из локального хранилища
+      return await _localChatDataSource.getMessageById(chatId, messageId);
     } catch (e) {
       return null;
     }
@@ -351,9 +364,10 @@ class ChatRepository {
   }) async {
     try {
       print('📱 ChatRepository: Закрепление сообщения $messageId в чате $chatId');
-      // Закрепляем на сервере
-      await _remoteChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
-      // И в локальном кэше
+      // Отправляем через WebSocket
+      _webSocketService.pinMessage(chatId: chatId, messageId: messageId);
+
+      // Обновляем локальный кэш
       await _localChatDataSource.pinMessage(chatId: chatId, messageId: messageId);
       
       // Обновляем кэш закрепленных сообщений после закрепления
@@ -374,9 +388,10 @@ class ChatRepository {
   }) async {
     try {
       print('📱 ChatRepository: Открепление сообщения $messageId в чате $chatId');
-      // Открепляем на сервере
-      await _remoteChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
-      // И в локальном кэше
+      // Отправляем через WebSocket
+      _webSocketService.unpinMessage(chatId: chatId, messageId: messageId);
+
+      // Обновляем локальный кэш
       await _localChatDataSource.unpinMessage(chatId: chatId, messageId: messageId);
       
       // Обновляем кэш закрепленных сообщений после открепления
