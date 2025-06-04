@@ -244,6 +244,9 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
+                    // Закомментированное отображение закрепленных сообщений
+                    // Закрепить
+                    /*
                     BlocBuilder<PinBloc, PinBlocState>(
                       builder: (context, state) {
                         if (state is MessagePinned) {
@@ -279,6 +282,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         return const SizedBox.shrink();
                       },
                     ),
+                    */
                     Expanded(
                       child: BlocBuilder<ChatBloc, ChatState>(
                         builder: (context, state) {
@@ -595,17 +599,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     ));
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.push_pin),
-              title: const Text('Закрепить сообщение'),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.read<PinBloc>().add(PinMessage(
-                      chatId: widget.chatId,
-                      messageId: message.id,
-                    ));
-              },
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.push_pin),
+            //   title: const Text('Закрепить сообщение'),
+            //   onTap: () {
+            //     Navigator.of(context).pop();
+            //     context.read<PinBloc>().add(PinMessage(
+            //           chatId: widget.chatId,
+            //           messageId: message.id,
+            //         ));
+            //   },
+            // ),
           ],
         ],
       ),
