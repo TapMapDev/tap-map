@@ -225,6 +225,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     print('After setState, editing message: $_editingMessage');
                   } else if (state is EditSuccess) {
                     print('Edit success, clearing editing state');
+                    context.read<ChatBloc>().add(LocalMessageEdited(
+                          messageId: state.messageId,
+                          newText: state.newText,
+                          editedAt: state.editedAt,
+                        ));
                     setState(() {
                       _editingMessage = null;
                       _messageController.clear();

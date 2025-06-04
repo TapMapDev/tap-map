@@ -47,6 +47,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<DisconnectFromChat>(_onDisconnectFromChat);
     on<UploadFile>(_onUploadFile);
     on<SendTyping>(_onSendTyping);
+    on<LocalMessageEdited>(_onLocalMessageEdited);
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
@@ -282,6 +283,24 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           print('❌ ChatBloc: Error getting user info: $e');
         }
         return;
+      } else if (type == 'edit_message') {
+        final messageId = messageData['message_id'] as int?;
+        final newText = messageData['text'] as String?;
+        final editedAtStr = messageData['edited_at'] as String?;
+        final editedAt =
+            editedAtStr != null ? DateTime.parse(editedAtStr) : DateTime.now();
+
+        if (messageId != null && newText != null) {
+          final updatedMessages = currentState.messages.map((m) {
+            if (m.id == messageId) {
+              return m.copyWith(text: newText, editedAt: editedAt);
+            }
+            return m;
+          }).toList();
+
+          emit(currentState.copyWith(messages: updatedMessages));
+        }
+        return;
       }
     } catch (e, stack) {
       print('❌ Socket: Ошибка обработки события: $e\n$stack');
@@ -344,5 +363,25 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         isTyping: event.isTyping,
       );
     } catch (_) {}
+  }
+
+  void _onLocalMessageEdited(
+    LocalMessageEdited event,
+    Emitter<ChatState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! ChatLoaded) return;
+
+    final updatedMessages = currentState.messages.map((message) {
+      if (message.id == event.messageId) {
+        return message.copyWith(
+          text: event.newText,
+          editedAt: event.editedAt,
+        );
+      }
+      return message;
+    }).toList();
+
+    emit(currentState.copyWith(messages: updatedMessages));
   }
 }
