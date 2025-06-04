@@ -132,6 +132,21 @@ class ReadReceiptReceived extends ChatEvent {
   List<Object?> get props => [messageId, userId];
 }
 
+class LocalMessageEdited extends ChatEvent {
+  final int messageId;
+  final String newText;
+  final DateTime editedAt;
+
+  const LocalMessageEdited({
+    required this.messageId,
+    required this.newText,
+    required this.editedAt,
+  });
+
+  @override
+  List<Object?> get props => [messageId, newText, editedAt];
+}
+
 class ConnectToChat extends ChatEvent {
   final int chatId;
 
