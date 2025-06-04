@@ -348,44 +348,73 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Обработка разных типов сообщений
     final messageType = messageData['type'];
     if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
-      final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
-      if (processedMessage != null && processedMessage.chatId == currentState.chat.chatId) {
-        // Проверяем, есть ли уже сообщение с таким ID
-        final existingIndex = currentState.messages.indexWhere((m) => m.id == processedMessage.id);
-        var updatedMessages = List<MessageModel>.from(currentState.messages);
-
-        if (existingIndex != -1) {
-          // Заменяем существующее сообщение
-          updatedMessages[existingIndex] = processedMessage;
-        } else {
-          // Ищем временное сообщение от текущего пользователя с тем же текстом
-          final tempIndex = updatedMessages.indexWhere(
-            (m) => m.id < 0 &&
-                m.senderUsername == processedMessage.senderUsername &&
-                m.text == processedMessage.text,
-          );
-
-          if (tempIndex != -1) {
-            updatedMessages[tempIndex] = processedMessage;
-          } else {
-            updatedMessages = [processedMessage, ...updatedMessages];
-          }
+      // Используем try-catch для обработки возможных исключений
+      try {
+        final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
+        
+        // Проверяем, не завершился ли уже обработчик событий
+        if (emit.isDone) {
+          print('⚠️ ChatBloc: Обработчик события уже завершен, emit не будет вызван');
+          return;
         }
         
-        print('🔄 ChatBloc: Добавляем новое сообщение в чат ${processedMessage.chatId}, ID: ${processedMessage.id}');
-        print('🔄 ChatBloc: Кол-во сообщений до: ${currentState.messages.length}, после: ${updatedMessages.length}');
-        
-        // Создаем новое состояние с обновленным списком сообщений и временной меткой
-        final newState = currentState.copyWith(
-          messages: updatedMessages,
-          lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
-        );
-        
-        print('🔄 ChatBloc: Обновляем состояние с lastUpdated: ${newState.lastUpdated}');
-        emit(newState);
-        
-        _chatWebSocketService.readMessage(chatId: processedMessage.chatId, messageId: processedMessage.id);
-        _chatRepository.resetUnreadCount(processedMessage.chatId);
+        if (processedMessage != null && processedMessage.chatId == currentState.chat.chatId) {
+          // Проверяем, есть ли уже сообщение с таким ID
+          final existingIndex = currentState.messages.indexWhere((m) => m.id == processedMessage.id);
+          var updatedMessages = List<MessageModel>.from(currentState.messages);
+  
+          if (existingIndex != -1) {
+            // Заменяем существующее сообщение
+            updatedMessages[existingIndex] = processedMessage;
+          } else {
+            // Ищем временное сообщение от текущего пользователя с тем же текстом
+            final tempIndex = updatedMessages.indexWhere(
+              (m) => m.id < 0 &&
+                  m.senderUsername == processedMessage.senderUsername &&
+                  m.text == processedMessage.text,
+            );
+  
+            if (tempIndex != -1) {
+              updatedMessages[tempIndex] = processedMessage;
+            } else {
+              updatedMessages = [processedMessage, ...updatedMessages];
+            }
+          }
+          
+          print('🔄 ChatBloc: Добавляем новое сообщение в чат ${processedMessage.chatId}, ID: ${processedMessage.id}');
+          print('🔄 ChatBloc: Кол-во сообщений до: ${currentState.messages.length}, после: ${updatedMessages.length}');
+          
+          // Повторная проверка перед emit
+          if (emit.isDone) {
+            print('⚠️ ChatBloc: Обработчик события уже завершен, emit не будет вызван');
+            return;
+          }
+          
+          // Создаем новое состояние с обновленным списком сообщений и временной меткой
+          final newState = currentState.copyWith(
+            messages: updatedMessages,
+            lastUpdated: DateTime.now() // Добавляем временную метку для гарантии обновления UI
+          );
+          
+          print('🔄 ChatBloc: Обновляем состояние с lastUpdated: ${newState.lastUpdated}');
+          emit(newState);
+          
+          // Асинхронные операции, которые не влияют на UI, делаем безопасным способом
+          _safelyExecuteAsync(() async {
+            _chatWebSocketService.readMessage(
+                chatId: processedMessage.chatId, 
+                messageId: processedMessage.id
+            );
+            await _chatRepository.resetUnreadCount(processedMessage.chatId);
+          });
+        }
+      } catch (e) {
+        print('❌ ChatBloc: Ошибка при обработке WebSocket сообщения: $e');
+        // Если произошла ошибка и обработчик еще не завершен, логируем ошибку
+        if (!emit.isDone) {
+          // Вместо попытки добавить error в текущее состояние, эмитим состояние ошибки, сохраняя предыдущее состояние
+          emit(ChatError(message: 'Ошибка обработки сообщения: $e', previousState: currentState));
+        }
       }
     } else if (messageType == 'typing') {
       final chatId = messageData['chat_id'];
@@ -429,16 +458,43 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Проверяем, является ли это сообщением
     final messageType = messageData['type'];
     if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
-      // Получаем ID чата
-      final chatId = messageData['chatId'] as int? ?? messageData['chat_id'] as int?;
-      
-      if (chatId != null) {
-        // Обрабатываем новое сообщение в репозитории
-        final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
+      try {
+        // Получаем ID чата
+        final chatId = messageData['chatId'] as int? ?? messageData['chat_id'] as int?;
         
-        // Обновляем список чатов для отражения нового сообщения
-        final updatedChats = await _chatRepository.fetchChats();
-        emit(ChatsLoaded(updatedChats));
+        if (chatId != null) {
+          // Проверка, не завершился ли уже обработчик событий
+          if (emit.isDone) {
+            print('⚠️ ChatBloc: Обработчик события уже завершен в _processMessageForChatsList, emit не будет вызван');
+            return;
+          }
+          
+          // Обрабатываем новое сообщение в репозитории
+          final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
+          
+          if (emit.isDone) {
+            print('⚠️ ChatBloc: Обработчик события уже завершен после processWebSocketMessage, emit не будет вызван');
+            return;
+          }
+          
+          // Обновляем список чатов для отражения нового сообщения
+          final updatedChats = await _chatRepository.fetchChats();
+          
+          // Финальная проверка перед emit
+          if (emit.isDone) {
+            print('⚠️ ChatBloc: Обработчик события уже завершен после fetchChats, emit не будет вызван');
+            return;
+          }
+          
+          print('🔄 ChatBloc: Обновляем список чатов после получения нового сообщения в чате $chatId');
+          emit(ChatsLoaded(updatedChats));
+        }
+      } catch (e) {
+        print('❌ ChatBloc: Ошибка при обработке WebSocket сообщения для списка чатов: $e');
+        // Если произошла ошибка и обработчик еще не завершен, создаем состояние ошибки
+        if (!emit.isDone) {
+          emit(ChatError(message: 'Ошибка обработки сообщения: $e', previousState: currentState));
+        }
       }
     }
   }
@@ -983,5 +1039,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       default:
         return 'file';
     }
+  }
+  
+  /// Безопасное выполнение асинхронных операций без блокирования UI
+  void _safelyExecuteAsync(Future<void> Function() operation) {
+    // Запускаем асинхронную операцию без await
+    operation().catchError((e) {
+      print('❌ ChatBloc: Ошибка в асинхронной операции: $e');
+    });
   }
 }

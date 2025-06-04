@@ -68,7 +68,7 @@ class ChatRepository {
   }
   
   /// Получить чат и его сообщения с кэшированием
-  /// Обновлено для использования стратегии "сначала кэш, потом сервер"
+  /// Обновлено для использования стратегии "сначала кэш, потом сервер, если данные устаревшие"
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     // Проверка на валидность chatId
     if (chatId <= 0) {
@@ -79,36 +79,41 @@ class ChatRepository {
     try {
       // Проверяем локальный кэш сначала
       final localChat = await _localChatDataSource.getChatById(chatId);
+      ChatModel? resultChat;
+      bool fromCache = false;
       
-      // Если в кэше есть чат, возвращаем его
-      if (localChat != null) {
+      // Если в кэше есть чат и имя не "Unknown Chat", возвращаем его
+      if (localChat != null && localChat.chatName != 'Unknown Chat') {
         print('💾 ChatRepository: Возвращаем чат из локального кэша: ${localChat.chatId}');
+        resultChat = localChat;
+        fromCache = true;
         
         // Асинхронно обновляем данные с сервера без блокировки UI
         _updateChatDataAsync(chatId);
-        
-        return {
-          'chat': localChat,
-          'fromCache': true
-        };
-      }
-      
-      // Если в кэше нет, загружаем с сервера
-      print('🌐 ChatRepository: Загружаем чат с сервера: $chatId');
-      final remoteChat = await _remoteChatDataSource.getChatById(chatId);
-      
-      if (remoteChat != null) {
-        // Кэшируем результат
-        await _localChatDataSource.cacheChat(remoteChat);
-        
-        return {
-          'chat': remoteChat,
-          'fromCache': false
-        };
       } else {
-        // Чат не найден ни в кэше, ни на сервере
-        throw Exception('Чат не найден: $chatId');
+        // Если в кэше нет или имя "Unknown Chat", загружаем с сервера
+        print('🌐 ChatRepository: Загружаем чат с сервера: $chatId (либо чат новый, либо имя в кэше Unknown Chat)');
+        final remoteChat = await _remoteChatDataSource.getChatById(chatId);
+        
+        if (remoteChat != null) {
+          // Кэшируем результат
+          await _localChatDataSource.cacheChat(remoteChat);
+          resultChat = remoteChat;
+        } else if (localChat != null) {
+          // Если не смогли загрузить с сервера, но в кэше есть, используем кэш
+          print('⚠️ ChatRepository: Не удалось получить чат с сервера, используем кэш');
+          resultChat = localChat;
+          fromCache = true;
+        } else {
+          // Чат не найден ни в кэше, ни на сервере
+          throw Exception('Чат не найден: $chatId');
+        }
       }
+      
+      return {
+        'chat': resultChat,
+        'fromCache': fromCache
+      };
     } catch (e) {
       print('❌ ChatRepository: Ошибка при загрузке чата $chatId: $e');
       throw Exception('Ошибка при загрузке чата: $e');
