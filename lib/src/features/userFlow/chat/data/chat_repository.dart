@@ -605,6 +605,19 @@ class ChatRepository {
       
       await _localChatDataSource.cacheMessage(newMessage.chatId, newMessage);
 
+      // Удаляем временное сообщение, если оно существует в кэше
+      try {
+        final cached =
+            await _localChatDataSource.getCachedMessagesForChat(newMessage.chatId);
+        for (final m in cached) {
+          if (m.id < 0 &&
+              m.senderUsername == newMessage.senderUsername &&
+              m.text == newMessage.text) {
+            await _localChatDataSource.deleteMessage(newMessage.chatId, m.id, 'for_me');
+          }
+        }
+      } catch (_) {}
+
       // Обновляем информацию о чате
       await _updateChatFromMessage(newMessage);
 

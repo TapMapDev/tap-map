@@ -350,8 +350,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (messageType == 'message' || messageType == 'create_message' || messageType == 'new_message') {
       final processedMessage = await _chatRepository.processWebSocketMessage(messageData);
       if (processedMessage != null && processedMessage.chatId == currentState.chat.chatId) {
-        // Создаем полностью новый список сообщений для гарантии обновления состояния
-        final updatedMessages = List<MessageModel>.from([processedMessage, ...currentState.messages]);
+        // Проверяем, есть ли уже сообщение с таким ID
+        final existingIndex = currentState.messages.indexWhere((m) => m.id == processedMessage.id);
+        var updatedMessages = List<MessageModel>.from(currentState.messages);
+
+        if (existingIndex != -1) {
+          // Заменяем существующее сообщение
+          updatedMessages[existingIndex] = processedMessage;
+        } else {
+          // Ищем временное сообщение от текущего пользователя с тем же текстом
+          final tempIndex = updatedMessages.indexWhere(
+            (m) => m.id < 0 &&
+                m.senderUsername == processedMessage.senderUsername &&
+                m.text == processedMessage.text,
+          );
+
+          if (tempIndex != -1) {
+            updatedMessages[tempIndex] = processedMessage;
+          } else {
+            updatedMessages = [processedMessage, ...updatedMessages];
+          }
+        }
         
         print('🔄 ChatBloc: Добавляем новое сообщение в чат ${processedMessage.chatId}, ID: ${processedMessage.id}');
         print('🔄 ChatBloc: Кол-во сообщений до: ${currentState.messages.length}, после: ${updatedMessages.length}');
