@@ -1,7 +1,5 @@
 part of 'delete_message_bloc.dart';
 
-import 'package:flutter/widgets.dart';
-
 abstract class DeleteMessageEvent extends Equatable {
   const DeleteMessageEvent();
 
