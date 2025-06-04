@@ -580,6 +580,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_me',
+                      context: context,
                     ));
               },
             ),
@@ -592,6 +593,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_all',
+                      context: context,
                     ));
               },
             ),

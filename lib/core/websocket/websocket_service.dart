@@ -88,6 +88,23 @@ class WebSocketService {
     }
   }
 
+  void deleteMessage({
+    required int chatId,
+    required int messageId,
+    required String action,
+  }) {
+    if (_channel.closeCode != null) {
+      return;
+    }
+    final jsonMessage = jsonEncode({
+      'type': 'delete_message',
+      'chat_id': chatId,
+      'message_id': messageId,
+      'action': action,
+    });
+    _channel.sink.add(jsonMessage);
+  }
+
   void readMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
       return;
