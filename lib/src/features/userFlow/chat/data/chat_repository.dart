@@ -46,7 +46,10 @@ class ChatRepository {
         print(
             '📱 Parsed chat model: chatId=${chat.chatId}, pinnedMessageId=${chat.pinnedMessageId}');
 
-        final List<dynamic> messagesData = messagesResponse.data;
+        final data = messagesResponse.data;
+        final List<dynamic> messagesData = data is Map<String, dynamic>
+            ? (data['results'] as List<dynamic>? ?? [])
+            : (data as List<dynamic>);
         final messages =
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
         print('📱 Parsed ${messages.length} messages');
@@ -104,7 +107,10 @@ class ChatRepository {
     try {
       final response = await _dioClient.get('/chat/$chatId/messages/');
       if (response.statusCode == 200) {
-        final List<dynamic> messagesData = response.data;
+        final data = response.data;
+        final List<dynamic> messagesData = data is Map<String, dynamic>
+            ? (data['results'] as List<dynamic>? ?? [])
+            : (data as List<dynamic>);
         final messages =
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
         return messages;
