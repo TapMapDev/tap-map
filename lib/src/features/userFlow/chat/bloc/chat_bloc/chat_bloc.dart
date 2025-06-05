@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -109,39 +108,39 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     try {
       emit(ChatLoading());
+      final data = await _chatRepository.fetchChatWithMessages(event.chatId);
+      final chat = data['chat'] as ChatModel;
+      final messages = data['messages'] as List<MessageModel>;
 
-      final chatData = await _chatRepository.fetchChatWithMessages(event.chatId);
-      final chat = chatData['chat'] as ChatModel;
-      final messages = chatData['messages'] as List<MessageModel>;
+      // Получаем ID закрепленного сообщения из локального хранилища
+      final pinnedMessageId =
+          await _chatRepository.getPinnedMessageId(event.chatId);
 
-      print('📩 ChatBloc: Получено ${messages.length} сообщений для чата ${event.chatId}');
-      
-      // Обрабатываем каждое сообщение, чтобы правильно отметить isMe и isRead
+      // Если есть закрепленное сообщение, находим его в списке
+      // TODO dont use for now - mb later
+      MessageModel? pinnedMessage;
+      if (pinnedMessageId != null) {
+        pinnedMessage = messages.firstWhere(
+          (m) => m.id == pinnedMessageId,
+          orElse: () {
+            return MessageModel.empty();
+          },
+        );
+      }
+
+      // Обновляем статус прочтения для непрочитанных сообщений
       final updatedMessages = messages.map((message) {
-        var updated = message;
-        
-        // Если отправитель - текущий пользователь, отмечаем как "моё" сообщение
-        if (updated.senderUsername == _currentUsername) {
-          updated = updated.copyWith(isMe: true);
-          
-          // Сообщения текущего пользователя всегда считаем прочитанными
-          if (!updated.isRead) {
-            updated = updated.copyWith(isRead: true);
-          }
-        } else {
-          // Для сообщений от других пользователей проверяем, должны ли они быть отмечены как прочитанные
-          // Это необходимо потому что сервер не всегда возвращает актуальный статус прочтения
-          
-          // Сообщения которые должны быть отмечены как прочитанные:
-          // 1. Сообщения, которые были получены ранее и должны быть уже прочитаны
-          final DateTime threshold = DateTime.now().subtract(const Duration(seconds: 2));
-          if (updated.createdAt.isBefore(threshold) && !updated.isRead) {
-            // Отмечаем как прочитанное
-            updated = updated.copyWith(isRead: true);
-          }
+        if (!message.isRead && message.senderUsername != _currentUsername) {
+          final updated = message.copyWith(isRead: true);
+
+          _webSocketService?.readMessage(
+            chatId: message.chatId,
+            messageId: message.id,
+          );
+
+          return updated;
         }
-        
-        return updated;
+        return message;
       }).toList();
 
       final currentState = state;
@@ -160,13 +159,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           isRead: true,
         ));
       }
-      
-      
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
-  
 
   Future<void> _onConnectToChat(
     ConnectToChat event,
