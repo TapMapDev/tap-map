@@ -51,8 +51,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _initChat();
-    // TODO зачем?
-    _stopTypingTimer();
     _chatBloc.add(ConnectToChat(widget.chatId));
     _chatBloc.add(FetchChatById(widget.chatId));
     
@@ -194,22 +192,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _markLatestMessagesAsRead() {
     final state = _chatBloc.state;
-    if (state is ChatLoadedState) {
-      // Получаем текущее имя пользователя из блока
-      final String? currentUsername = state.currentUsername;
-      if (currentUsername == null) return;
+    if (state is ChatLoaded) {
+
+      print(_currentUserId);
+      print(_currentUsername);
+      if (_currentUsername == null) return;
       
       // Создаем Map для хранения последних сообщений от каждого отправителя
-      final Map<String, ChatMessageModel> latestMessagesByUser = {};
+      final Map<String, MessageModel> latestMessagesByUser = {};
       
       // Проходим по всем сообщениям и находим последнее от каждого отправителя
       for (final message in state.messages) {
         // Пропускаем сообщения, которые отправил текущий пользователь или уже прочитаны
-        if (message.senderUsername == currentUsername || message.isRead) continue;
+        if (message.senderUsername == _currentUsername || message.isRead) continue;
         
         // Если это новое сообщение от отправителя или сообщение более позднее чем то, что уже есть в Map
         if (!latestMessagesByUser.containsKey(message.senderUsername) || 
-            message.timestamp.isAfter(latestMessagesByUser[message.senderUsername]!.timestamp)) {
+            message.createdAt.isAfter(latestMessagesByUser[message.senderUsername]!.createdAt)) {
           latestMessagesByUser[message.senderUsername] = message;
         }
       }

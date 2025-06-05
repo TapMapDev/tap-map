@@ -138,6 +138,7 @@ class WebSocketService {
     } catch (e) {
       print('❌ Socket: Failed to send read message: $e');
     }
+    print('📖 Socket: в чате $chatId успешно прочитано сообщение: $messageId');
   }
 
   void sendTyping({required int chatId, required bool isTyping}) {

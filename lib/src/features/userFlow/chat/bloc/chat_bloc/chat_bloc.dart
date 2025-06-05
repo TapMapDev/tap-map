@@ -459,14 +459,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
       
       // Вызываем websocket метод для отметки сообщения как прочитанного
-      await _webSocketService!.readMessage(
+      _webSocketService!.readMessage(
         chatId: event.chatId,
         messageId: event.messageId,
       );
       
       // Обновляем состояние, чтобы отметить это сообщение и все предыдущие от того же отправителя как прочитанные
       final currentState = state;
-      if (currentState is ChatLoadedState) {
+      if (currentState is ChatLoaded) {
         String? senderUsername;
         
         // Находим отправителя сообщения, которое мы пометили как прочитанное
@@ -482,22 +482,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           final timestamp = currentState.messages
               .firstWhere((m) => m.id == event.messageId, 
                   orElse: () => MessageModel.empty())
-              .timestamp;
+              .createdAt;
               
-          if (timestamp != null) {
-            final updatedMessages = currentState.messages.map((message) {
-              // Если сообщение от того же отправителя, было отправлено до или одновременно 
-              // с текущим сообщением, и оно не прочитано, то помечаем его как прочитанное
-              if (message.senderUsername == senderUsername && 
-                  !message.isRead && 
-                  (message.timestamp.isBefore(timestamp) || message.timestamp.isAtSameMomentAs(timestamp))) {
-                return message.copyWith(isRead: true);
-              }
-              return message;
-            }).toList();
-            
-            emit(currentState.copyWith(messages: updatedMessages));
-          }
+          final updatedMessages = currentState.messages.map((message) {
+            // Если сообщение от того же отправителя, было отправлено до или одновременно
+            // с текущим сообщением, и оно не прочитано, то помечаем его как прочитанное
+            if (message.senderUsername == senderUsername &&
+                !message.isRead &&
+                (message.createdAt.isBefore(timestamp) || message.createdAt.isAtSameMomentAs(timestamp))) {
+              return message.copyWith(isRead: true);
+            }
+            return message;
+          }).toList();
+
+          emit(currentState.copyWith(messages: updatedMessages));
         }
       }
     } catch (e) {
