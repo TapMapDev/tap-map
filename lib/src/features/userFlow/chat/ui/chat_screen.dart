@@ -51,13 +51,15 @@ class _ChatScreenState extends State<ChatScreen> {
     _userRepository = GetIt.instance<UserRepository>();
     _chatBloc = context.read<ChatBloc>();
     _initChat();
+    // TODO зачем?
+    _stopTypingTimer();
     _chatBloc.add(ConnectToChat(widget.chatId));
     _chatBloc.add(FetchChatById(widget.chatId));
     
-    // Отмечаем чат как прочитанный после отрисовки UI
-    print('📖 ChatScreen: Планируем отметку чата как прочитанного');
+    // Используем postFrameCallback, чтобы пометить сообщения как прочитанные
+    // после полной инициализации виджета
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _markChatAsRead();
+      _markLatestMessagesAsRead();
     });
   }
 
@@ -190,12 +192,41 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingTimer = null;
   }
 
-  void _markChatAsRead() async {
-    try {
-      await _chatRepository.markChatAsRead(widget.chatId);
-      print('📖 ChatScreen: Чат ${widget.chatId} отмечен как прочитанный');
-    } catch (e) {
-      print('❌ ChatScreen: Ошибка при отметке чата как прочитанного: $e');
+  void _markLatestMessagesAsRead() {
+    final state = _chatBloc.state;
+    if (state is ChatLoadedState) {
+      // Получаем текущее имя пользователя из блока
+      final String? currentUsername = state.currentUsername;
+      if (currentUsername == null) return;
+      
+      // Создаем Map для хранения последних сообщений от каждого отправителя
+      final Map<String, ChatMessageModel> latestMessagesByUser = {};
+      
+      // Проходим по всем сообщениям и находим последнее от каждого отправителя
+      for (final message in state.messages) {
+        // Пропускаем сообщения, которые отправил текущий пользователь или уже прочитаны
+        if (message.senderUsername == currentUsername || message.isRead) continue;
+        
+        // Если это новое сообщение от отправителя или сообщение более позднее чем то, что уже есть в Map
+        if (!latestMessagesByUser.containsKey(message.senderUsername) || 
+            message.timestamp.isAfter(latestMessagesByUser[message.senderUsername]!.timestamp)) {
+          latestMessagesByUser[message.senderUsername] = message;
+        }
+      }
+      
+      // Для каждого отправителя отмечаем его последнее сообщение как прочитанное
+      latestMessagesByUser.forEach((_, message) {
+        try {
+          _chatBloc.add(
+            MarkMessageReadEvent(
+              chatId: message.chatId,
+              messageId: message.id,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Ошибка при отметке сообщения как прочитанного: $e');
+        }
+      });
     }
   }
 

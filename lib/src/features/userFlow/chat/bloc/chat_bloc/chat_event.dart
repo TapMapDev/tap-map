@@ -189,3 +189,16 @@ class UploadFile extends ChatEvent {
 class AutoResetTypingStatus extends ChatEvent {
   const AutoResetTypingStatus();
 }
+
+class MarkMessageReadEvent extends ChatEvent {
+  final int chatId;
+  final int messageId;
+
+  const MarkMessageReadEvent({
+    required this.chatId,
+    required this.messageId,
+  });
+
+  @override
+  List<Object?> get props => [chatId, messageId];
+}

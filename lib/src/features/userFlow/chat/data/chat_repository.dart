@@ -98,20 +98,6 @@ class ChatRepository {
     }
   }
 
-  Future<void> markChatAsRead(int chatId) async {
-    try {
-      final response = await _dioClient.post(
-        '/chats/$chatId/mark_read/',
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to mark chat as read: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to mark chat as read: $e');
-    }
-  }
-
   Future<List<MessageModel>> getChatHistory(int chatId) async {
     try {
       final response = await _dioClient.get('/chat/$chatId/messages/');

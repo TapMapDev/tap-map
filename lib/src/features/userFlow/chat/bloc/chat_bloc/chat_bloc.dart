@@ -51,6 +51,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendTyping>(_onSendTyping);
     on<LocalMessageEdited>(_onLocalMessageEdited);
     on<AutoResetTypingStatus>(_onAutoResetTypingStatus);
+    on<MarkMessageReadEvent>(_onMarkMessageRead); // Добавляем обработчик для нового события
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
@@ -444,6 +445,64 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final currentState = state;
     if (currentState is ChatLoaded) {
       emit(currentState.copyWith(isOtherUserTyping: false));
+    }
+  }
+
+  // Обработчик события отметки сообщения как прочитанного
+  Future<void> _onMarkMessageRead(
+    MarkMessageReadEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    try {
+      if (_webSocketService == null) {
+        return;
+      }
+      
+      // Вызываем websocket метод для отметки сообщения как прочитанного
+      await _webSocketService!.readMessage(
+        chatId: event.chatId,
+        messageId: event.messageId,
+      );
+      
+      // Обновляем состояние, чтобы отметить это сообщение и все предыдущие от того же отправителя как прочитанные
+      final currentState = state;
+      if (currentState is ChatLoadedState) {
+        String? senderUsername;
+        
+        // Находим отправителя сообщения, которое мы пометили как прочитанное
+        for (var message in currentState.messages) {
+          if (message.id == event.messageId) {
+            senderUsername = message.senderUsername;
+            break;
+          }
+        }
+        
+        if (senderUsername != null && senderUsername != _currentUsername) {
+          // Обновляем все сообщения от этого отправителя, которые имеют timestamp меньше или равный текущему сообщению
+          final timestamp = currentState.messages
+              .firstWhere((m) => m.id == event.messageId, 
+                  orElse: () => MessageModel.empty())
+              .timestamp;
+              
+          if (timestamp != null) {
+            final updatedMessages = currentState.messages.map((message) {
+              // Если сообщение от того же отправителя, было отправлено до или одновременно 
+              // с текущим сообщением, и оно не прочитано, то помечаем его как прочитанное
+              if (message.senderUsername == senderUsername && 
+                  !message.isRead && 
+                  (message.timestamp.isBefore(timestamp) || message.timestamp.isAtSameMomentAs(timestamp))) {
+                return message.copyWith(isRead: true);
+              }
+              return message;
+            }).toList();
+            
+            emit(currentState.copyWith(messages: updatedMessages));
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ ChatBloc: Ошибка при отметке сообщения как прочитанного: $e');
+      // Не эмиттим состояние ошибки, чтобы не прерывать работу пользователя
     }
   }
 
