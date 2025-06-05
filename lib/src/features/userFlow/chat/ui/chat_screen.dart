@@ -191,9 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _markLatestMessagesAsRead() {
     final state = _chatBloc.state;
     if (state is ChatLoaded) {
-
-      print(_currentUserId);
-      print(_currentUsername);
+      debugPrint('_markLatestMessagesAsRead currentUser=$_currentUsername');
       if (_currentUsername == null) return;
       
       // Создаем Map для хранения последних сообщений от каждого отправителя
@@ -214,6 +212,8 @@ class _ChatScreenState extends State<ChatScreen> {
       // Для каждого отправителя отмечаем его последнее сообщение как прочитанное
       latestMessagesByUser.forEach((_, message) {
         try {
+          debugPrint(
+              'ChatScreen: mark message ${message.id} from ${message.senderUsername} as read');
           _chatBloc.add(
             MarkMessageReadEvent(
               chatId: message.chatId,
