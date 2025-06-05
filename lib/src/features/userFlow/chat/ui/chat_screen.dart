@@ -53,12 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _initChat();
     _chatBloc.add(ConnectToChat(widget.chatId));
     _chatBloc.add(FetchChatById(widget.chatId));
-    
-    // Используем postFrameCallback, чтобы пометить сообщения как прочитанные
-    // после полной инициализации виджета
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _markLatestMessagesAsRead();
-    });
+
   }
 
   Future<void> _initChat() async {
@@ -76,6 +71,9 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       print(
           '👤 ChatScreen: Current user set - username: $_currentUsername, id: $_currentUserId');
+      if (_chatBloc.state is ChatLoaded) {
+        _markLatestMessagesAsRead();
+      }
     } catch (e) {
       print('❌ ChatScreen: Error loading current user: $e');
     }
@@ -269,6 +267,14 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           body: MultiBlocListener(
             listeners: [
+              BlocListener<ChatBloc, ChatState>(
+                listenWhen: (previous, current) => current is ChatLoaded,
+                listener: (context, state) {
+                  if (state is ChatLoaded && _currentUsername != null) {
+                    _markLatestMessagesAsRead();
+                  }
+                },
+              ),
               BlocListener<DeleteMessageBloc, DeleteMessageState>(
                 listener: (context, state) {
                   if (state is DeleteMessageSuccess) {

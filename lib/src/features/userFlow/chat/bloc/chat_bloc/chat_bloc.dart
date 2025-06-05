@@ -161,55 +161,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ));
       }
       
-      // После загрузки сообщений, запускаем отметку их прочитанными
-      // Это обеспечит актуализацию статуса на сервере
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Вызовем метод для отметки последних сообщений как прочитанных
-        print('📖 ChatBloc: Автоматическая отметка сообщений как прочитанных после загрузки');
-        _markLatestMessagesAsRead();
-      });
       
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
   
-  // Метод для отметки последних сообщений от каждого отправителя как прочитанных
-  void _markLatestMessagesAsRead() {
-    final currentState = state;
-    if (currentState is! ChatLoaded) return;
-    if (_currentUsername == null) return;
-    
-    // Создаем Map для хранения последних сообщений от каждого отправителя
-    final Map<String, MessageModel> latestMessagesByUser = {};
-    
-    // Проходим по всем сообщениям и находим последнее от каждого отправителя
-    for (final message in currentState.messages) {
-      // Пропускаем сообщения, которые отправил текущий пользователь или уже прочитаны
-      if (message.senderUsername == _currentUsername || message.isRead) continue;
-      
-      // Если это новое сообщение от отправителя или сообщение более позднее чем то, что уже есть в Map
-      if (!latestMessagesByUser.containsKey(message.senderUsername) || 
-          message.createdAt.isAfter(latestMessagesByUser[message.senderUsername]!.createdAt)) {
-        latestMessagesByUser[message.senderUsername] = message;
-      }
-    }
-    
-    // Для каждого отправителя отмечаем его последнее сообщение как прочитанное
-    latestMessagesByUser.forEach((_, message) {
-      try {
-        if (message.chatId > 0 && message.id > 0) {
-          print('📖 ChatBloc: Отправка запроса на отметку сообщения ID: ${message.id} как прочитанного');
-          add(MarkMessageReadEvent(
-            chatId: message.chatId,
-            messageId: message.id,
-          ));
-        }
-      } catch (e) {
-        print('❌ ChatBloc: Ошибка при отметке сообщения как прочитанного: $e');
-      }
-    });
-  }
 
   Future<void> _onConnectToChat(
     ConnectToChat event,
