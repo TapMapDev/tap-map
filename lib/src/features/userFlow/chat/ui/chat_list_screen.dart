@@ -4,6 +4,7 @@ import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
 import '../bloc/chat_bloc/chat_bloc.dart';
 import '../models/chat_model.dart';
+import '../widgets/user_search_delegate.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -27,6 +28,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Чаты'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: UserSearchDelegate(),
+              );
+            },
+          ),
+        ],
       ),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
