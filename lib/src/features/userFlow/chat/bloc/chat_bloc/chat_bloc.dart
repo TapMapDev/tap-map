@@ -141,7 +141,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Обновляем статус прочтения для непрочитанных сообщений
       final updatedMessages = messages.map((message) {
         if (!message.isRead && message.senderUsername != _currentUsername) {
-          debugPrint(
+          print(
               'ChatBloc: marking message ${message.id} as read on fetch');
           final updated = message.copyWith(isRead: true);
 
@@ -401,7 +401,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           // Обновляем статусы сообщений из all_read_ids
           final updatedMessages = currentState.messages.map((message) {
             if (idsToMark.contains(message.id)) {
-              debugPrint('ChatBloc: server marked ${message.id} as read');
+              print('ChatBloc: server marked ${message.id} as read');
               return message.copyWith(isRead: true);
             }
             return message;
@@ -537,7 +537,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (currentState is ChatLoaded) {
         final updated = currentState.messages.map((m) {
           if (m.id == event.messageId) {
-            debugPrint(
+            print(
                 'ChatBloc: locally mark message ${m.id} as read for chat ${event.chatId}');
             return m.copyWith(isRead: true);
           }
