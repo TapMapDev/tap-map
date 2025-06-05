@@ -43,22 +43,28 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
       // Используем только WebSocket для удаления сообщений
       print('DeleteMessageBloc: Using WebSocket for message deletion');
       if (_webSocketService != null) {
-        _webSocketService!.deleteMessage(
-          chatId: event.chatId,
-          messageId: event.messageId,
-          action: event.action,
-        );
-        print('DeleteMessageBloc: WebSocket delete message sent');
+        try {
+          _webSocketService!.deleteMessage(
+            chatId: event.chatId,
+            messageId: event.messageId,
+            action: event.action,
+          );
+          print('DeleteMessageBloc: WebSocket delete message sent');
+          emit(DeleteMessageSuccess(
+            chatId: event.chatId,
+            messageId: event.messageId,
+          ));
+          print('DeleteMessageBloc: Emitted DeleteMessageSuccess state');
+        } catch (e) {
+          print('DeleteMessageBloc: Error occurred while deleting via WebSocket: $e');
+          emit(DeleteMessageFailure(e.toString()));
+          print('DeleteMessageBloc: Emitted DeleteMessageFailure state');
+        }
       } else {
         print('DeleteMessageBloc: WebSocketService is null, cannot delete via WebSocket');
+        emit(const DeleteMessageFailure('WebSocketService unavailable'));
+        print('DeleteMessageBloc: Emitted DeleteMessageFailure state');
       }
-
-      // В любом случае эмитим успех для локального удаления
-      emit(DeleteMessageSuccess(
-        chatId: event.chatId,
-        messageId: event.messageId,
-      ));
-      print('DeleteMessageBloc: Emitted DeleteMessageSuccess state');
     } catch (e) {
       print('DeleteMessageBloc: Error occurred: $e');
       emit(DeleteMessageFailure(e.toString()));

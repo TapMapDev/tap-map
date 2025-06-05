@@ -118,7 +118,7 @@ class WebSocketService {
       print('✅ Socket: Delete message sent successfully');
     } catch (e) {
       print('❌ Socket: Failed to send delete message: $e');
-      // Не пробрасываем ошибку, чтобы UI не падал
+      throw e; // Пробрасываем ошибку для обработки в DeleteMessageBloc
     }
   }
 
