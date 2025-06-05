@@ -316,6 +316,25 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           emit(currentState.copyWith(messages: updatedMessages));
         }
         return;
+      } else if (type == 'read_message') {
+        // Обработка события о прочтении сообщения
+        final messageId = messageData['message_id'] as int?;
+        final chatId = messageData['chat_id'] as int?;
+        
+        if (messageId != null && chatId != null) {
+          print('📖 ChatBloc: Обработка события о прочтении сообщения ID: $messageId в чате: $chatId');
+          
+          // Обновляем статус прочтения для этого сообщения
+          final updatedMessages = currentState.messages.map((message) {
+            if (message.id == messageId) {
+              return message.copyWith(isRead: true);
+            }
+            return message;
+          }).toList();
+          
+          emit(currentState.copyWith(messages: updatedMessages));
+        }
+        return;
       } else if (type == 'message_edited') {
         // Обрабатываем сообщение об отредактированном сообщении
         final chatId = messageData['chat_id'] as int?;

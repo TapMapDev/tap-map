@@ -53,6 +53,12 @@ class _ChatScreenState extends State<ChatScreen> {
     _initChat();
     _chatBloc.add(ConnectToChat(widget.chatId));
     _chatBloc.add(FetchChatById(widget.chatId));
+    
+    // Отмечаем чат как прочитанный после отрисовки UI
+    print('📖 ChatScreen: Планируем отметку чата как прочитанного');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markChatAsRead();
+    });
   }
 
   Future<void> _initChat() async {
@@ -182,6 +188,15 @@ class _ChatScreenState extends State<ChatScreen> {
   void _stopTypingTimer() {
     _typingTimer?.cancel();
     _typingTimer = null;
+  }
+
+  void _markChatAsRead() async {
+    try {
+      await _chatRepository.markChatAsRead(widget.chatId);
+      print('📖 ChatScreen: Чат ${widget.chatId} отмечен как прочитанный');
+    } catch (e) {
+      print('❌ ChatScreen: Ошибка при отметке чата как прочитанного: $e');
+    }
   }
 
   @override
