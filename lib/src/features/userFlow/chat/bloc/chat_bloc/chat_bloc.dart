@@ -26,6 +26,43 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   StreamSubscription? _wsSubscription;
   Timer? _typingResetTimer;
 
+  // Храним список чатов локально, чтобы можно было обновлять его при получении
+  // новых сообщений и переиспользовать без повторного запроса к серверу
+  List<ChatModel> _chats = [];
+
+  void _sortChats() {
+    _chats.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      if (a.isPinned && b.isPinned) {
+        final aOrder = a.pinOrder ?? 0;
+        final bOrder = b.pinOrder ?? 0;
+        return aOrder.compareTo(bOrder);
+      }
+      final aTime = a.lastMessageCreatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.lastMessageCreatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+  }
+
+  void _updateChatPreview(MessageModel message) {
+    final index = _chats.indexWhere((c) => c.chatId == message.chatId);
+    if (index == -1) return;
+
+    final chat = _chats[index];
+    _chats[index] = chat.copyWith(
+      lastMessageText: message.text,
+      lastMessageSenderUsername: message.senderUsername,
+      lastMessageCreatedAt: message.createdAt,
+    );
+
+    _sortChats();
+
+    if (state is ChatsLoaded) {
+      emit(ChatsLoaded(List.from(_chats)));
+    }
+  }
+
   // Добавляем геттер для доступа к WebSocketService
   WebSocketService? get webSocketService => _webSocketService;
 
@@ -58,7 +95,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       emit(ChatLoading());
       final chats = await _chatRepository.fetchChats();
-      emit(ChatsLoaded(chats));
+      _chats = List.from(chats);
+      emit(ChatsLoaded(_chats));
     } catch (e) {
       emit(ChatError(e.toString()));
     }
@@ -296,6 +334,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               print('❌ ChatBloc: Невозможно отметить сообщение как прочитанное: chatId=${newMessage.chatId}, messageId=${newMessage.id}');
             }
           }
+
+          // Обновляем превью и порядок чатов в списке
+          _updateChatPreview(newMessage);
 
           final updatedMessages = List<MessageModel>.from(mutableState.messages)
             ..insert(0, newMessage);
