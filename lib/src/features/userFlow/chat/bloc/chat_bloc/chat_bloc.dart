@@ -237,9 +237,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         
         // Сбрасываем статус "печатает..." при получении любого сообщения
         // Это решает проблему "зависшего" индикатора
-        if (currentState.isOtherUserTyping) {
+        var mutableState = currentState;
+        if (mutableState.isOtherUserTyping) {
           print('⌨️ ChatBloc: Сброс статуса печати, получено новое сообщение');
-          emit(currentState.copyWith(isOtherUserTyping: false));
+          final updatedState = mutableState.copyWith(isOtherUserTyping: false);
+          emit(updatedState);
+          mutableState = updatedState;
         }
         
         if (senderId == null) {
@@ -280,16 +283,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             );
           }
 
-          final updatedMessages = List<MessageModel>.from(currentState.messages)
+          final updatedMessages = List<MessageModel>.from(mutableState.messages)
             ..insert(0, newMessage);
 
           print(
               '📨 ChatBloc: Emitting new state with ${updatedMessages.length} messages');
-          emit(currentState.copyWith(
+          emit(mutableState.copyWith(
             messages: updatedMessages,
             isRead: true,
-            replyTo: currentState.replyTo,
-            forwardFrom: currentState.forwardFrom,
+            replyTo: mutableState.replyTo,
+            forwardFrom: mutableState.forwardFrom,
           ));
         } catch (e) {
           print('❌ ChatBloc: Error getting user info: $e');
