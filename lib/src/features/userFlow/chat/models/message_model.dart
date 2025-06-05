@@ -50,8 +50,8 @@ class MessageModel extends Equatable {
     final editedAt = json['edited_at'] as String?;
     final senderUserId = json['user_id'] as int? ?? json['sender_id'] as int?;
     return MessageModel(
-      id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-      chatId: json['chat'] as int? ?? 0,
+      id: json['message_id'] as int? ?? 0,
+      chatId: json['chat_id'] as int? ?? 0,
       text: json['text'] as String? ?? '',
       senderUsername: json['sender_username'] as String? ?? 'Unknown',
       createdAt: json['created_at'] != null
