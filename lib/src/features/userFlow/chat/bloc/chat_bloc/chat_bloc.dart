@@ -138,22 +138,35 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         );
       }
 
-      // Обновляем статус прочтения для непрочитанных сообщений
+      // Обновляем статус прочтения для всех сообщений от других пользователей
       final updatedMessages = messages.map((message) {
         if (!message.isRead && message.senderUsername != _currentUsername) {
-          print(
-              'ChatBloc: marking message ${message.id} as read on fetch');
-          final updated = message.copyWith(isRead: true);
-
-          _webSocketService?.readMessage(
-            chatId: message.chatId,
-            messageId: message.id,
-          );
-
-          return updated;
+          return message.copyWith(isRead: true);
         }
         return message;
       }).toList();
+
+      // Находим последнее непрочитанное сообщение от другого пользователя и отмечаем его как прочитанное
+      // Сервер автоматически отметит все предыдущие сообщения как прочитанные
+      if (_webSocketService != null) {
+        final lastUnreadMessage = messages
+            .where((m) => !m.isRead && m.senderUsername != _currentUsername)
+            .fold<MessageModel?>(null, (prev, message) {
+              if (prev == null || message.createdAt.isAfter(prev.createdAt)) {
+                return message;
+              }
+              return prev;
+            });
+
+        if (lastUnreadMessage != null) {
+          print(
+              'ChatBloc: marking all messages as read via the last message ${lastUnreadMessage.id}');
+          _webSocketService?.readMessage(
+            chatId: lastUnreadMessage.chatId,
+            messageId: lastUnreadMessage.id,
+          );
+        }
+      }
 
       final currentState = state;
       if (currentState is ChatLoaded) {
