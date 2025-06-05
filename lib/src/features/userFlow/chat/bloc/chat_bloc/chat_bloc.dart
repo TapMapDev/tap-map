@@ -192,6 +192,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         return;
       }
       // Получаем токен. Если его нет, значит пользователь не авторизован
+      // TODO лишнее - можно брать 1 раз
       final token = await _prefsRepository.getAccessToken();
       if (token == null) {
         return;
