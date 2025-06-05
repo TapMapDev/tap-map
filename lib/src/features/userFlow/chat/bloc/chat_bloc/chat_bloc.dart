@@ -141,6 +141,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       // Обновляем статус прочтения для непрочитанных сообщений
       final updatedMessages = messages.map((message) {
         if (!message.isRead && message.senderUsername != _currentUsername) {
+          debugPrint(
+              'ChatBloc: marking message ${message.id} as read on fetch');
           final updated = message.copyWith(isRead: true);
 
           _webSocketService?.readMessage(
@@ -392,14 +394,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         
         if (messageId != null && chatId != null && allReadIds.isNotEmpty) {
           print('📖 ChatBloc: Обработка события о прочтении сообщений: '
-              '$allReadIds в чате: $chatId'
-          );
+              '$allReadIds в чате: $chatId');
 
           final idsToMark = <int>{messageId, ...allReadIds};
-          
+
           // Обновляем статусы сообщений из all_read_ids
           final updatedMessages = currentState.messages.map((message) {
             if (idsToMark.contains(message.id)) {
+              debugPrint('ChatBloc: server marked ${message.id} as read');
               return message.copyWith(isRead: true);
             }
             return message;
@@ -530,9 +532,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         return;
       }
       
-      // Просто отправляем WebSocket событие для отметки сообщения как прочитанного
+      // Обновляем локальное состояние, чтобы сразу отобразить галочку
+      final currentState = state;
+      if (currentState is ChatLoaded) {
+        final updated = currentState.messages.map((m) {
+          if (m.id == event.messageId) {
+            debugPrint(
+                'ChatBloc: locally mark message ${m.id} as read for chat ${event.chatId}');
+            return m.copyWith(isRead: true);
+          }
+          return m;
+        }).toList();
+        emit(currentState.copyWith(messages: updated));
+      }
+
+      // Отправляем WebSocket событие для отметки сообщения как прочитанного
       // Сервер автоматически отметит все предыдущие сообщения от этого пользователя
-      // А на read_message от сервера мы уже обрабатываем все необходимые сообщения
       if (event.chatId > 0 && event.messageId > 0) {
         print('📖 ChatBloc: Отправка запроса на отметку сообщения ID: ${event.messageId} в чате: ${event.chatId}');
         _webSocketService!.readMessage(

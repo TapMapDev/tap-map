@@ -25,6 +25,9 @@ class ChatBubble extends StatelessWidget {
     final isOwnMessage = message.senderUsername == currentUsername;
     if (!isOwnMessage) return const SizedBox.shrink();
 
+    debugPrint(
+        'ChatBubble: messageId=${message.id}, isRead=${message.isRead}, currentUser=$currentUsername');
+
     final icon = message.isRead ? Icons.done_all : Icons.check;
     final color = message.isRead ? Colors.blue : Colors.grey;
 
