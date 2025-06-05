@@ -469,55 +469,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   // Обработчик события отметки сообщения как прочитанного
-  Future<void> _onMarkMessageRead(
+  void _onMarkMessageRead(
     MarkMessageReadEvent event,
     Emitter<ChatState> emit,
-  ) async {
+  ) {
     try {
       if (_webSocketService == null) {
         return;
       }
       
-      // Вызываем websocket метод для отметки сообщения как прочитанного
-      _webSocketService!.readMessage(
-        chatId: event.chatId,
-        messageId: event.messageId,
-      );
-      
-      // Обновляем состояние, чтобы отметить это сообщение и все предыдущие от того же отправителя как прочитанные
-      final currentState = state;
-      if (currentState is ChatLoaded) {
-        String? senderUsername;
-        
-        // Находим отправителя сообщения, которое мы пометили как прочитанное
-        for (var message in currentState.messages) {
-          if (message.id == event.messageId) {
-            senderUsername = message.senderUsername;
-            break;
-          }
-        }
-        
-        if (senderUsername != null && senderUsername != _currentUsername) {
-          // Обновляем все сообщения от этого отправителя, которые имеют timestamp меньше или равный текущему сообщению
-          final timestamp = currentState.messages
-              .firstWhere((m) => m.id == event.messageId, 
-                  orElse: () => MessageModel.empty())
-              .createdAt;
-              
-          final updatedMessages = currentState.messages.map((message) {
-            // Если сообщение от того же отправителя, было отправлено до или одновременно
-            // с текущим сообщением, и оно не прочитано, то помечаем его как прочитанное
-            if (message.senderUsername == senderUsername &&
-                !message.isRead &&
-                (message.createdAt.isBefore(timestamp) || message.createdAt.isAtSameMomentAs(timestamp))) {
-              return message.copyWith(isRead: true);
-            }
-            return message;
-          }).toList();
-
-          emit(currentState.copyWith(messages: updatedMessages));
-        }
+      // Просто отправляем WebSocket событие для отметки сообщения как прочитанного
+      // Сервер автоматически отметит все предыдущие сообщения от этого пользователя
+      // А на read_message от сервера мы уже обрабатываем все необходимые сообщения
+      if (event.chatId > 0 && event.messageId > 0) {
+        print('📖 ChatBloc: Отправка запроса на отметку сообщения ID: ${event.messageId} в чате: ${event.chatId}');
+        _webSocketService!.readMessage(
+          chatId: event.chatId,
+          messageId: event.messageId,
+        );
+      } else {
+        print('❌ ChatBloc: Невозможно отметить сообщение как прочитанное: недопустимые ID');
       }
+      
+      // Состояние будет обновлено, когда мы получим подтверждение от сервера
     } catch (e) {
       print('❌ ChatBloc: Ошибка при отметке сообщения как прочитанного: $e');
       // Не эмиттим состояние ошибки, чтобы не прерывать работу пользователя
