@@ -130,16 +130,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
+      // TODO лишнее - можно брать 1 раз
       final token = await _prefsRepository.getAccessToken();
       if (token == null) {
         emit(const ChatError('No access token available'));
         return;
       }
 
+      // TODO лишнее - можно брать 1 раз
       final user = await _userRepository.getCurrentUser();
       _currentUsername = user.username;
       _currentUserId = user.id; // Обновляем ID текущего пользователя
 
+      // TODO лишнее - можно открывать когда в чаты только заходим
       _webSocketService = WebSocketService(jwtToken: token);
       _webSocketService!.connect();
       _webSocketService!.setCurrentUsername(_currentUsername!);
@@ -213,6 +216,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       // Если сообщение пришло как строка, пробуем распарсить JSON
       dynamic messageData = event.message;
+      print(messageData);
       if (messageData is String) {
         try {
           messageData = jsonDecode(messageData);
@@ -258,6 +262,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             return;
           }
 
+          // TODO мб убрать sender_username из модели приходится лишние запросы
+          // TODO либо при открытии чата писать в поле и брать из chat_list[0].chat_name
           var newMessage = MessageModel.fromJson({
             ...messageData,
             'sender_username': user.username,
