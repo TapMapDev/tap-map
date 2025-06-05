@@ -258,7 +258,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             return;
           }
 
-          final newMessage = MessageModel.fromJson({
+          var newMessage = MessageModel.fromJson({
             ...messageData,
             'sender_username': user.username,
           });
@@ -282,6 +282,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               chatId: newMessage.chatId,
               messageId: newMessage.id,
             );
+            newMessage = newMessage.copyWith(isRead: true);
           }
 
           final updatedMessages = List<MessageModel>.from(mutableState.messages)
