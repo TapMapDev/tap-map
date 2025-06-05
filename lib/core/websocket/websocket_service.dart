@@ -22,6 +22,7 @@ class WebSocketService {
       Uri.parse('wss://api.tap-map.net/ws/notifications/'),
       headers: {
         'Authorization': 'Bearer $_jwtToken',
+        'X-Timezone': 'Asia/Bangkok',
       },
     );
     _broadcastStream = _channel.stream.asBroadcastStream();
