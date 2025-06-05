@@ -117,6 +117,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           await _chatRepository.getPinnedMessageId(event.chatId);
 
       // Если есть закрепленное сообщение, находим его в списке
+      // TODO dont use for now - mb later
       MessageModel? pinnedMessage;
       if (pinnedMessageId != null) {
         pinnedMessage = messages.firstWhere(
