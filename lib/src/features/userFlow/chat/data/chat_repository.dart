@@ -10,13 +10,19 @@ class ChatRepository {
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
 
+  List<ChatModel>? _cachedChats;
+
   ChatRepository({
     required DioClient dioClient,
     required SharedPreferences prefs,
   })  : _dioClient = dioClient,
         _prefs = prefs;
 
-  Future<List<ChatModel>> fetchChats() async {
+  Future<List<ChatModel>> fetchChats({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedChats != null) {
+      return _cachedChats!;
+    }
+
     try {
       final response = await _dioClient.get('/chat/list/');
 
@@ -32,12 +38,17 @@ class ChatRepository {
           return aOrder.compareTo(bOrder);
         });
 
+        _cachedChats = chats;
         return chats;
       }
       throw Exception('Failed to fetch chats: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to fetch chats: $e');
     }
+  }
+
+  List<ChatModel> getCachedChats() {
+    return _cachedChats ?? [];
   }
 
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {

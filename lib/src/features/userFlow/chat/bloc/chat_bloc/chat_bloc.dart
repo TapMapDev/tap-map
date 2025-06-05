@@ -92,13 +92,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
-    try {
+    final cachedChats = _chatRepository.getCachedChats();
+
+    if (cachedChats.isNotEmpty && !event.forceRefresh) {
+      _chats = List.from(cachedChats);
+      emit(ChatsLoaded(_chats));
+    } else {
       emit(ChatLoading());
-      final chats = await _chatRepository.fetchChats();
+    }
+
+    try {
+      final chats = await _chatRepository.fetchChats(forceRefresh: true);
       _chats = List.from(chats);
       emit(ChatsLoaded(_chats));
     } catch (e) {
-      emit(ChatError(e.toString()));
+      if (cachedChats.isEmpty || event.forceRefresh) {
+        emit(ChatError(e.toString()));
+      }
     }
   }
 

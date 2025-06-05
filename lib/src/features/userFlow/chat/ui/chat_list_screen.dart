@@ -19,7 +19,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     // Загружаем список чатов при инициализации
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatBloc>().add(FetchChats());
+      context.read<ChatBloc>().add(const FetchChats());
     });
   }
 
@@ -43,7 +43,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatDisconnected) {
-            context.read<ChatBloc>().add(FetchChats());
+            context.read<ChatBloc>().add(const FetchChats());
           }
         },
         builder: (context, state) {
@@ -71,7 +71,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget _buildChatList(List<ChatModel> chats) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ChatBloc>().add(FetchChats());
+        context.read<ChatBloc>().add(const FetchChats(forceRefresh: true));
       },
       child: ListView.builder(
         itemCount: chats.length,
