@@ -28,13 +28,17 @@ class ChatBubble extends StatelessWidget {
     debugPrint(
         'ChatBubble: messageId=${message.id}, isRead=${message.isRead}, currentUser=$currentUsername');
 
-    final icon = message.isRead ? Icons.done_all : Icons.check;
-    final color = message.isRead ? Colors.blue : Colors.grey;
+    // TODO: Re-enable read status icons once design is finalized.
+    // final icon = message.isRead ? Icons.done_all : Icons.check;
+    // final color = message.isRead ? Colors.blue : Colors.grey;
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Icon(icon, size: 16, color: color),
-    );
+    // return Padding(
+    //   padding: const EdgeInsets.only(left: 4),
+    //   child: Icon(icon, size: 16, color: color),
+    // );
+
+    // Temporarily hide read status visuals while keeping the logic intact.
+    return const SizedBox.shrink();
   }
 
   @override
