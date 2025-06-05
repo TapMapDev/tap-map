@@ -89,9 +89,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LocalMessageEdited>(_onLocalMessageEdited);
     on<AutoResetTypingStatus>(_onAutoResetTypingStatus);
     on<MarkMessageReadEvent>(_onMarkMessageRead); // Добавляем обработчик для нового события
+
+    // Открываем соединение сразу при инициализации блока
+    Future.microtask(() => add(const ConnectToChat(0)));
   }
 
   Future<void> _onFetchChats(FetchChats event, Emitter<ChatState> emit) async {
+    // Если соединение еще не установлено, попробуем подключиться
+    if (_webSocketService == null) {
+      add(const ConnectToChat(0));
+    }
+
     final cachedChats = _chatRepository.getCachedChats();
 
     if (cachedChats.isNotEmpty && !event.forceRefresh) {
@@ -179,10 +187,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      // TODO лишнее - можно брать 1 раз
+      if (_webSocketService != null) {
+        emit(ChatConnected());
+        return;
+      }
+      // Получаем токен. Если его нет, значит пользователь не авторизован
       final token = await _prefsRepository.getAccessToken();
       if (token == null) {
-        emit(const ChatError('No access token available'));
         return;
       }
 
