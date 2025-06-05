@@ -334,13 +334,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Обработка события о прочтении сообщения
         final messageId = messageData['message_id'] as int?;
         final chatId = messageData['chat_id'] as int?;
+        final allReadIdsDynamic = messageData['all_read_ids'] as List<dynamic>?;
+        final allReadIds =
+            allReadIdsDynamic?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [];
         
-        if (messageId != null && chatId != null) {
-          print('📖 ChatBloc: Обработка события о прочтении сообщения ID: $messageId в чате: $chatId');
+        if (messageId != null && chatId != null && allReadIds.isNotEmpty) {
+          print('📖 ChatBloc: Обработка события о прочтении сообщений: '
+              '$allReadIds в чате: $chatId'
+          );
+
+          final idsToMark = <int>{messageId, ...allReadIds};
           
-          // Обновляем статус прочтения для этого сообщения
+          // Обновляем статусы сообщений из all_read_ids
           final updatedMessages = currentState.messages.map((message) {
-            if (message.id == messageId) {
+            if (idsToMark.contains(message.id)) {
               return message.copyWith(isRead: true);
             }
             return message;
