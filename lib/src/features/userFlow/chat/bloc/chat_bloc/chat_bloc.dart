@@ -284,11 +284,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           if (newMessage.senderUsername != _currentUsername) {
             print(
                 '📨 ChatBloc: Sending read receipt for message ${newMessage.id}');
-            _webSocketService?.readMessage(
-              chatId: newMessage.chatId,
-              messageId: newMessage.id,
-            );
-            newMessage = newMessage.copyWith(isRead: true);
+                
+            // Отправляем только если ID сообщения и ID чата действительны
+            if (newMessage.chatId > 0 && newMessage.id > 0) {
+              _webSocketService?.readMessage(
+                chatId: newMessage.chatId,
+                messageId: newMessage.id,
+              );
+              newMessage = newMessage.copyWith(isRead: true);
+            } else {
+              print('❌ ChatBloc: Невозможно отметить сообщение как прочитанное: chatId=${newMessage.chatId}, messageId=${newMessage.id}');
+            }
           }
 
           final updatedMessages = List<MessageModel>.from(mutableState.messages)
