@@ -94,39 +94,69 @@ class WebSocketService {
     required String action,
   }) {
     if (_channel.closeCode != null) {
-      return;
+      print('❌ Socket: Channel is closed, attempting to reconnect...');
+      try {
+        connect(); // Попытка переподключиться
+        print('✅ Socket: Reconnected successfully');
+      } catch (e) {
+        print('❌ Socket: Failed to reconnect for delete message: $e');
+        return;
+      }
     }
+
     final jsonMessage = jsonEncode({
       'type': 'delete_message',
       'chat_id': chatId,
       'message_id': messageId,
       'action': action,
     });
-    _channel.sink.add(jsonMessage);
+    
+    print('📤 Socket: Sending delete message: $jsonMessage');
+    try {
+      _channel.sink.add(jsonMessage);
+      print('✅ Socket: Delete message sent successfully');
+    } catch (e) {
+      print('❌ Socket: Failed to send delete message: $e');
+      // Не пробрасываем ошибку, чтобы UI не падал
+    }
   }
 
   void readMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
+      print('❌ Socket: Channel is closed when sending read_message, skipping');
       return;
     }
+    
     final jsonMessage = jsonEncode({
       'type': 'read_message',
       'chat_id': chatId,
       'message_id': messageId,
     });
-    _channel.sink.add(jsonMessage);
+    
+    try {
+      _channel.sink.add(jsonMessage);
+    } catch (e) {
+      print('❌ Socket: Failed to send read message: $e');
+    }
   }
 
   void sendTyping({required int chatId, required bool isTyping}) {
     if (_channel.closeCode != null) {
+      print('❌ Socket: Channel is closed when sending typing status, skipping');
       return;
     }
+    
     final jsonMessage = jsonEncode({
       'type': 'typing',
       'chat_id': chatId,
       'is_typing': isTyping,
     });
-    _channel.sink.add(jsonMessage);
+    
+    try {
+      _channel.sink.add(jsonMessage);
+    } catch (e) {
+      print('❌ Socket: Failed to send typing status: $e');
+    }
   }
 
   Stream get stream => _broadcastStream;
