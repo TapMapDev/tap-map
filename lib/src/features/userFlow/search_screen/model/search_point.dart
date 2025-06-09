@@ -1,7 +1,7 @@
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point.dart';
 import 'package:tap_map/src/features/userFlow/common/data/models/point_image.dart';
 
-abstract class SearchPoint {
+abstract class TinderPoint {
   final int id;
   final String name;
   final String? description;
@@ -9,7 +9,7 @@ abstract class SearchPoint {
   final String? distance;
   final String? timeInfo;
 
-  SearchPoint({
+  TinderPoint({
     required this.id,
     required this.name,
     this.description,
@@ -18,16 +18,16 @@ abstract class SearchPoint {
     this.timeInfo,
   });
 
-  factory SearchPoint.fromJson(Map<String, dynamic> json) {
+  factory TinderPoint.fromJson(Map<String, dynamic> json) {
     final type = json['object_type'] as String? ?? 'point';
     if (type == 'event') {
-      return EventCard.fromJson(json);
+      return TinderEventCard.fromJson(json);
     }
-    return PointCard.fromJson(json);
+    return TinderPointCard.fromJson(json);
   }
 }
 
-class PointCard extends SearchPoint {
+class TinderPointCard extends TinderPoint {
   final String? openStatus;
   final String? category;
   final List<TinderInfo> tinderInfo;
@@ -35,7 +35,7 @@ class PointCard extends SearchPoint {
   final List<CardData> belowCardData;
   final String? objectType;
 
-  PointCard({
+  TinderPointCard({
     required super.id,
     required super.name,
     super.description,
@@ -50,7 +50,7 @@ class PointCard extends SearchPoint {
     this.objectType,
   });
 
-  factory PointCard.fromJson(Map<String, dynamic> json) => PointCard(
+  factory TinderPointCard.fromJson(Map<String, dynamic> json) => TinderPointCard(
     id: json['id'] as int? ?? 0,
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
@@ -74,8 +74,8 @@ class PointCard extends SearchPoint {
   );
 
   /// Создает карточку точки из полной модели Point
-  factory PointCard.fromPoint(Point point) {
-    return PointCard(
+  factory TinderPointCard.fromPoint(Point point) {
+    return TinderPointCard(
       id: point.properties.id,
       name: point.properties.name,
       description: point.properties.description,
@@ -86,13 +86,13 @@ class PointCard extends SearchPoint {
   }
 }
 
-class EventCard extends SearchPoint {
+class TinderEventCard extends TinderPoint {
   final DateTime startDt;
   final DateTime endDt;
   final String eventStatus;
   final String? objectType;
 
-  EventCard({
+  TinderEventCard({
     required super.id,
     required super.name,
     super.description,
@@ -105,7 +105,7 @@ class EventCard extends SearchPoint {
     this.objectType,
   });
 
-  factory EventCard.fromJson(Map<String, dynamic> json) => EventCard(
+  factory TinderEventCard.fromJson(Map<String, dynamic> json) => TinderEventCard(
     id: json['id'] as int? ?? 0,
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
@@ -121,6 +121,7 @@ class EventCard extends SearchPoint {
   );
 }
 
+// TODO один в один CardData
 class TinderInfo {
   final String label;
   final String value;
@@ -133,6 +134,7 @@ class TinderInfo {
   );
 }
 
+// TODO один в один TinderInfo
 class CardData {
   final String label;
   final String value;

@@ -66,8 +66,8 @@ class Point {
   }
 
   /// Конвертирует полную модель точки в карточку для отображения в поиске
-  PointCard toCard() {
-    return PointCard(
+  TinderPointCard toCard() {
+    return TinderPointCard(
       id: properties.id,
       name: properties.name,
       description: properties.description,
