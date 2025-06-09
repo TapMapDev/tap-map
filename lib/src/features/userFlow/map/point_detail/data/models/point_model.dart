@@ -1,6 +1,7 @@
 import 'feature.dart';
 import 'review.dart';
 
+/// Model representing detailed point information returned from `/points/<id>/`.
 class PointModel {
   final String type; // always "Feature"
   final PointProperties properties;
@@ -13,7 +14,6 @@ class PointModel {
   // TODO backend should provide these values
   final double rating;
   final int totalReviews;
-  final List<String> imageUrls;
   final List<Feature> features;
   final List<Review> reviews;
   final int friendsCount;
@@ -25,6 +25,7 @@ class PointModel {
     required this.geometry,
     this.polygon,
     this.trails,
+    this.polygonChildren,
     this.rating = 0,
     this.totalReviews = 0,
     this.features = const [],
@@ -34,7 +35,9 @@ class PointModel {
   });
 
   factory PointModel.fromJson(Map<String, dynamic> json) {
+
     final props = PointProperties.fromJson(json['properties'] ?? {});
+
     return PointModel(
       type: json['type'] as String? ?? 'Feature',
       properties: props,
@@ -46,11 +49,11 @@ class PointModel {
       polygonChildren: (json['polygon_children'] as List<dynamic>? ?? [])
           .map((e) => PointModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-        rating: (props.extra['rating'] as num?)?.toDouble() ?? 0,
-        totalReviews: props.extra['totalReviews'] as int? ?? 0,
-        features: (props.extra['features'] as List<dynamic>? ?? [])
-            .map((e) => Feature.fromJson(e as Map<String, dynamic>))
-            .toList(),
+      rating: (props.extra['rating'] as num?)?.toDouble() ?? 0,
+      totalReviews: props.extra['totalReviews'] as int? ?? 0,
+      features: (props.extra['features'] as List<dynamic>? ?? [])
+          .map((e) => Feature.fromJson(e as Map<String, dynamic>))
+          .toList(),
       reviews: (props.extra['reviews'] as List<dynamic>? ?? [])
           .map((e) => Review.fromJson(e as Map<String, dynamic>))
           .toList(),
