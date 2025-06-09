@@ -1,7 +1,7 @@
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_feature.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_review.dart';
 import 'package:tap_map/src/features/userFlow/common/data/models/point_image.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/model/search_point.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/data/models/tinder_point.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
 class Point {
