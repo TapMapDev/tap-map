@@ -47,3 +47,4 @@ android/key.properties
 *.jks
 *.apk
 *.bin
+flutter/

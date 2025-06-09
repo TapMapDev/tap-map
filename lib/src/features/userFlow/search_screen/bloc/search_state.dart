@@ -10,7 +10,7 @@ class SearchInitial extends SearchState {}
 
 // Состояние загрузки
 class SearchLoading extends SearchState {
-  final List<ScreenResponseModal>? cachedPlaces;
+  final List<BaseCard>? cachedPlaces;
   final bool hasCachedData;
 
   SearchLoading({
@@ -24,7 +24,7 @@ class SearchLoading extends SearchState {
 
 // Состояние с загруженными данными
 class SearchLoaded extends SearchState {
-  final List<ScreenResponseModal> places;
+  final List<BaseCard> places;
   final bool isEndReached;
   final int offset;
   final int currentIndex; // Текущий индекс в свайпере
@@ -39,7 +39,7 @@ class SearchLoaded extends SearchState {
   });
 
   SearchLoaded copyWith({
-    List<ScreenResponseModal>? places,
+    List<BaseCard>? places,
     bool? isEndReached,
     int? offset,
     int? currentIndex,

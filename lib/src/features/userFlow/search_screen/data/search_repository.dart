@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:tap_map/core/network/api_service.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/model/search_response_modal.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/models/card_models.dart';
 
 abstract class SearchRepository {
-  Future<List<ScreenResponseModal>> getPlaces({
+  Future<List<BaseCard>> getPlaces({
     required int offset,
     required int limit,
   });
 
-  Future<List<ScreenResponseModal>> getPlacesByCategory(
+  Future<List<BaseCard>> getPlacesByCategory(
     String category, {
     required int offset,
     required int limit,
@@ -17,15 +17,15 @@ abstract class SearchRepository {
 
   Future<void> likePlace(int placeId, {required String objectType});
   Future<void> skipPlace(int placeId, {required String objectType});
-  Future<List<ScreenResponseModal>> fetchPlace();
-  Future<List<ScreenResponseModal>?> getCachedPlaces();
-  Future<void> cachePlaces(List<ScreenResponseModal> places);
+  Future<List<BaseCard>> fetchPlace();
+  Future<List<BaseCard>?> getCachedPlaces();
+  Future<void> cachePlaces(List<BaseCard> places);
 }
 
 class SearchRepositoryImpl implements SearchRepository {
   final ApiService apiService;
-  final Map<String, List<ScreenResponseModal>> _cache = {};
-  final Map<int, ScreenResponseModal> _placeCache = {};
+  final Map<String, List<BaseCard>> _cache = {};
+  final Map<int, BaseCard> _placeCache = {};
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 1);
 
@@ -48,7 +48,7 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
-  Future<List<ScreenResponseModal>> fetchPlace() async {
+  Future<List<BaseCard>> fetchPlace() async {
     try {
       final response = await apiService
           .getData('/cards/?lat=7.884296908086358&lon=98.38744968835519');
@@ -62,7 +62,7 @@ class SearchRepositoryImpl implements SearchRepository {
           return [_parseFromRawData(data)];
         } else if (data is List) {
           // Обрабатываем список мест
-          List<ScreenResponseModal> results = [];
+          List<BaseCard> results = [];
           for (var item in data) {
             if (item is Map<String, dynamic>) {
               results.add(_parseFromRawData(item));
@@ -86,7 +86,7 @@ class SearchRepositoryImpl implements SearchRepository {
           if (data is Map<String, dynamic>) {
             return [_parseFromRawData(data)];
           } else if (data is List && data.isNotEmpty) {
-            List<ScreenResponseModal> results = [];
+            List<BaseCard> results = [];
             for (var item in data) {
               if (item is Map<String, dynamic>) {
                 results.add(_parseFromRawData(item));
@@ -107,16 +107,16 @@ class SearchRepositoryImpl implements SearchRepository {
               description:
                   'Perfect place for coffee lovers with a great variety of coffee beans',
               images: [
-                ScreenImage(id: 1, image: 'https://picsum.photos/500/802'),
-                ScreenImage(id: 2, image: 'https://picsum.photos/500/803')
+                CardImage(id: 1, image: 'https://picsum.photos/500/802'),
+                CardImage(id: 2, image: 'https://picsum.photos/500/803')
               ]),
           _createMockData().copyWith(
               id: 3,
               name: 'Beachfront Bar',
               description: 'Enjoy cocktails with a stunning sea view',
               images: [
-                ScreenImage(id: 1, image: 'https://picsum.photos/500/804'),
-                ScreenImage(id: 2, image: 'https://picsum.photos/500/805')
+                CardImage(id: 1, image: 'https://picsum.photos/500/804'),
+                CardImage(id: 2, image: 'https://picsum.photos/500/805')
               ])
         ];
       }
@@ -130,23 +130,23 @@ class SearchRepositoryImpl implements SearchRepository {
             description:
                 'Perfect place for coffee lovers with a great variety of coffee beans',
             images: [
-              ScreenImage(id: 1, image: 'https://picsum.photos/500/802'),
-              ScreenImage(id: 2, image: 'https://picsum.photos/500/803')
+              CardImage(id: 1, image: 'https://picsum.photos/500/802'),
+              CardImage(id: 2, image: 'https://picsum.photos/500/803')
             ]),
         _createMockData().copyWith(
             id: 3,
             name: 'Beachfront Bar',
             description: 'Enjoy cocktails with a stunning sea view',
             images: [
-              ScreenImage(id: 1, image: 'https://picsum.photos/500/804'),
-              ScreenImage(id: 2, image: 'https://picsum.photos/500/805')
+              CardImage(id: 1, image: 'https://picsum.photos/500/804'),
+              CardImage(id: 2, image: 'https://picsum.photos/500/805')
             ])
       ];
     }
   }
 
   // Метод для парсинга из любого формата данных
-  ScreenResponseModal _parseFromRawData(Map<String, dynamic> data) {
+  BaseCard _parseFromRawData(Map<String, dynamic> data) {
     try {
       // Логируем все ключи и значения, чтобы лучше понять структуру
       data.forEach((key, value) {
@@ -179,7 +179,7 @@ class SearchRepositoryImpl implements SearchRepository {
       }
 
       // Создаем модель с преобразованными данными
-      return ScreenResponseModal(
+      return PointCard(
         id: _parseIntSafely(data['id']),
         name: _parseStringSafely(data['name'], 'Без названия'),
         description: _parseStringSafely(data['description'], 'Нет описания'),
@@ -197,19 +197,19 @@ class SearchRepositoryImpl implements SearchRepository {
       print('Stack trace: $stackTrace');
 
       // Создаем модель с минимальными данными из ответа
-      return ScreenResponseModal(
+      return PointCard(
         id: _parseIntSafely(data['id']),
         name: _parseStringSafely(data['name'], 'Место'),
         description:
             _parseStringSafely(data['description'], 'Описание отсутствует'),
         images: _extractImagesFromAnyField(data) ??
-            [ScreenImage(id: 1, image: 'https://picsum.photos/500/800')],
+            [CardImage(id: 1, image: 'https://picsum.photos/500/800')],
         openStatus: _parseStringSafely(data['open_status'], 'unknown'),
         distance: _parseStringSafely(data['distance'], '0 км'),
         timeInfo: _parseStringSafely(data['time_info'], ''),
         category: _parseStringSafely(data['category'], 'Место'),
         tinderInfo: [TinderInfo(label: 'Информация', value: 'Недоступна')],
-        underCardData: [UnderCardData(label: 'Данные', value: 'Недоступны')],
+        underCardData: [CardData(label: 'Данные', value: 'Недоступны')],
         objectType: _parseStringSafely(data['object_type'], 'point'),
       );
     }
@@ -236,7 +236,7 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   // Попытка найти изображения в любом поле ответа
-  List<ScreenImage>? _extractImagesFromAnyField(Map<String, dynamic> data) {
+  List<CardImage>? _extractImagesFromAnyField(Map<String, dynamic> data) {
     // Поиск в разных возможных полях
     for (var key in [
       'images',
@@ -253,17 +253,17 @@ class SearchRepositoryImpl implements SearchRepository {
         // Случай когда значение - строка URL
         if (value is String &&
             (value.startsWith('http') || value.startsWith('https'))) {
-          return [ScreenImage(id: 1, image: value)];
+          return [CardImage(id: 1, image: value)];
         }
 
         // Случай когда значение - список строк URL
         if (value is List) {
-          List<ScreenImage> result = [];
+          List<CardImage> result = [];
           for (int i = 0; i < value.length; i++) {
             var item = value[i];
             if (item is String &&
                 (item.startsWith('http') || item.startsWith('https'))) {
-              result.add(ScreenImage(id: i + 1, image: item));
+              result.add(CardImage(id: i + 1, image: item));
             } else if (item is Map<String, dynamic> &&
                 (item.containsKey('url') ||
                     item.containsKey('image') ||
@@ -272,7 +272,7 @@ class SearchRepositoryImpl implements SearchRepository {
               String imageUrl =
                   item['url'] ?? item['image'] ?? item['src'] ?? item['path'];
               if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
-                result.add(ScreenImage(id: i + 1, image: imageUrl));
+                result.add(CardImage(id: i + 1, image: imageUrl));
               }
             }
           }
@@ -286,7 +286,7 @@ class SearchRepositoryImpl implements SearchRepository {
               String? url = value[imageKey] as String?;
               if (url != null &&
                   (url.startsWith('http') || url.startsWith('https'))) {
-                return [ScreenImage(id: 1, image: url)];
+                return [CardImage(id: 1, image: url)];
               }
             }
           }
@@ -297,9 +297,9 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   // Вспомогательный метод для парсинга имен и URL изображений
-  List<ScreenImage> _parseImages(dynamic imagesData) {
+  List<CardImage> _parseImages(dynamic imagesData) {
     // Инициализируем список для результата
-    List<ScreenImage> result = [];
+    List<CardImage> result = [];
 
     try {
       // Если imagesData - список
@@ -317,7 +317,7 @@ class SearchRepositoryImpl implements SearchRepository {
                 imageUrl = item[key] as String;
                 if ((imageUrl.startsWith('http') ||
                     imageUrl.startsWith('https'))) {
-                  result.add(ScreenImage(id: id++, image: imageUrl));
+                  result.add(CardImage(id: id++, image: imageUrl));
                   break;
                 }
               }
@@ -326,14 +326,14 @@ class SearchRepositoryImpl implements SearchRepository {
           // Если элемент - строка URL
           else if (item is String &&
               (item.startsWith('http') || item.startsWith('https'))) {
-            result.add(ScreenImage(id: id++, image: item));
+            result.add(CardImage(id: id++, image: item));
           }
         }
       }
       // Если imagesData - одиночная строка URL
       else if (imagesData is String &&
           (imagesData.startsWith('http') || imagesData.startsWith('https'))) {
-        result.add(ScreenImage(id: 1, image: imagesData));
+        result.add(CardImage(id: 1, image: imagesData));
       }
       // Если imagesData - объект с URL
       else if (imagesData is Map<String, dynamic>) {
@@ -343,7 +343,7 @@ class SearchRepositoryImpl implements SearchRepository {
             String? url = imagesData[imageKey] as String?;
             if (url != null &&
                 (url.startsWith('http') || url.startsWith('https'))) {
-              result.add(ScreenImage(id: 1, image: url));
+              result.add(CardImage(id: 1, image: url));
               break;
             }
           }
@@ -357,11 +357,11 @@ class SearchRepositoryImpl implements SearchRepository {
     if (result.isEmpty) {
       print('Не удалось получить изображения, используем тестовые');
       result.add(
-          ScreenImage(id: 1, image: 'https://picsum.photos/id/1/800/1200'));
+          CardImage(id: 1, image: 'https://picsum.photos/id/1/800/1200'));
       result.add(
-          ScreenImage(id: 2, image: 'https://picsum.photos/id/2/800/1200'));
+          CardImage(id: 2, image: 'https://picsum.photos/id/2/800/1200'));
       result.add(
-          ScreenImage(id: 3, image: 'https://picsum.photos/id/3/800/1200'));
+          CardImage(id: 3, image: 'https://picsum.photos/id/3/800/1200'));
     }
 
     return result;
@@ -384,11 +384,11 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   // Вспомогательный метод для парсинга under_card_data
-  List<UnderCardData> _parseUnderCardData(dynamic underCardData) {
+  List<CardData> _parseUnderCardData(dynamic underCardData) {
     if (underCardData is List) {
       try {
         return underCardData
-            .map((data) => UnderCardData.fromJson(data))
+            .map((data) => CardData.fromJson(data))
             .toList();
       } catch (e) {
         print('Ошибка при парсинге under_card_data: $e');
@@ -396,20 +396,20 @@ class SearchRepositoryImpl implements SearchRepository {
     }
     // Возвращаем тестовые данные
     return [
-      UnderCardData(label: 'Адрес', value: 'Phuket, Thailand'),
-      UnderCardData(label: 'Часы работы', value: '09:00 - 22:00'),
+      CardData(label: 'Адрес', value: 'Phuket, Thailand'),
+      CardData(label: 'Часы работы', value: '09:00 - 22:00'),
     ];
   }
 
   // Метод для создания тестовых данных
-  ScreenResponseModal _createMockData() {
-    return ScreenResponseModal(
+  PointCard _createMockData() {
+    return PointCard(
       id: 1,
       name: 'Restaurant Demo',
       description: 'A beautiful restaurant with amazing food',
       images: [
-        ScreenImage(id: 1, image: 'https://picsum.photos/500/800'),
-        ScreenImage(id: 2, image: 'https://picsum.photos/500/801'),
+        CardImage(id: 1, image: 'https://picsum.photos/500/800'),
+        CardImage(id: 2, image: 'https://picsum.photos/500/801'),
       ],
       openStatus: 'open',
       distance: '2.5 км',
@@ -420,15 +420,15 @@ class SearchRepositoryImpl implements SearchRepository {
         TinderInfo(label: 'Цена', value: 'Средняя'),
       ],
       underCardData: [
-        UnderCardData(label: 'Адрес', value: 'Phuket, Thailand'),
-        UnderCardData(label: 'Часы работы', value: '09:00 - 23:00'),
+        CardData(label: 'Адрес', value: 'Phuket, Thailand'),
+        CardData(label: 'Часы работы', value: '09:00 - 23:00'),
       ],
       objectType: 'point',
     );
   }
 
   @override
-  Future<List<ScreenResponseModal>> getPlaces({
+  Future<List<BaseCard>> getPlaces({
     required int offset,
     required int limit,
   }) async {
@@ -453,7 +453,7 @@ class SearchRepositoryImpl implements SearchRepository {
       final List<dynamic> placesJson =
           response['data']['places'] as List? ?? [];
       final places = placesJson
-          .map((place) => ScreenResponseModal.fromJson(place))
+          .map((place) => BaseCard.fromJson(place))
           .toList();
 
       _cache[cacheKey] = places;
@@ -462,7 +462,7 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
-  Future<List<ScreenResponseModal>> getPlacesByCategory(
+  Future<List<BaseCard>> getPlacesByCategory(
     String category, {
     required int offset,
     required int limit,
@@ -489,7 +489,7 @@ class SearchRepositoryImpl implements SearchRepository {
       final List<dynamic> placesJson =
           response['data']['places'] as List? ?? [];
       final places = placesJson
-          .map((place) => ScreenResponseModal.fromJson(place))
+          .map((place) => BaseCard.fromJson(place))
           .toList();
 
       _cache[cacheKey] = places;
@@ -542,7 +542,7 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
-  Future<List<ScreenResponseModal>?> getCachedPlaces() async {
+  Future<List<BaseCard>?> getCachedPlaces() async {
     // Простая реализация - возвращаем кешированные данные, если они есть
     if (_cache.containsKey('recent_places')) {
       return _cache['recent_places'];
@@ -551,7 +551,7 @@ class SearchRepositoryImpl implements SearchRepository {
   }
 
   @override
-  Future<void> cachePlaces(List<ScreenResponseModal> places) async {
+  Future<void> cachePlaces(List<BaseCard> places) async {
     // Сохраняем места в кеш
     _cache['recent_places'] = places;
 

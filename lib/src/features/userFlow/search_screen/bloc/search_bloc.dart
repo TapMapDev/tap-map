@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/model/search_response_modal.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/models/card_models.dart';
 
 part 'search_event.dart';
 part 'search_state.dart';
@@ -41,7 +41,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onInitializeSearch(
       InitializeSearchEvent event, Emitter<SearchState> emit) async {
-    List<ScreenResponseModal>? cachedPlaces =
+    List<BaseCard>? cachedPlaces =
         await searchRepository.getCachedPlaces();
 
     if (cachedPlaces != null && cachedPlaces.isNotEmpty) {
