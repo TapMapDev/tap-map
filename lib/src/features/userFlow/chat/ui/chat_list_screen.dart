@@ -4,6 +4,7 @@ import 'package:tap_map/src/features/userFlow/chat/ui/chat_screen.dart';
 
 import '../bloc/chat_bloc/chat_bloc.dart';
 import '../models/chat_model.dart';
+import '../widgets/user_search_delegate.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -18,7 +19,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     // Загружаем список чатов при инициализации
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatBloc>().add(FetchChats());
+      context.read<ChatBloc>().add(const FetchChats());
     });
   }
 
@@ -27,11 +28,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Чаты'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: UserSearchDelegate(),
+              );
+            },
+          ),
+        ],
       ),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatDisconnected) {
-            context.read<ChatBloc>().add(FetchChats());
+            context.read<ChatBloc>().add(const FetchChats());
           }
         },
         builder: (context, state) {
@@ -59,7 +71,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget _buildChatList(List<ChatModel> chats) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ChatBloc>().add(FetchChats());
+        context.read<ChatBloc>().add(const FetchChats(forceRefresh: true));
       },
       child: ListView.builder(
         itemCount: chats.length,
@@ -81,7 +93,11 @@ class _ChatListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        child: Text(chat.chatName[0].toUpperCase()),
+        backgroundImage:
+            chat.chatPhoto != null ? NetworkImage(chat.chatPhoto!) : null,
+        child: chat.chatPhoto == null
+            ? Text(chat.chatName[0].toUpperCase())
+            : null,
       ),
       title: Text(chat.chatName),
       subtitle: Text(

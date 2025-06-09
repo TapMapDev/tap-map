@@ -87,11 +87,13 @@ class MyApp extends StatelessWidget {
               prefsRepository: getIt.get<SharedPrefsRepository>(),
             ),
           ),
-          BlocProvider(
-            create: (context) => PinBloc(
-              chatRepository: getIt.get<ChatRepository>(),
-            ),
-          ),
+          // Закомментирован функционал закрепления сообщений
+          // Закрепить
+          // BlocProvider(
+          //   create: (context) => PinBloc(
+          //     chatRepository: getIt.get<ChatRepository>(),
+          //   ),
+          // ),
           BlocProvider(
             create: (context) => ReplyBloc(),
           ),

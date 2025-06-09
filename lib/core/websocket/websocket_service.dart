@@ -22,6 +22,7 @@ class WebSocketService {
       Uri.parse('wss://api.tap-map.net/ws/notifications/'),
       headers: {
         'Authorization': 'Bearer $_jwtToken',
+        'X-Timezone': 'Asia/Bangkok',
       },
     );
     _broadcastStream = _channel.stream.asBroadcastStream();
@@ -88,28 +89,76 @@ class WebSocketService {
     }
   }
 
+  void deleteMessage({
+    required int chatId,
+    required int messageId,
+    required String action,
+  }) {
+    if (_channel.closeCode != null) {
+      print('❌ Socket: Channel is closed, attempting to reconnect...');
+      try {
+        connect(); // Попытка переподключиться
+        print('✅ Socket: Reconnected successfully');
+      } catch (e) {
+        print('❌ Socket: Failed to reconnect for delete message: $e');
+        return;
+      }
+    }
+
+    final jsonMessage = jsonEncode({
+      'type': 'delete_message',
+      'chat_id': chatId,
+      'message_id': messageId,
+      'action': action,
+    });
+    
+    print('📤 Socket: Sending delete message: $jsonMessage');
+    try {
+      _channel.sink.add(jsonMessage);
+      print('✅ Socket: Delete message sent successfully');
+    } catch (e) {
+      print('❌ Socket: Failed to send delete message: $e');
+      throw e; // Пробрасываем ошибку для обработки в DeleteMessageBloc
+    }
+  }
+
   void readMessage({required int chatId, required int messageId}) {
     if (_channel.closeCode != null) {
+      print('❌ Socket: Channel is closed when sending read_message, skipping');
       return;
     }
+    
     final jsonMessage = jsonEncode({
       'type': 'read_message',
       'chat_id': chatId,
       'message_id': messageId,
     });
-    _channel.sink.add(jsonMessage);
+    
+    try {
+      _channel.sink.add(jsonMessage);
+    } catch (e) {
+      print('❌ Socket: Failed to send read message: $e');
+    }
+    print('📖 Socket: в чате $chatId успешно прочитано сообщение: $messageId');
   }
 
   void sendTyping({required int chatId, required bool isTyping}) {
     if (_channel.closeCode != null) {
+      print('❌ Socket: Channel is closed when sending typing status, skipping');
       return;
     }
+    
     final jsonMessage = jsonEncode({
       'type': 'typing',
       'chat_id': chatId,
       'is_typing': isTyping,
     });
-    _channel.sink.add(jsonMessage);
+    
+    try {
+      _channel.sink.add(jsonMessage);
+    } catch (e) {
+      print('❌ Socket: Failed to send typing status: $e');
+    }
   }
 
   Stream get stream => _broadcastStream;

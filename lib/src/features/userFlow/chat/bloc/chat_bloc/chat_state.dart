@@ -35,7 +35,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
   final MessageModel? replyTo;
   final MessageModel? forwardFrom;
   final bool isRead;
-  final Set<String> typingUsers;
+  final bool isOtherUserTyping;
 
   ChatLoaded({
     required this.chat,
@@ -43,7 +43,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
     this.replyTo,
     this.forwardFrom,
     this.isRead = false,
-    this.typingUsers = const {},
+    this.isOtherUserTyping = false,
   });
 
   @override
@@ -53,7 +53,7 @@ class ChatLoaded extends ChatState with EquatableMixin {
         replyTo,
         forwardFrom,
         isRead,
-        typingUsers,
+        isOtherUserTyping,
       ];
 
   ChatLoaded copyWith({
@@ -62,14 +62,15 @@ class ChatLoaded extends ChatState with EquatableMixin {
     MessageModel? replyTo,
     MessageModel? forwardFrom,
     bool? isRead,
-    Set<String>? typingUsers,
+    bool? isOtherUserTyping,
   }) {
     return ChatLoaded(
       chat: chat ?? this.chat,
       messages: messages ?? this.messages,
-      forwardFrom: forwardFrom ?? this.forwardFrom,
+      replyTo: replyTo,
+      forwardFrom: forwardFrom,
       isRead: isRead ?? this.isRead,
-      typingUsers: typingUsers ?? this.typingUsers,
+      isOtherUserTyping: isOtherUserTyping ?? this.isOtherUserTyping,
     );
   }
 }

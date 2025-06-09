@@ -10,25 +10,45 @@ class ChatRepository {
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
 
+  List<ChatModel>? _cachedChats;
+
   ChatRepository({
     required DioClient dioClient,
     required SharedPreferences prefs,
   })  : _dioClient = dioClient,
         _prefs = prefs;
 
-  Future<List<ChatModel>> fetchChats() async {
+  Future<List<ChatModel>> fetchChats({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedChats != null) {
+      return _cachedChats!;
+    }
+
     try {
       final response = await _dioClient.get('/chat/list/');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         final chats = data.map((json) => ChatModel.fromJson(json)).toList();
+
+        chats.sort((a, b) {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          final aOrder = a.pinOrder ?? 0;
+          final bOrder = b.pinOrder ?? 0;
+          return aOrder.compareTo(bOrder);
+        });
+
+        _cachedChats = chats;
         return chats;
       }
       throw Exception('Failed to fetch chats: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to fetch chats: $e');
     }
+  }
+
+  List<ChatModel> getCachedChats() {
+    return _cachedChats ?? [];
   }
 
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
@@ -46,7 +66,10 @@ class ChatRepository {
         print(
             '📱 Parsed chat model: chatId=${chat.chatId}, pinnedMessageId=${chat.pinnedMessageId}');
 
-        final List<dynamic> messagesData = messagesResponse.data;
+        final data = messagesResponse.data;
+        final List<dynamic> messagesData = data is Map<String, dynamic>
+            ? (data['results'] as List<dynamic>? ?? [])
+            : (data as List<dynamic>);
         final messages =
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
         print('📱 Parsed ${messages.length} messages');
@@ -86,25 +109,14 @@ class ChatRepository {
     }
   }
 
-  Future<void> markChatAsRead(int chatId) async {
-    try {
-      final response = await _dioClient.post(
-        '/chats/$chatId/mark_read/',
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to mark chat as read: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to mark chat as read: $e');
-    }
-  }
-
   Future<List<MessageModel>> getChatHistory(int chatId) async {
     try {
       final response = await _dioClient.get('/chat/$chatId/messages/');
       if (response.statusCode == 200) {
-        final List<dynamic> messagesData = response.data;
+        final data = response.data;
+        final List<dynamic> messagesData = data is Map<String, dynamic>
+            ? (data['results'] as List<dynamic>? ?? [])
+            : (data as List<dynamic>);
         final messages =
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
         return messages;

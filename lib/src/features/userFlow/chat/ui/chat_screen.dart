@@ -30,15 +30,17 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final UserRepository _userRepository;
   late final ChatBloc _chatBloc;
-  final _messageController = TextEditingController();
-  final _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String? _currentUsername;
   int? _currentUserId;
   MessageModel? _forwardFrom;
   bool _isTyping = false;
+  Timer? _typingTimer;
   MessageModel? _editingMessage;
   File? _selectedMediaFile;
   bool _isVideo = false;
+  DateTime _lastTypeTime = DateTime.now();  // Последнее время фактического ввода
 
   @override
   void initState() {
@@ -51,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _initChat();
     _chatBloc.add(ConnectToChat(widget.chatId));
     _chatBloc.add(FetchChatById(widget.chatId));
+
   }
 
   Future<void> _initChat() async {
@@ -68,6 +71,9 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       print(
           '👤 ChatScreen: Current user set - username: $_currentUsername, id: $_currentUserId');
+      if (_chatBloc.state is ChatLoaded) {
+        _markLatestMessagesAsRead();
+      }
     } catch (e) {
       print('❌ ChatScreen: Error loading current user: $e');
     }
@@ -131,7 +137,93 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       _messageController.clear();
+      
+      // Сбрасываем статус печати при отправке сообщения
+      if (_isTyping) {
+        print('📱 ChatScreen: Сброс статуса печати при отправке сообщения');
+        _isTyping = false;
+        _chatBloc.add(SendTyping(
+          chatId: widget.chatId,
+          isTyping: false,
+        ));
+        _stopTypingTimer();
+      }
+      
       _scrollToBottom();
+    }
+  }
+
+  void _startTypingTimer() {
+    _stopTypingTimer(); // Сначала очищаем, чтобы не было дублей
+    
+    // Создаем таймер для проверки активности ввода каждые 5 секунд
+    _typingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      final now = DateTime.now();
+      final timeSinceLastType = now.difference(_lastTypeTime);
+      
+      // Если с момента последней активности прошло больше 3 секунд - считаем что печать остановлена
+      if (timeSinceLastType.inSeconds > 3) {
+        if (_isTyping) {
+          print('📱 ChatScreen: Пауза в печати более 3 секунд - сброс статуса печати');
+          _isTyping = false;
+          _chatBloc.add(SendTyping(
+            chatId: widget.chatId,
+            isTyping: false,
+          ));
+          _stopTypingTimer();
+        }
+      } else if (_isTyping) {
+        // Отправляем только если активно печатает
+        print('📱 ChatScreen: Обновление статуса печати (активная печать)');
+        _chatBloc.add(SendTyping(
+          chatId: widget.chatId,
+          isTyping: true,
+        ));
+      }
+    });
+  }
+
+  void _stopTypingTimer() {
+    _typingTimer?.cancel();
+    _typingTimer = null;
+  }
+
+  void _markLatestMessagesAsRead() {
+    final state = _chatBloc.state;
+    if (state is ChatLoaded) {
+      debugPrint('_markLatestMessagesAsRead currentUser=$_currentUsername');
+      if (_currentUsername == null) return;
+      
+      // Создаем Map для хранения последних сообщений от каждого отправителя
+      final Map<String, MessageModel> latestMessagesByUser = {};
+      
+      // Проходим по всем сообщениям и находим последнее от каждого отправителя
+      for (final message in state.messages) {
+        // Пропускаем сообщения, которые отправил текущий пользователь или уже прочитаны
+        if (message.senderUsername == _currentUsername || message.isRead) continue;
+        
+        // Если это новое сообщение от отправителя или сообщение более позднее чем то, что уже есть в Map
+        if (!latestMessagesByUser.containsKey(message.senderUsername) || 
+            message.createdAt.isAfter(latestMessagesByUser[message.senderUsername]!.createdAt)) {
+          latestMessagesByUser[message.senderUsername] = message;
+        }
+      }
+      
+      // Для каждого отправителя отмечаем его последнее сообщение как прочитанное
+      latestMessagesByUser.forEach((_, message) {
+        try {
+          debugPrint(
+              'ChatScreen: mark message ${message.id} from ${message.senderUsername} as read');
+          _chatBloc.add(
+            MarkMessageReadEvent(
+              chatId: message.chatId,
+              messageId: message.id,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Ошибка при отметке сообщения как прочитанного: $e');
+        }
+      });
     }
   }
 
@@ -140,6 +232,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _chatBloc.add(DisconnectFromChat());
+    _stopTypingTimer();
     super.dispose();
   }
 
@@ -174,6 +267,14 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           body: MultiBlocListener(
             listeners: [
+              BlocListener<ChatBloc, ChatState>(
+                listenWhen: (previous, current) => current is ChatLoaded,
+                listener: (context, state) {
+                  if (state is ChatLoaded && _currentUsername != null) {
+                    _markLatestMessagesAsRead();
+                  }
+                },
+              ),
               BlocListener<DeleteMessageBloc, DeleteMessageState>(
                 listener: (context, state) {
                   if (state is DeleteMessageSuccess) {
@@ -225,6 +326,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     print('After setState, editing message: $_editingMessage');
                   } else if (state is EditSuccess) {
                     print('Edit success, clearing editing state');
+                    context.read<ChatBloc>().add(LocalMessageEdited(
+                          messageId: state.messageId,
+                          newText: state.newText,
+                          editedAt: state.editedAt,
+                        ));
                     setState(() {
                       _editingMessage = null;
                       _messageController.clear();
@@ -244,6 +350,9 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Column(
                   children: [
+                    // Закомментированное отображение закрепленных сообщений
+                    // Закрепить
+                    /*
                     BlocBuilder<PinBloc, PinBlocState>(
                       builder: (context, state) {
                         if (state is MessagePinned) {
@@ -279,6 +388,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         return const SizedBox.shrink();
                       },
                     ),
+                    */
                     Expanded(
                       child: BlocBuilder<ChatBloc, ChatState>(
                         builder: (context, state) {
@@ -323,16 +433,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     BlocBuilder<ChatBloc, ChatState>(
                       builder: (context, state) {
-                        if (state is ChatLoaded &&
-                            state.typingUsers.isNotEmpty) {
-                          final otherTypingUsers = state.typingUsers
-                              .where((username) => username != _currentUsername)
-                              .toSet();
-
-                          if (otherTypingUsers.isNotEmpty) {
-                            return TypingIndicator(
-                                typingUsers: otherTypingUsers);
-                          }
+                        if (state is ChatLoaded && state.isOtherUserTyping) {
+                          return TypingIndicator(isTyping: true);
                         }
                         return const SizedBox.shrink();
                       },
@@ -470,19 +572,31 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _messageController,
                       onSend: _sendMessage,
                       onChanged: (text) {
+                        _lastTypeTime = DateTime.now();
                         if (!_isTyping && text.isNotEmpty) {
+                          // Пользователь начал печатать
                           _isTyping = true;
+                          print('📱 ChatScreen: Пользователь начал печатать');
                           _chatBloc.add(SendTyping(
                             chatId: widget.chatId,
                             isTyping: true,
                           ));
+                          
+                          // Запускаем периодическое обновление статуса печати
+                          _startTypingTimer();
                         } else if (_isTyping && text.isEmpty) {
+                          // Пользователь стер весь текст
                           _isTyping = false;
+                          print('📱 ChatScreen: Пользователь стер весь текст');
                           _chatBloc.add(SendTyping(
                             chatId: widget.chatId,
                             isTyping: false,
                           ));
+                          
+                          // Останавливаем таймер обновления статуса
+                          _stopTypingTimer();
                         }
+                        // Третье условие больше не нужно, так как таймер сам отправит обновления
                       },
                       onFileSelected: (file) {
                         final fileToUpload = File(file.path!);
@@ -547,14 +661,14 @@ class _ChatScreenState extends State<ChatScreen> {
               context.read<ReplyBloc>().add(SetReplyTo(message));
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.forward),
-            title: const Text('Переслать'),
-            onTap: () {
-              Navigator.pop(context);
-              _showChatSelectionDialog(message);
-            },
-          ),
+          // ListTile(
+          //   leading: const Icon(Icons.forward),
+          //   title: const Text('Переслать'),
+          //   onTap: () {
+          //     Navigator.pop(context);
+          //     _showChatSelectionDialog(message);
+          //   },
+          // ),
           if (message.senderUsername == _currentUsername) ...[
             ListTile(
               leading: const Icon(Icons.edit),
@@ -580,6 +694,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_me',
+                      context: context,
                     ));
               },
             ),
@@ -592,26 +707,29 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatId: widget.chatId,
                       messageId: message.id,
                       action: 'for_all',
+                      context: context,
                     ));
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.push_pin),
-              title: const Text('Закрепить сообщение'),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.read<PinBloc>().add(PinMessage(
-                      chatId: widget.chatId,
-                      messageId: message.id,
-                    ));
-              },
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.push_pin),
+            //   title: const Text('Закрепить сообщение'),
+            //   onTap: () {
+            //     Navigator.of(context).pop();
+            //     context.read<PinBloc>().add(PinMessage(
+            //           chatId: widget.chatId,
+            //           messageId: message.id,
+            //         ));
+            //   },
+            // ),
           ],
         ],
       ),
     );
   }
 
+  // Функции пересылки сообщений временно отключены
+  /*
   void _forwardMessageToChat(MessageModel message, int targetChatId) {
     _chatBloc.add(SendMessage(
       chatId: targetChatId,
@@ -668,4 +786,5 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
   }
+  */
 }

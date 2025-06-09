@@ -397,4 +397,30 @@ class UserRepository implements IUserRepository {
       throw Exception('Failed to unblock user: $e');
     }
   }
+
+  /// Поиск пользователей по имени пользователя или email.
+  /// Возвращает список найденных пользователей.
+  /// TODO(tapmap): уточнить конечную точку API и параметры запроса.
+  Future<List<UserModel>> searchUsers(String query) async {
+    try {
+      final response = await apiService.getData(
+        '/users/search/',
+        queryParams: {'query': query},
+      );
+
+      if (response['statusCode'] == 200) {
+        final data = response['data'];
+        if (data is List) {
+          return UserModel.fromJsonList(data);
+        } else if (data is Map<String, dynamic> && data['results'] is List) {
+          return UserModel.fromJsonList(data['results'] as List);
+        }
+        return [];
+      } else {
+        throw Exception('Search request failed: ${response['statusCode']}');
+      }
+    } catch (e) {
+      throw Exception('Failed to search users: $e');
+    }
+  }
 }

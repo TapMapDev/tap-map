@@ -23,6 +23,8 @@ class MessageModel extends Equatable {
   final bool isTyping;
   final int? senderUserId;
   final bool isMe;
+  final int? commentsCount;
+  final Map<String, dynamic>? reactionsSummary;
 
   const MessageModel({
     required this.id,
@@ -40,14 +42,16 @@ class MessageModel extends Equatable {
     this.isTyping = false,
     this.senderUserId,
     this.isMe = false,
+    this.commentsCount,
+    this.reactionsSummary,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     final editedAt = json['edited_at'] as String?;
-    final senderUserId = json['user_id'] as int?;
+    final senderUserId = json['user_id'] as int? ?? json['sender_id'] as int?;
     return MessageModel(
-      id: json['id'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-      chatId: json['chat'] as int? ?? 0,
+      id: json['message_id'] as int? ?? json['id'] as int? ?? 0,
+      chatId: json['chat_id'] as int? ?? json['chat'] as int? ?? 0,
       text: json['text'] as String? ?? '',
       senderUsername: json['sender_username'] as String? ?? 'Unknown',
       createdAt: json['created_at'] != null
@@ -69,6 +73,8 @@ class MessageModel extends Equatable {
       isTyping: json['is_typing'] as bool? ?? false,
       senderUserId: senderUserId,
       isMe: false,
+      commentsCount: json['comments_count'] as int?,
+      reactionsSummary: json['reactions_summary'] as Map<String, dynamic>?,
     );
   }
 
@@ -100,6 +106,8 @@ class MessageModel extends Equatable {
       'is_pinned': isPinned,
       'is_read': isRead,
       'is_typing': isTyping,
+      'comments_count': commentsCount,
+      'reactions_summary': reactionsSummary,
 
     };
   }
@@ -120,6 +128,8 @@ class MessageModel extends Equatable {
     bool? isTyping,
     int? senderUserId,
     bool? isMe,
+    int? commentsCount,
+    Map<String, dynamic>? reactionsSummary,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -137,6 +147,8 @@ class MessageModel extends Equatable {
       isTyping: isTyping ?? this.isTyping,
       senderUserId: senderUserId ?? this.senderUserId,
       isMe: isMe ?? this.isMe,
+      commentsCount: commentsCount ?? this.commentsCount,
+      reactionsSummary: reactionsSummary ?? this.reactionsSummary,
     );
   }
 
@@ -157,6 +169,8 @@ class MessageModel extends Equatable {
         isTyping,
         senderUserId,
         isMe,
+        commentsCount,
+        reactionsSummary,
       ];
 
   static MessageModel empty() {
@@ -171,6 +185,8 @@ class MessageModel extends Equatable {
       isTyping: false,
       senderUserId: null,
       isMe: false,
+      commentsCount: null,
+      reactionsSummary: null,
     );
   }
 }

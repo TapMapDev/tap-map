@@ -7,7 +7,14 @@ abstract class ChatEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class FetchChats extends ChatEvent {}
+class FetchChats extends ChatEvent {
+  final bool forceRefresh;
+
+  const FetchChats({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
 
 class FetchChatById extends ChatEvent {
   final int chatId;
@@ -132,6 +139,21 @@ class ReadReceiptReceived extends ChatEvent {
   List<Object?> get props => [messageId, userId];
 }
 
+class LocalMessageEdited extends ChatEvent {
+  final int messageId;
+  final String newText;
+  final DateTime editedAt;
+
+  const LocalMessageEdited({
+    required this.messageId,
+    required this.newText,
+    required this.editedAt,
+  });
+
+  @override
+  List<Object?> get props => [messageId, newText, editedAt];
+}
+
 class ConnectToChat extends ChatEvent {
   final int chatId;
 
@@ -169,4 +191,21 @@ class UploadFile extends ChatEvent {
 
   @override
   List<Object?> get props => [file, caption];
+}
+
+class AutoResetTypingStatus extends ChatEvent {
+  const AutoResetTypingStatus();
+}
+
+class MarkMessageReadEvent extends ChatEvent {
+  final int chatId;
+  final int messageId;
+
+  const MarkMessageReadEvent({
+    required this.chatId,
+    required this.messageId,
+  });
+
+  @override
+  List<Object?> get props => [chatId, messageId];
 }
