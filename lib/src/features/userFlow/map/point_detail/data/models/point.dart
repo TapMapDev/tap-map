@@ -2,13 +2,13 @@ import 'point_feature.dart';
 import 'point_review.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
-class PointModel {
+class Point {
   final String type; // always "Feature"
   final PointProperties properties;
   final PointGeometryData geometry;
   final PointGeometryData? polygon;
   final PointGeometryData? trails;
-  final List<PointModel>? polygonChildren;
+  final List<Point>? polygonChildren;
 
   // Fields from the previous version that are still used in the UI.
   // TODO backend should provide these values
@@ -19,7 +19,7 @@ class PointModel {
   final int friendsCount;
   final List<String> friendAvatars;
 
-  PointModel({
+  Point({
     required this.type,
     required this.properties,
     required this.geometry,
@@ -34,11 +34,11 @@ class PointModel {
     this.friendAvatars = const [],
   });
 
-  factory PointModel.fromJson(Map<String, dynamic> json) {
+  factory Point.fromJson(Map<String, dynamic> json) {
 
     final props = PointProperties.fromJson(json['properties'] ?? {});
 
-    return PointModel(
+    return Point(
       type: json['type'] as String? ?? 'Feature',
       properties: props,
       geometry: PointGeometryData.fromJson(json['geometry'] ?? {}),
@@ -47,7 +47,7 @@ class PointModel {
       trails:
       json['trails'] != null ? PointGeometryData.fromJson(json['trails']) : null,
       polygonChildren: (json['polygon_children'] as List<dynamic>? ?? [])
-          .map((e) => PointModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => Point.fromJson(e as Map<String, dynamic>))
           .toList(),
       rating: (props.extra['rating'] as num?)?.toDouble() ?? 0,
       totalReviews: props.extra['totalReviews'] as int? ?? 0,
