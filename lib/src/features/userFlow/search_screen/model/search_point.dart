@@ -1,8 +1,11 @@
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point.dart';
+import 'package:tap_map/src/features/userFlow/common/data/models/point_image.dart';
+
 abstract class SearchPoint {
   final int id;
   final String name;
   final String? description;
-  final List<CardImage> images;
+  final List<PointImage> images;
   final String? distance;
   final String? timeInfo;
 
@@ -52,7 +55,7 @@ class PointCard extends SearchPoint {
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
     images: (json['images'] as List<dynamic>? ?? [])
-        .map((e) => CardImage.fromJson(e as Map<String, dynamic>))
+        .map((e) => PointImage.fromJson(e as Map<String, dynamic>))
         .toList(),
     distance: json['distance'] as String?,
     timeInfo: json['time_info'] as String?,
@@ -69,6 +72,18 @@ class PointCard extends SearchPoint {
         .toList(),
     objectType: json['object_type'] as String?,
   );
+
+  /// Создает карточку точки из полной модели Point
+  factory PointCard.fromPoint(Point point) {
+    return PointCard(
+      id: point.properties.id,
+      name: point.properties.name,
+      description: point.properties.description,
+      images: point.properties.images,
+      category: point.properties.category,
+      // TODO Остальные поля могут быть заполнены при необходимости
+    );
+  }
 }
 
 class EventCard extends SearchPoint {
@@ -95,7 +110,7 @@ class EventCard extends SearchPoint {
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
     images: (json['images'] as List<dynamic>? ?? [])
-        .map((e) => CardImage.fromJson(e as Map<String, dynamic>))
+        .map((e) => PointImage.fromJson(e as Map<String, dynamic>))
         .toList(),
     startDt: DateTime.tryParse(json['start_dt'] ?? '') ?? DateTime.now(),
     endDt: DateTime.tryParse(json['end_dt'] ?? '') ?? DateTime.now(),
@@ -104,16 +119,6 @@ class EventCard extends SearchPoint {
     timeInfo: json['time_info'] as String?,
     objectType: json['object_type'] as String?,
   );
-}
-
-class CardImage {
-  final int id;
-  final String image;
-
-  CardImage({required this.id, required this.image});
-
-  factory CardImage.fromJson(Map<String, dynamic> json) =>
-      CardImage(id: json['id'] as int? ?? 0, image: json['image'] as String? ?? '');
 }
 
 class TinderInfo {

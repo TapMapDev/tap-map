@@ -1,5 +1,7 @@
-import 'point_feature.dart';
-import 'point_review.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_feature.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_review.dart';
+import 'package:tap_map/src/features/userFlow/common/data/models/point_image.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/model/search_point.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
 class Point {
@@ -60,6 +62,18 @@ class Point {
       friendsCount: props.extra['friendsCount'] as int? ?? 0,
       friendAvatars: List<String>.from(
           props.extra['friendAvatars'] as List<dynamic>? ?? const []),
+    );
+  }
+
+  /// Конвертирует полную модель точки в карточку для отображения в поиске
+  PointCard toCard() {
+    return PointCard(
+      id: properties.id,
+      name: properties.name,
+      description: properties.description,
+      images: properties.images,
+      category: properties.category,
+      // TODO Можно добавить и другие поля при необходимости
     );
   }
 }
@@ -161,17 +175,6 @@ class PointGeometryData {
     type: json['type'] as String? ?? '',
     coordinates: json['coordinates'] as List<dynamic>? ?? [],
   );
-}
-
-// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
-class PointImage {
-  final int id;
-  final String image;
-
-  PointImage({required this.id, required this.image});
-
-  factory PointImage.fromJson(Map<String, dynamic> json) =>
-      PointImage(id: json['id'] as int? ?? 0, image: json['image'] as String? ?? '');
 }
 
 // TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
