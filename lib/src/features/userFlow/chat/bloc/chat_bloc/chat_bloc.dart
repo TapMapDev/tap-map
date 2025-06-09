@@ -344,6 +344,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
           print(
               '📨 ChatBloc: Emitting new state with ${updatedMessages.length} messages');
+          await _chatRepository.addMessageToCache(
+            mutableState.chat.chatId,
+            newMessage,
+          );
           emit(mutableState.copyWith(
             messages: updatedMessages,
             isRead: true,
@@ -368,6 +372,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             }
             return m;
           }).toList();
+
+          MessageModel? editedMessage;
+          try {
+            editedMessage =
+                updatedMessages.firstWhere((m) => m.id == messageId);
+          } catch (_) {}
+          if (editedMessage != null) {
+            await _chatRepository.updateMessageInCache(
+              currentState.chat.chatId,
+              editedMessage,
+            );
+          }
 
           emit(currentState.copyWith(messages: updatedMessages));
         }
@@ -418,6 +434,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             return m;
           }).toList();
 
+          MessageModel? editedMessage;
+          try {
+            editedMessage =
+                updatedMessages.firstWhere((m) => m.id == messageId);
+          } catch (_) {}
+          if (editedMessage != null) {
+            await _chatRepository.updateMessageInCache(
+              currentState.chat.chatId,
+              editedMessage,
+            );
+          }
+
           emit(currentState.copyWith(messages: updatedMessages));
         }
         return;
@@ -431,6 +459,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
         final updatedMessages =
             currentState.messages.where((m) => m.id != messageId).toList();
+
+        await _chatRepository.removeMessageFromCache(
+            currentState.chat.chatId, messageId);
 
         emit(currentState.copyWith(messages: updatedMessages));
 
@@ -448,9 +479,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         
         if (messageId != null && currentState.chat.chatId == chatId) {
           print('📝 ChatBloc: Удаление сообщения $messageId из списка сообщений');
-          final updatedMessages = 
+          final updatedMessages =
               currentState.messages.where((m) => m.id != messageId).toList();
-              
+
+          await _chatRepository.removeMessageFromCache(
+              currentState.chat.chatId, messageId);
+
           emit(currentState.copyWith(messages: updatedMessages));
         }
         return;
@@ -610,6 +644,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
       return message;
     }).toList();
+
+    try {
+      final editedMessage =
+          updatedMessages.firstWhere((m) => m.id == event.messageId);
+      _chatRepository.updateMessageInCache(
+          currentState.chat.chatId, editedMessage);
+    } catch (_) {}
 
     emit(currentState.copyWith(messages: updatedMessages));
   }

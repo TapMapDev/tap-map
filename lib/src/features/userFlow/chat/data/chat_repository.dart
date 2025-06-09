@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
@@ -9,12 +11,78 @@ class ChatRepository {
   final DioClient _dioClient;
   final SharedPreferences _prefs;
   static const String _pinnedMessageKey = 'pinned_message_';
+  static const String _chatHistoryKey = 'chat_history_';
+  static const String _chatHistoryTsKey = 'chat_history_ts_';
+  static const Duration _cacheDuration = Duration(minutes: 5);
 
   ChatRepository({
     required DioClient dioClient,
     required SharedPreferences prefs,
   })  : _dioClient = dioClient,
         _prefs = prefs;
+
+  List<MessageModel>? _loadMessages(int chatId) {
+    final jsonString = _prefs.getString('$_chatHistoryKey$chatId');
+    if (jsonString == null) return null;
+    try {
+      final List<dynamic> data = json.decode(jsonString) as List<dynamic>;
+      return data
+          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<MessageModel>? _getCachedMessages(int chatId) {
+    final timestamp = _prefs.getInt('$_chatHistoryTsKey$chatId');
+    if (timestamp == null) return null;
+    final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+    if (age > _cacheDuration.inMilliseconds) {
+      _prefs.remove('$_chatHistoryKey$chatId');
+      _prefs.remove('$_chatHistoryTsKey$chatId');
+      return null;
+    }
+    return _loadMessages(chatId);
+  }
+
+  Future<void> _cacheMessages(int chatId, List<MessageModel> messages) async {
+    final jsonString =
+        json.encode(messages.map((m) => m.toJson()).toList());
+    await _prefs.setString('$_chatHistoryKey$chatId', jsonString);
+    await _prefs.setInt(
+        '$_chatHistoryTsKey$chatId', DateTime.now().millisecondsSinceEpoch);
+  }
+
+  Future<void> addMessageToCache(int chatId, MessageModel message) async {
+    final messages = _loadMessages(chatId);
+    if (messages == null) return;
+    messages.insert(0, message);
+    await _prefs.setString(
+      '$_chatHistoryKey$chatId',
+      json.encode(messages.map((m) => m.toJson()).toList()),
+    );
+  }
+
+  Future<void> updateMessageInCache(int chatId, MessageModel message) async {
+    final messages = _loadMessages(chatId);
+    if (messages == null) return;
+    final updated = messages.map((m) => m.id == message.id ? message : m).toList();
+    await _prefs.setString(
+      '$_chatHistoryKey$chatId',
+      json.encode(updated.map((m) => m.toJson()).toList()),
+    );
+  }
+
+  Future<void> removeMessageFromCache(int chatId, int messageId) async {
+    final messages = _loadMessages(chatId);
+    if (messages == null) return;
+    final updated = messages.where((m) => m.id != messageId).toList();
+    await _prefs.setString(
+      '$_chatHistoryKey$chatId',
+      json.encode(updated.map((m) => m.toJson()).toList()),
+    );
+  }
 
   Future<List<ChatModel>> fetchChats() async {
     try {
@@ -43,25 +111,33 @@ class ChatRepository {
   Future<Map<String, dynamic>> fetchChatWithMessages(int chatId) async {
     try {
       print('📡 Fetching chat data for chatId: $chatId');
-      final chatResponse = await _dioClient.get('/chat/$chatId/');
-      print('📡 Chat response data: ${chatResponse.data}');
 
+      final cachedMessages = _getCachedMessages(chatId);
+      final chatResponse = await _dioClient.get('/chat/$chatId/');
+
+      if (cachedMessages != null) {
+        print('💾 Returning cached messages for chat $chatId');
+        final chat = ChatModel.fromJson(chatResponse.data);
+        return {
+          'chat': chat,
+          'messages': cachedMessages,
+        };
+      }
+
+      print('📡 No cache, requesting messages from backend');
       final messagesResponse = await _dioClient.get('/chat/$chatId/messages/');
-      print('📡 Messages response data: ${messagesResponse.data}');
 
       if (chatResponse.statusCode == 200 &&
           messagesResponse.statusCode == 200) {
         final chat = ChatModel.fromJson(chatResponse.data);
-        print(
-            '📱 Parsed chat model: chatId=${chat.chatId}, pinnedMessageId=${chat.pinnedMessageId}');
-
         final data = messagesResponse.data;
         final List<dynamic> messagesData = data is Map<String, dynamic>
             ? (data['results'] as List<dynamic>? ?? [])
             : (data as List<dynamic>);
         final messages =
             messagesData.map((json) => MessageModel.fromJson(json)).toList();
-        print('📱 Parsed ${messages.length} messages');
+
+        await _cacheMessages(chatId, messages);
 
         return {
           'chat': chat,
@@ -128,6 +204,7 @@ class ChatRepository {
       if (response.statusCode != 200) {
         throw Exception('Failed to delete message: ${response.statusCode}');
       }
+      await removeMessageFromCache(chatId, messageId);
     } catch (e) {
       if (e is DioException) {}
       rethrow;
