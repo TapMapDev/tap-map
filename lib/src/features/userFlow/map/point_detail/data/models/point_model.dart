@@ -1,5 +1,5 @@
 import 'feature.dart';
-import 'review.dart';
+import 'point_review_model.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
 class PointModel {
@@ -15,7 +15,7 @@ class PointModel {
   final double rating;
   final int totalReviews;
   final List<PointFeature> features;
-  final List<PointReview> reviews;
+  final List<PointReviewModel> reviews;
   final int friendsCount;
   final List<String> friendAvatars;
 
@@ -55,7 +55,7 @@ class PointModel {
           .map((e) => PointFeature.fromJson(e as Map<String, dynamic>))
           .toList(),
       reviews: (props.extra['reviews'] as List<dynamic>? ?? [])
-          .map((e) => PointReview.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointReviewModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       friendsCount: props.extra['friendsCount'] as int? ?? 0,
       friendAvatars: List<String>.from(
