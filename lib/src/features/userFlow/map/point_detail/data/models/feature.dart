@@ -1,9 +1,9 @@
-class Feature {
+class PointFeature {
   final String title;   // «Wi-Fi», «Парковка 🚗» …
-  Feature({required this.title});
+  PointFeature({required this.title});
 
-  factory Feature.fromJson(Map<String, dynamic> j) =>
-      Feature(title: j['title'] as String);
+  factory PointFeature.fromJson(Map<String, dynamic> j) =>
+      PointFeature(title: j['title'] as String);
 
   Map<String, dynamic> toJson() => {'title': title};
 }

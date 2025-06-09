@@ -5,17 +5,17 @@ import 'review.dart';
 class PointModel {
   final String type; // always "Feature"
   final PointProperties properties;
-  final GeometryData geometry;
-  final GeometryData? polygon;
-  final GeometryData? trails;
+  final PointGeometryData geometry;
+  final PointGeometryData? polygon;
+  final PointGeometryData? trails;
   final List<PointModel>? polygonChildren;
 
   // Fields from the previous version that are still used in the UI.
   // TODO backend should provide these values
   final double rating;
   final int totalReviews;
-  final List<Feature> features;
-  final List<Review> reviews;
+  final List<PointFeature> features;
+  final List<PointReview> reviews;
   final int friendsCount;
   final List<String> friendAvatars;
 
@@ -41,21 +41,21 @@ class PointModel {
     return PointModel(
       type: json['type'] as String? ?? 'Feature',
       properties: props,
-      geometry: GeometryData.fromJson(json['geometry'] ?? {}),
+      geometry: PointGeometryData.fromJson(json['geometry'] ?? {}),
       polygon:
-      json['polygon'] != null ? GeometryData.fromJson(json['polygon']) : null,
+      json['polygon'] != null ? PointGeometryData.fromJson(json['polygon']) : null,
       trails:
-      json['trails'] != null ? GeometryData.fromJson(json['trails']) : null,
+      json['trails'] != null ? PointGeometryData.fromJson(json['trails']) : null,
       polygonChildren: (json['polygon_children'] as List<dynamic>? ?? [])
           .map((e) => PointModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       rating: (props.extra['rating'] as num?)?.toDouble() ?? 0,
       totalReviews: props.extra['totalReviews'] as int? ?? 0,
       features: (props.extra['features'] as List<dynamic>? ?? [])
-          .map((e) => Feature.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointFeature.fromJson(e as Map<String, dynamic>))
           .toList(),
       reviews: (props.extra['reviews'] as List<dynamic>? ?? [])
-          .map((e) => Review.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointReview.fromJson(e as Map<String, dynamic>))
           .toList(),
       friendsCount: props.extra['friendsCount'] as int? ?? 0,
       friendAvatars: List<String>.from(
@@ -72,15 +72,15 @@ class PointProperties {
   final String? shortDescription;
   final String? jsonDescription;
   final String markerType;
-  final List<ImageInfo> images;
+  final List<PointImage> images;
   final String? logo;
   final String? category;
   final String? subcategory;
   final int user;
   final List<String> tags;
-  final ContactInfo? contactInfo;
-  final WorkingHours? workingHours;
-  final List<Product>? priceList;
+  final PointContactInfo? contactInfo;
+  final PointWorkingHours? workingHours;
+  final List<PointProduct>? priceList;
   final String? googleMapsUrl;
   final dynamic jsonMenu;
   final double zoom;
@@ -125,7 +125,7 @@ class PointProperties {
       jsonDescription: json['json_description'] as String?,
       markerType: json['marker_type'] as String? ?? 'point',
       images: (json['images'] as List<dynamic>? ?? [])
-          .map((e) => ImageInfo.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointImage.fromJson(e as Map<String, dynamic>))
           .toList(),
       logo: json['logo'] as String?,
       category: json['category'] as String?,
@@ -133,13 +133,13 @@ class PointProperties {
       user: json['user'] as int? ?? 0,
       tags: List<String>.from(json['tags'] as List<dynamic>? ?? const []),
       contactInfo: json['contact_info'] != null
-          ? ContactInfo.fromJson(json['contact_info'])
+          ? PointContactInfo.fromJson(json['contact_info'])
           : null,
       workingHours: json['working_hours'] != null
-          ? WorkingHours.fromJson(json['working_hours'])
+          ? PointWorkingHours.fromJson(json['working_hours'])
           : null,
       priceList: (json['price_list'] as List<dynamic>?)?.map((e) =>
-          Product.fromJson(e as Map<String, dynamic>)).toList(),
+          PointProduct.fromJson(e as Map<String, dynamic>)).toList(),
       googleMapsUrl: json['google_maps_url'] as String?,
       jsonMenu: json['json_menu'],
       zoom: (json['zoom'] as num?)?.toDouble() ?? 16,
@@ -150,56 +150,61 @@ class PointProperties {
   }
 }
 
-class GeometryData {
+// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
+class PointGeometryData {
   final String type;
   final List<dynamic> coordinates;
 
-  GeometryData({required this.type, required this.coordinates});
+  PointGeometryData({required this.type, required this.coordinates});
 
-  factory GeometryData.fromJson(Map<String, dynamic> json) => GeometryData(
+  factory PointGeometryData.fromJson(Map<String, dynamic> json) => PointGeometryData(
     type: json['type'] as String? ?? '',
     coordinates: json['coordinates'] as List<dynamic>? ?? [],
   );
 }
 
-class ImageInfo {
+// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
+class PointImage {
   final int id;
   final String image;
 
-  ImageInfo({required this.id, required this.image});
+  PointImage({required this.id, required this.image});
 
-  factory ImageInfo.fromJson(Map<String, dynamic> json) =>
-      ImageInfo(id: json['id'] as int? ?? 0, image: json['image'] as String? ?? '');
+  factory PointImage.fromJson(Map<String, dynamic> json) =>
+      PointImage(id: json['id'] as int? ?? 0, image: json['image'] as String? ?? '');
 }
 
-class ContactInfo {
+// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
+class PointContactInfo {
   final List<String> phoneNumbers;
   final List<String> websites;
 
-  ContactInfo({this.phoneNumbers = const [], this.websites = const []});
+  PointContactInfo({this.phoneNumbers = const [], this.websites = const []});
 
-  factory ContactInfo.fromJson(Map<String, dynamic> json) => ContactInfo(
+  factory PointContactInfo.fromJson(Map<String, dynamic> json) => PointContactInfo(
     phoneNumbers: List<String>.from(json['phone_numbers'] as List<dynamic>? ?? const []),
     websites: List<String>.from(json['websites'] as List<dynamic>? ?? const []),
   );
 }
 
-class WorkingHours {
+// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
+class PointWorkingHours {
   final Map<String, dynamic> raw;
 
-  WorkingHours({this.raw = const {}});
+  PointWorkingHours({this.raw = const {}});
 
-  factory WorkingHours.fromJson(Map<String, dynamic> json) =>
-      WorkingHours(raw: json);
+  factory PointWorkingHours.fromJson(Map<String, dynamic> json) =>
+      PointWorkingHours(raw: json);
 }
 
-class Product {
+// TODO в будущем вынести в отдельный файл т.к. будем юзать в Событиях еще
+class PointProduct {
   final String name;
   final double price;
 
-  Product({required this.name, required this.price});
+  PointProduct({required this.name, required this.price});
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
+  factory PointProduct.fromJson(Map<String, dynamic> json) => PointProduct(
     name: json['name'] as String? ?? '',
     price: (json['price'] as num?)?.toDouble() ?? 0,
   );
