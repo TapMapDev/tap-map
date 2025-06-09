@@ -1,5 +1,5 @@
-import 'point_feature_model.dart';
-import 'point_review_model.dart';
+import 'point_feature.dart';
+import 'point_review.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
 class PointModel {
@@ -14,8 +14,8 @@ class PointModel {
   // TODO backend should provide these values
   final double rating;
   final int totalReviews;
-  final List<PointFeatureModel> features;
-  final List<PointReviewModel> reviews;
+  final List<PointFeature> features;
+  final List<PointReview> reviews;
   final int friendsCount;
   final List<String> friendAvatars;
 
@@ -52,10 +52,10 @@ class PointModel {
       rating: (props.extra['rating'] as num?)?.toDouble() ?? 0,
       totalReviews: props.extra['totalReviews'] as int? ?? 0,
       features: (props.extra['features'] as List<dynamic>? ?? [])
-          .map((e) => PointFeatureModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointFeature.fromJson(e as Map<String, dynamic>))
           .toList(),
       reviews: (props.extra['reviews'] as List<dynamic>? ?? [])
-          .map((e) => PointReviewModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointReview.fromJson(e as Map<String, dynamic>))
           .toList(),
       friendsCount: props.extra['friendsCount'] as int? ?? 0,
       friendAvatars: List<String>.from(

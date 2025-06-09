@@ -1,5 +1,5 @@
-import 'point_feature_model.dart';
-import 'point_review_model.dart';
+import 'point_feature.dart';
+import 'point_review.dart';
 
 /// Модель детальной информации о точке.
 /// Поддерживает формат ответа:
@@ -18,8 +18,8 @@ class PointDetail {
   final double rating;
   final int totalReviews;
   final List<String> imageUrls;
-  final List<PointFeatureModel> features;
-  final List<PointReviewModel> reviews;
+  final List<PointFeature> features;
+  final List<PointReview> reviews;
   final int friendsCount;
   final List<String> friendAvatars;
 
@@ -62,10 +62,10 @@ class PointDetail {
           .map((e) => (e as Map<String, dynamic>)['image'] as String)
           .toList(),
       features: (p['features'] as List<dynamic>? ?? [])
-          .map((e) => PointFeatureModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointFeature.fromJson(e as Map<String, dynamic>))
           .toList(),
       reviews: (p['reviews'] as List<dynamic>? ?? [])
-          .map((e) => PointReviewModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => PointReview.fromJson(e as Map<String, dynamic>))
           .toList(),
       friendsCount: p['friendsCount'] as int? ?? 0,
       friendAvatars:

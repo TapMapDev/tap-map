@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:tap_map/ui/theme/app_text_styles.dart';
 import 'package:tap_map/ui/theme/app_colors.dart';
-import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_review_model.dart';
+import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point_review.dart';
 
 class ReviewsSection extends StatelessWidget {
-  final List<PointReviewModel> reviews;
+  final List<PointReview> reviews;
   final int totalCount;
   final VoidCallback? onSeeAll;
   final bool showFullReviews;
@@ -81,7 +81,7 @@ class ReviewsSection extends StatelessWidget {
     );
   }
 
-  Widget _card(PointReviewModel r) {
+  Widget _card(PointReview r) {
     return Column(
       children: [
         Row(
