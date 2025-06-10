@@ -15,3 +15,7 @@ class CheckAuthorizationEvent extends AuthorizationEvent {}
 class LogoutEvent extends AuthorizationEvent {}
 
 class RefreshTokensEvent extends AuthorizationEvent {}
+
+class AuthorizationSignInWithGooglePressedEvent extends AuthorizationEvent {}
+
+class AuthorizationSignInWithFacebookPressedEvent extends AuthorizationEvent {}

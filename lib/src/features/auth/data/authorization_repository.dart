@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -198,12 +200,207 @@ class AuthorizationRepositoryImpl {
       if (statusCode == 200 || statusCode == 204) {
         debugPrint('✅ FCM token deactivated successfully');
       } else {
-        debugPrint(
-            '⚠️ Failed to deactivate FCM token. Status code: $statusCode');
+        debugPrint('⚠️ FCM token deactivation failed with status code: $statusCode');
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error during FCM token deactivation: $e');
+      debugPrint('❌ Error deactivating FCM token: $e');
       debugPrintStack(stackTrace: stackTrace);
     }
+  }
+
+  /// Авторизация через Google
+  Future<AuthorizationResponseModel> signInWithGoogle() async {
+    try {
+      // Вызов Google SDK для авторизации
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        return AuthorizationResponseModel(
+          statusCode: 400,
+          message: 'Авторизация через Google отменена пользователем',
+          accessToken: null,
+          refreshToken: null,
+        );
+      }
+      
+      // Получение токена авторизации
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Формирование userData для API
+      final Map<String, dynamic> userData = {
+        'id': googleUser.id,
+        'email': googleUser.email,
+        'first_name': googleUser.displayName?.split(' ').first ?? '',
+        'last_name': googleUser.displayName?.split(' ').length > 1
+            ? googleUser.displayName?.split(' ').last 
+            : '',
+      };
+      
+      // Вызов API для Google авторизации
+      return await authorizeWithGoogle(googleAuth.accessToken!, userData);
+    } catch (e, stackTrace) {
+      debugPrint('❌ Google sign in error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: -1,
+        message: 'Ошибка авторизации через Google: $e',
+      );
+    }
+  }
+  
+  /// Авторизация через Facebook
+  Future<AuthorizationResponseModel> signInWithFacebook() async {
+    try {
+      // Вызов Facebook SDK для авторизации
+      final LoginResult result = await FacebookAuth.instance.login(permissions: ['email', 'public_profile']);
+      
+      if (result.status != LoginStatus.success) {
+        return AuthorizationResponseModel(
+          statusCode: 400,
+          message: 'Авторизация через Facebook не удалась: ${result.status}',
+          accessToken: null,
+          refreshToken: null,
+        );
+      }
+      
+      // Получение данных пользователя
+      final userData = await FacebookAuth.instance.getUserData(fields: 'id,email,first_name,last_name');
+      
+      // Вызов API для Facebook авторизации
+      return await authorizeWithFacebook(result.accessToken!.token, userData);
+    } catch (e, stackTrace) {
+      debugPrint('❌ Facebook sign in error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: -1,
+        message: 'Ошибка авторизации через Facebook: $e',
+      );
+    }
+  }
+  
+  /// Отправка токена и данных Google на сервер
+  Future<AuthorizationResponseModel> authorizeWithGoogle(
+      String accessToken, Map<String, dynamic> userData) async {
+    try {
+      final response = await apiService.postData(
+        '/api/auth/google/',
+        {
+          'access_token': accessToken,
+          'user_data': userData,
+        },
+        useAuth: false,
+      );
+      
+      return _processAuthResponse(response);
+    } on DioException catch (e, stackTrace) {
+      return _handleDioError(e, stackTrace, 'Google');
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: -1,
+        message: 'Неизвестная ошибка при авторизации через Google: $e',
+      );
+    }
+  }
+  
+  /// Отправка токена и данных Facebook на сервер
+  Future<AuthorizationResponseModel> authorizeWithFacebook(
+      String accessToken, Map<String, dynamic> userData) async {
+    try {
+      final response = await apiService.postData(
+        '/api/auth/facebook/',
+        {
+          'access_token': accessToken,
+          'user_data': userData,
+        },
+        useAuth: false,
+      );
+      
+      return _processAuthResponse(response);
+    } on DioException catch (e, stackTrace) {
+      return _handleDioError(e, stackTrace, 'Facebook');
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      return AuthorizationResponseModel(
+        accessToken: null,
+        refreshToken: null,
+        statusCode: -1,
+        message: 'Неизвестная ошибка при авторизации через Facebook: $e',
+      );
+    }
+  }
+  
+  /// Обработка ответа API от социальных сетей
+  AuthorizationResponseModel _processAuthResponse(Map<String, dynamic> response) {
+    final statusCode = response['statusCode'] as int;
+    final data = response['data'];
+    
+    if (statusCode == 200 || statusCode == 201) {
+      final responseModel = AuthorizationResponseModel.fromJson(
+        data,
+        statusCode,
+      );
+      
+      if (responseModel.accessToken != null &&
+          responseModel.refreshToken != null) {
+        prefs.saveAccessToken(responseModel.accessToken!);
+        prefs.saveRefreshToken(responseModel.refreshToken!);
+      }
+      
+      return responseModel;
+    } else {
+      String message = 'Ошибка авторизации';
+      if (data != null) {
+        if (data['detail'] is List) {
+          message = (data['detail'] as List).join(', ');
+        } else if (data['detail'] != null) {
+          message = data['detail'].toString();
+        } else if (data['message'] != null) {
+          message = data['message'].toString();
+        }
+      }
+      
+      return AuthorizationResponseModel(
+        statusCode: statusCode,
+        accessToken: null,
+        refreshToken: null,
+        message: message,
+      );
+    }
+  }
+  
+  /// Обработка ошибок Dio
+  AuthorizationResponseModel _handleDioError(DioException e, StackTrace stackTrace, String provider) {
+    debugPrintStack(stackTrace: stackTrace);
+    
+    final int statusCode = e.response?.statusCode ?? -1;
+    String message = 'Произошла ошибка при авторизации через $provider';
+    
+    final data = e.response?.data;
+    if (data != null) {
+      if (data['detail'] is List) {
+        message = (data['detail'] as List).join(', ');
+      } else if (data['detail'] != null) {
+        message = data['detail'].toString();
+      } else if (data['message'] != null) {
+        message = data['message'].toString();
+      }
+    }
+    
+    return AuthorizationResponseModel(
+      accessToken: null,
+      refreshToken: null,
+      statusCode: statusCode,
+      message: message,
+    );
   }
 }

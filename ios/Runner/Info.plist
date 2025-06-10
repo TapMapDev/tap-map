@@ -59,13 +59,51 @@
 							<string>tapmap</string>
 						</array>
 					</dict>
+					<!-- Google Sign-in -->
+					<dict>
+						<key>CFBundleTypeRole</key>
+						<string>Editor</string>
+						<key>CFBundleURLName</key>
+						<string>com.googleusercontent.apps</string>
+						<key>CFBundleURLSchemes</key>
+						<array>
+							<!-- Вставьте сюда ваш Google Sign-in ID -->
+							<string>com.googleusercontent.apps.000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</string>
+						</array>
+					</dict>
+					<!-- Facebook Login -->
+					<dict>
+						<key>CFBundleTypeRole</key>
+						<string>Editor</string>
+						<key>CFBundleURLName</key>
+						<string>facebook</string>
+						<key>CFBundleURLSchemes</key>
+						<array>
+							<!-- Вставьте сюда ваш Facebook App ID с префиксом fb -->
+							<string>fb000000000000000</string>
+						</array>
+					</dict>
 				</array>
 			</dict>
 		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>FacebookAppID</key>
+		<string>000000000000000</string>
+		<key>FacebookClientToken</key>
+		<string>00000000000000000000000000000000</string>
+		<key>FacebookDisplayName</key>
+		<string>TapMap</string>
 		<key>FlutterDeepLinkingEnabled</key>
 		<false />
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<!-- Facebook SDK -->
+			<string>fbapi</string>
+			<string>fb-messenger-share-api</string>
+			<string>fbauth2</string>
+			<string>fbshareextension</string>
+		</array>
 		<key>LSRequiresIPhoneOS</key>
 		<true />
 		<key>MKDirectionsApplicationSupportedModes</key>
