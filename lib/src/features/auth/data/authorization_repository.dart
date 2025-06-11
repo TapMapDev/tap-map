@@ -290,7 +290,7 @@ class AuthorizationRepositoryImpl {
       String accessToken, Map<String, dynamic> userData) async {
     try {
       final response = await apiService.postData(
-        '/api/auth/google/',
+        '/auth/google/',
         {
           'access_token': accessToken,
           'user_data': userData,
@@ -317,7 +317,7 @@ class AuthorizationRepositoryImpl {
       String accessToken, Map<String, dynamic> userData) async {
     try {
       final response = await apiService.postData(
-        '/api/auth/facebook/',
+        '/auth/facebook/',
         {
           'access_token': accessToken,
           'user_data': userData,
