@@ -235,8 +235,7 @@ class AuthorizationRepositoryImpl {
         'id': googleUser.id,
         'email': googleUser.email,
         'first_name': googleUser.displayName?.split(' ').first ?? '',
-        'last_name': googleUser.displayName != null
-            && googleUser.displayName!.split(' ').length > 1
+        'last_name': googleUser.displayName != null && googleUser.displayName!.split(' ').length > 1
             ? googleUser.displayName!.split(' ').last 
             : '',
       };
