@@ -9,6 +9,10 @@ class AuthConfig {
   /// Получить Client Secret для Google авторизации
   static String get googleClientSecret => 
       dotenv.env['GOOGLE_CLIENT_SECRET'] ?? '';
+      
+  /// Получить Web Client ID для Google авторизации на Android
+  static String get googleWebClientId => 
+      dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? '';
 
   /// Получить App ID для Facebook авторизации
   static String get facebookAppId => 

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -212,10 +213,17 @@ class AuthorizationRepositoryImpl {
   /// Авторизация через Google
   Future<AuthorizationResponseModel> signInWithGoogle() async {
     try {
-      // Вызов Google SDK для авторизации с клиентским ID из конфигурации
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: AuthConfig.googleClientId,
-      );
+      // Вызов Google SDK для авторизации с клиентскими данными из конфигурации
+      final GoogleSignIn googleSignIn = Platform.isAndroid 
+          ? GoogleSignIn(
+              // На Android нужно явно указать serverClientId, если oauth_client пуст в google-services.json
+              serverClientId: AuthConfig.googleWebClientId,
+              scopes: ['email', 'profile'],
+            )
+          : GoogleSignIn(
+              clientId: AuthConfig.googleClientId,
+              scopes: ['email', 'profile'],
+            );
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
       if (googleUser == null) {
