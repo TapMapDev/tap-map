@@ -131,7 +131,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
     if (password != repeat) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Пароли не совпадают'),
+          content: Text('Пароли должны совпадать'),
         ),
       );
       return;
