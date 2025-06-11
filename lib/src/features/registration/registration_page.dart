@@ -269,7 +269,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Passwords must match'),
+                                content: Text('Пароли должны совпадать'),
                                 backgroundColor: Colors.orange,
                               ),
                             );
