@@ -21,6 +21,51 @@ class RegistrationResponseModel {
 
   factory RegistrationResponseModel.fromJson(
       Map<String, dynamic> json, int statusCode) {
+    String? errorMessage;
+    String? errorField;
+
+    // Проверяем поля на наличие ошибок
+    for (final field in ['username', 'email', 'password1', 'password2']) {
+      if (json[field] != null) {
+        final value = json[field];
+        if (value is List && value.isNotEmpty) {
+          errorMessage = value.first.toString();
+        } else if (value is String) {
+          errorMessage = value;
+        }
+        errorField = field;
+        break;
+      }
+    }
+
+    // Ошибки, не относящиеся к конкретному полю
+    if (errorMessage == null && json['non_field_errors'] != null) {
+      final value = json['non_field_errors'];
+      if (value is List && value.isNotEmpty) {
+        errorMessage = value.first.toString();
+      } else if (value is String) {
+        errorMessage = value;
+      }
+    }
+
+    // Локализованное имя поля для отображения в сообщении об ошибке
+    const fieldNames = {
+      'username': 'Юзернэйм',
+      'email': 'Эмэил',
+      'password1': 'Пароль',
+      'password2': 'Повторите пароль',
+    };
+
+    if (errorMessage != null && errorField != null) {
+      final fieldName = fieldNames[errorField] ?? errorField;
+      if (errorMessage.contains('blank') ||
+          errorMessage.contains('пуст') ||
+          errorMessage.contains('required') ||
+          errorMessage.contains('обязат')) {
+        errorMessage = 'Поле "$fieldName" не может быть пустым';
+      }
+    }
+
     return RegistrationResponseModel(
         username:
             statusCode == 201 || statusCode == 200 ? json['username'] : null,
@@ -32,10 +77,6 @@ class RegistrationResponseModel {
         statusCode: statusCode,
         accessToken: json['access'],
         refreshToken: json['refresh'],
-        error: json['username']?[0] ??
-            json['email']?[0] ??
-            json['non_field_errors']?[0] ??
-            json['password1']?[0] ??
-            json['password2']?[0]);
+        error: errorMessage);
   }
 }
