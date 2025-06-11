@@ -67,8 +67,8 @@
 						<string>com.googleusercontent.apps</string>
 						<key>CFBundleURLSchemes</key>
 						<array>
-							<!-- Вставьте сюда ваш Google Sign-in ID -->
-							<string>com.googleusercontent.apps.000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</string>
+							<!-- Google Sign-in с реальным Client ID -->
+							<string>com.googleusercontent.apps.501224158757-9djrmoe8sjoccffpt9c2687pfptb4vp8</string>
 						</array>
 					</dict>
 					<!-- Facebook Login -->
@@ -79,8 +79,8 @@
 						<string>facebook</string>
 						<key>CFBundleURLSchemes</key>
 						<array>
-							<!-- Вставьте сюда ваш Facebook App ID с префиксом fb -->
-							<string>fb000000000000000</string>
+							<!-- Facebook App ID с префиксом fb -->
+							<string>fb1394966721505308</string>
 						</array>
 					</dict>
 				</array>
@@ -88,10 +88,11 @@
 		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<!-- Настройки для Facebook с реальными значениями -->
 		<key>FacebookAppID</key>
-		<string>000000000000000</string>
+		<string>1394966721505308</string>
 		<key>FacebookClientToken</key>
-		<string>00000000000000000000000000000000</string>
+		<string>70186eae1a55bac64c10e880b87fdec0</string>
 		<key>FacebookDisplayName</key>
 		<string>TapMap</string>
 		<key>FlutterDeepLinkingEnabled</key>

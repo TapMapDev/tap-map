@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:tap_map/core/config/auth_config.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
@@ -211,8 +212,10 @@ class AuthorizationRepositoryImpl {
   /// Авторизация через Google
   Future<AuthorizationResponseModel> signInWithGoogle() async {
     try {
-      // Вызов Google SDK для авторизации
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      // Вызов Google SDK для авторизации с клиентским ID из конфигурации
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: AuthConfig.googleClientId,
+      );
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
       if (googleUser == null) {
