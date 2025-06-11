@@ -51,6 +51,10 @@ signingConfigs {
 
 dependencies {
     implementation 'com.google.firebase:firebase-messaging:23.0.0'
+    // Добавляем зависимости для Facebook SDK
+    implementation 'com.facebook.android:facebook-android-sdk:latest.release'
+    // Добавляем зависимости для Google Sign-In
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
 }
 
 flutter {
