@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tap_map/core/config/auth_config.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
@@ -213,20 +214,15 @@ class AuthorizationRepositoryImpl {
   /// Авторизация через Google
   Future<AuthorizationResponseModel> signInWithGoogle() async {
     try {
-      // Вызов Google SDK для авторизации с клиентскими данными из конфигурации
-      final GoogleSignIn googleSignIn = Platform.isAndroid 
-          ? GoogleSignIn(
-              // На Android нужно явно указать serverClientId, если oauth_client пуст в google-services.json
-              serverClientId: AuthConfig.googleWebClientId,
-              scopes: ['email', 'profile'],
-            )
-          : GoogleSignIn(
-              clientId: AuthConfig.googleClientId,
-              scopes: ['email', 'profile'],
-            );
+      // Используем Firebase Auth для авторизации через Google
+      print('Запускаем процесс авторизации через Google');
+      
+      // Инициализация процесса входа в Google
+      final GoogleSignIn googleSignIn = GoogleSignIn();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
       if (googleUser == null) {
+        print('Пользователь отменил авторизацию Google');
         return AuthorizationResponseModel(
           statusCode: 400,
           message: 'Авторизация через Google отменена пользователем',
@@ -235,21 +231,49 @@ class AuthorizationRepositoryImpl {
         );
       }
       
-      // Получение токена авторизации
+      // Получение данных аутентификации
+      print('Получаем токены аутентификации Google');
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Создание учетных данных Firebase
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      
+      // Вход в Firebase с учетными данными Google
+      print('Выполняем вход в Firebase с учетными данными Google');
+      final UserCredential userCredential = 
+          await FirebaseAuth.instance.signInWithCredential(credential);
+          
+      // Получение Firebase ID token для бэкенда
+      final String? firebaseToken = await userCredential.user?.getIdToken();
+      
+      if (firebaseToken == null) {
+        print('Firebase токен не получен');
+        return AuthorizationResponseModel(
+          statusCode: 400,
+          message: 'Не удалось получить токен Firebase',
+          accessToken: null,
+          refreshToken: null,
+        );
+      }
       
       // Формирование userData для API
       final Map<String, dynamic> userData = {
-        'id': googleUser.id,
-        'email': googleUser.email,
-        'first_name': googleUser.displayName?.split(' ').first ?? '',
-        'last_name': googleUser.displayName != null && googleUser.displayName!.split(' ').length > 1
-            ? googleUser.displayName!.split(' ').last 
-            : '',
+        'id': userCredential.user?.uid ?? googleUser.id,
+        'email': userCredential.user?.email ?? googleUser.email,
+        'first_name': userCredential.user?.displayName?.split(' ').first ?? googleUser.displayName?.split(' ').first ?? '',
+        'last_name': userCredential.user?.displayName != null && userCredential.user!.displayName!.split(' ').length > 1
+            ? userCredential.user!.displayName!.split(' ').last
+            : googleUser.displayName != null && googleUser.displayName!.split(' ').length > 1
+                ? googleUser.displayName!.split(' ').last
+                : '',
       };
       
-      // Вызов API для Google авторизации
-      return await authorizeWithGoogle(googleAuth.accessToken!, userData);
+      // Вызов API для авторизации на бэкенде
+      print('Отправляем Firebase токен на бэкенд для авторизации');
+      return await authorizeWithGoogle(firebaseToken, userData);
     } catch (e, stackTrace) {
       debugPrint('❌ Google sign in error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -298,12 +322,12 @@ class AuthorizationRepositoryImpl {
   
   /// Отправка токена и данных Google на сервер
   Future<AuthorizationResponseModel> authorizeWithGoogle(
-      String accessToken, Map<String, dynamic> userData) async {
+      String idToken, Map<String, dynamic> userData) async {
     try {
       final response = await apiService.postData(
         '/auth/google/',
         {
-          'access_token': accessToken,
+          'id_token': idToken,
           'user_data': userData,
         },
         useAuth: false,
