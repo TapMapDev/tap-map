@@ -327,7 +327,7 @@ class AuthorizationRepositoryImpl {
       final response = await apiService.postData(
         '/auth/google/',
         {
-          'id_token': idToken,
+          'access_token': idToken, // Изменяем обратно на access_token, как ожидает API
           'user_data': userData,
         },
         useAuth: false,
