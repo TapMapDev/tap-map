@@ -260,7 +260,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content:
-                                    Text('Поле "Пароль" не может быть пустым'),
+                                    Text('"Пароль" не может быть пустым'),
                                 backgroundColor: Colors.orange,
                               ),
                             );
@@ -270,7 +270,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Поле "Повтор Пароля" не может быть пустым'),
+                                    '"Повтор Пароля" не может быть пустым'),
                                 backgroundColor: Colors.orange,
                               ),
                             );
