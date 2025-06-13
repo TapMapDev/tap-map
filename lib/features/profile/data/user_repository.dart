@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/network/api_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/features/user_profile/model/user_response_model.dart';
+import 'package:tap_map/features/profile/model/user_response_model.dart';
 
 // TODO(tapmap): Упростить репозиторий, убрать абстракцию IUserRepository и
 // использовать единый класс репозитория.

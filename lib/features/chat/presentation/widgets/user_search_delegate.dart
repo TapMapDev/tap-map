@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tap_map/features/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/chat/presentation/pages/chat_screen.dart';
-import 'package:tap_map/features/user_profile/data/user_repository.dart';
-import 'package:tap_map/features/user_profile/model/user_response_model.dart';
+import 'package:tap_map/features/profile/data/user_repository.dart';
+import 'package:tap_map/features/profile/model/user_response_model.dart';
 
 class UserSearchDelegate extends SearchDelegate<UserModel?> {
   final UserRepository _userRepository = GetIt.instance<UserRepository>();

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tap_map/features/user_profile/data/user_repository.dart';
-import 'package:tap_map/features/user_profile/model/user_response_model.dart';
+import 'package:tap_map/features/profile/data/user_repository.dart';
+import 'package:tap_map/features/profile/model/user_response_model.dart';
 
 part 'user_information_event.dart';
 part 'user_information_state.dart';

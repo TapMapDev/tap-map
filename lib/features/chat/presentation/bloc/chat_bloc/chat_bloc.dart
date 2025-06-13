@@ -8,7 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_event.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
-import 'package:tap_map/features/user_profile/data/user_repository.dart';
+import 'package:tap_map/features/profile/data/user_repository.dart';
 import 'package:tap_map/features/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/chat/data/models/chat_model.dart';
 import 'package:tap_map/features/chat/data/models/message_model.dart';

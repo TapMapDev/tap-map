@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/navigation/routes.dart';
 import 'package:tap_map/features/chat/data/repositories/chat_repository.dart';
-import 'package:tap_map/features/user_profile/bloc/user_information_bloc.dart';
-import 'package:tap_map/features/user_profile/model/user_response_model.dart';
-import 'package:tap_map/features/user_profile/widget/client_avatar.dart';
+import 'package:tap_map/features/profile/bloc/user_information_bloc.dart';
+import 'package:tap_map/features/profile/model/user_response_model.dart';
+import 'package:tap_map/features/profile/widget/client_avatar.dart';
 
 class PublicUserProfileScreen extends StatefulWidget {
   final String username;
