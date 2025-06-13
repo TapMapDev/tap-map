@@ -1,6 +1,6 @@
 import 'package:tap_map/features/userFlow/map/point_detail/data/models/point_feature.dart';
 import 'package:tap_map/features/userFlow/map/point_detail/data/models/point_review.dart';
-import 'package:tap_map/core/models/point_image.dart';
+import 'package:tap_map/shared/models/point_image.dart';
 import 'package:tap_map/features/userFlow/search_screen/data/models/tinder_point.dart';
 
 /// Model representing detailed point information returned from `/points/<id>/`.
