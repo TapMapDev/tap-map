@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
-import 'package:tap_map/features/userFlow/chat/widgets/video_player_widget.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/widgets/video_player_widget.dart';
 
 class MessageContent extends StatelessWidget {
   final MessageModel message;

@@ -8,7 +8,7 @@ import 'package:tap_map/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/features/password_reset/ui/new_password_page.dart';
 import 'package:tap_map/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/features/registration/registration_page.dart';
-import 'package:tap_map/features/userFlow/chat/ui/chat_list_screen.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/pages/chat_list_screen.dart';
 import 'package:tap_map/features/userFlow/chat/ui/chat_screen.dart';
 import 'package:tap_map/features/userFlow/map/major_map.dart';
 import 'package:tap_map/features/userFlow/search_screen/search_page.dart';

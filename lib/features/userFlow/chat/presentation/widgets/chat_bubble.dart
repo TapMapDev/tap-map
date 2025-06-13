@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
-import 'package:tap_map/features/userFlow/chat/widgets/bubble_reference.dart';
-import 'package:tap_map/features/userFlow/chat/widgets/message_content.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/widgets/bubble_reference.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/widgets/message_content.dart';
 
 class ChatBubble extends StatelessWidget {
   final MessageModel message;
