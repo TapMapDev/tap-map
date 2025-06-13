@@ -64,6 +64,9 @@ class RegistrationResponseModel {
           errorMessage.contains('обязат')) {
         errorMessage = 'Поле "$fieldName" не может быть пустым';
       }
+      if (errorMessage.contains('Пользователь с таким Электронная почта уже существует')) {
+        errorMessage = 'Пользователь с такой Электронной почтой уже существует';
+      }
     }
 
     return RegistrationResponseModel(
