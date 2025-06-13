@@ -1,5 +1,5 @@
 import 'package:tap_map/core/network/api_service.dart';
-import 'package:tap_map/features/map/icons/model/icons_response_modal.dart';
+import 'package:tap_map/features/map/icons/model/icons_response_model.dart';
 
 // TODO(tapmap): Перейти на единый стиль репозиториев без интерфейса IconsRepository.
 

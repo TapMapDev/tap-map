@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/features/map/icons/data/icons_repository.dart';
-import 'package:tap_map/features/map/icons/model/icons_response_modal.dart';
+import 'package:tap_map/features/map/icons/model/icons_response_model.dart';
 
 part 'icons_event.dart';
 part 'icons_state.dart';

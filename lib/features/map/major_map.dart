@@ -11,7 +11,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mp;
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/features/map/icons/bloc/icons_bloc.dart';
-import 'package:tap_map/features/map/icons/model/icons_response_modal.dart';
+import 'package:tap_map/features/map/icons/model/icons_response_model.dart';
 import 'package:tap_map/features/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/features/map/widgets/geo_location.dart';
 import 'package:tap_map/features/map/widgets/icon_opacity.dart'
