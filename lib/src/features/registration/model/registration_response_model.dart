@@ -53,7 +53,7 @@ class RegistrationResponseModel {
       'username': 'Псевдоним',
       'email': 'Email',
       'password1': 'Пароль',
-      'password2': 'Повтор пароля',
+      'password2': 'Повтор Пароля',
     };
 
     if (errorMessage != null && errorField != null) {
