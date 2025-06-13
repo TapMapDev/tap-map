@@ -15,8 +15,8 @@ import 'package:tap_map/features/search/search_page.dart';
 import 'package:tap_map/features/profile/model/user_response_model.dart';
 import 'package:tap_map/features/profile/ui/edit_profile_page.dart';
 import 'package:tap_map/features/profile/ui/profile_share.dart';
-import 'package:tap_map/features/profile/ui/public_profile.dart';
-import 'package:tap_map/features/profile/ui/profile.dart';
+import 'package:tap_map/features/profile/ui/public_user_profile.dart';
+import 'package:tap_map/features/profile/ui/user_profile.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
