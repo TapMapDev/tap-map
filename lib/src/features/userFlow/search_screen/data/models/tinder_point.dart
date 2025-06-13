@@ -1,5 +1,5 @@
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/models/point.dart';
-import 'package:tap_map/src/features/userFlow/common/data/models/point_image.dart';
+import 'package:tap_map/core/models/point_image.dart';
 
 abstract class TinderPoint {
   final int id;
