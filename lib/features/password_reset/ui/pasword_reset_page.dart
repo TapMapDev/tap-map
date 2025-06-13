@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_event.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_state.dart';
-import 'package:tap_map/shared/widgets/custom_elevated_button.dart';
+import 'package:tap_map/core/widgets/custom_elevated_button.dart';
 
 class PasswordRequestPage extends StatefulWidget {
   const PasswordRequestPage({super.key});
