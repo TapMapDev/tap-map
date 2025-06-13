@@ -41,7 +41,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
             );
           }
           if (state is RegistarationStateSuccess) {
-            context.go(AppRoutes.authorization);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Аккаунт успешно создан')),
+            );
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted) context.go(AppRoutes.authorization);
+            });
           }
         },
         builder: (context, state) {
