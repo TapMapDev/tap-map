@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/core/di/di.dart';
-import 'package:tap_map/features/search_screen/bloc/search_bloc.dart';
-import 'package:tap_map/features/search_screen/data/repositories/search_repository.dart';
-import 'package:tap_map/features/search_screen/widgets/search_silver.dart';
+import 'package:tap_map/features/search/bloc/search_bloc.dart';
+import 'package:tap_map/features/search/data/repositories/search_repository.dart';
+import 'package:tap_map/features/search/widgets/search_silver.dart';
 
 bool _enableDetailedLogs = false;
 

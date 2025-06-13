@@ -11,7 +11,7 @@ import 'package:tap_map/features/registration/registration_page.dart';
 import 'package:tap_map/features/chat/presentation/pages/chat_list_screen.dart';
 import 'package:tap_map/features/chat/presentation/pages/chat_screen.dart';
 import 'package:tap_map/features/map/major_map.dart';
-import 'package:tap_map/features/search_screen/search_page.dart';
+import 'package:tap_map/features/search/search_page.dart';
 import 'package:tap_map/features/user_profile/model/user_response_model.dart';
 import 'package:tap_map/features/user_profile/ui/edit_profile_page.dart';
 import 'package:tap_map/features/user_profile/ui/profile_share.dart';
