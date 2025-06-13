@@ -256,6 +256,26 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       const BackButton(),
                       CustomElevatedButton(
                         onPressed: () {
+                          if (passwordController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Поле "Пароль" не может быть пустым'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          if (passwordRepeatController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Поле "Повтор Пароля" не может быть пустым'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
                           if (passwordController.text ==
                               passwordRepeatController.text) {
                             context.read<RegistrationBloc>().add(
