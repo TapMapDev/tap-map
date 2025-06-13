@@ -1,5 +1,5 @@
 import 'package:tap_map/core/websocket/websocket_service.dart';
-import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/message_model.dart';
 
 // TODO(tapmap): Переписать логику отправки сообщений без отдельного use case.
 // Использовать основной подход проекта с репозиториями и BLoC.

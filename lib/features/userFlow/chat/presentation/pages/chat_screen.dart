@@ -11,7 +11,7 @@ import 'package:tap_map/features/userFlow/chat/bloc/edit_bloc/edit_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/bloc/reply_bloc/reply_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
-import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/message_model.dart';
 import 'package:tap_map/features/userFlow/chat/presentation/widgets/chat_bubble.dart';
 import 'package:tap_map/features/userFlow/chat/presentation/widgets/message_input.dart';
 import 'package:tap_map/features/userFlow/chat/presentation/widgets/scrollbottom.dart';

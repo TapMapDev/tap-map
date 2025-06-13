@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/message_model.dart';
 part 'reply_event.dart';
 part 'reply_state.dart';
 

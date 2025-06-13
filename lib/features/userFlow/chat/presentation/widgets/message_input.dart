@@ -1,7 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/message_model.dart';
 
 class MessageInput extends StatelessWidget {
   final TextEditingController controller;

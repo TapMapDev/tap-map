@@ -10,8 +10,8 @@ import 'package:tap_map/core/websocket/websocket_event.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
-import 'package:tap_map/features/userFlow/chat/models/chat_model.dart';
-import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/chat_model.dart';
+import 'package:tap_map/features/userFlow/chat/data/models/message_model.dart';
 import 'package:tap_map/features/userFlow/chat/services/send_message_use_case.dart';
 
 part 'chat_event.dart';
