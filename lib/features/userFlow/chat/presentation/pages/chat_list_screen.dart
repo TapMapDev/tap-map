@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/presentation/pages/chat_screen.dart';
-import 'package:tap_map/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/bloc/chat_bloc/chat_bloc.dart';
 import 'package:tap_map/features/userFlow/chat/data/models/chat_model.dart';
 import 'package:tap_map/features/userFlow/chat/presentation/widgets/user_search_delegate.dart';
 

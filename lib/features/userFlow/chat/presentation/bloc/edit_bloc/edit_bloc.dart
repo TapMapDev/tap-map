@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
-import 'package:tap_map/features/userFlow/chat/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/features/userFlow/chat/presentation/bloc/chat_bloc/chat_bloc.dart';
 
 part 'edit_event.dart';
 part 'edit_state.dart';
