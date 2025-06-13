@@ -5,7 +5,7 @@ import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
 import 'package:tap_map/ui/theme/app_colors.dart';
 import 'package:tap_map/core/navigation/routes.dart';
 import 'package:tap_map/features/registration/bloc/registration_bloc.dart';
-import 'package:tap_map/widget/custom_elevated_button.dart';
+import 'package:tap_map/shared/widgets/custom_elevated_button.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});

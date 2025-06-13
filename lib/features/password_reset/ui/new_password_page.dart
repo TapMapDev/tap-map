@@ -5,7 +5,7 @@ import 'package:tap_map/core/navigation/routes.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_event.dart';
 import 'package:tap_map/features/password_reset/bloc/password_resert_state.dart';
-import 'package:tap_map/widget/custom_elevated_button.dart';
+import 'package:tap_map/shared/widgets/custom_elevated_button.dart';
 
 class NewPasswordPage extends StatefulWidget {
   final String? uid;
