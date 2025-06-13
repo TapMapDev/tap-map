@@ -14,19 +14,19 @@ import 'package:tap_map/features/password_reset/bloc/password_resert_bloc.dart';
 import 'package:tap_map/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/features/registration/data/registration_repository.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/bloc/chat_bloc/chat_bloc.dart';
-import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
+import 'package:tap_map/features/chat/presentation/bloc/chat_bloc/chat_bloc.dart';
+import 'package:tap_map/features/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/userFlow/map/icons/bloc/icons_bloc.dart';
 import 'package:tap_map/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/features/userFlow/map/styles/bloc/map_styles_bloc.dart';
 import 'package:tap_map/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/features/userFlow/search_screen/bloc/search_bloc.dart';
 import 'package:tap_map/features/userFlow/search_screen/data/repositories/search_repository.dart';
-import 'package:tap_map/features/userFlow/user_profile/bloc/user_information_bloc.dart';
-import 'package:tap_map/features/userFlow/user_profile/data/user_repository.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/bloc/reply_bloc/reply_bloc.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/bloc/delete_message/delete_message_bloc.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/bloc/edit_bloc/edit_bloc.dart';
+import 'package:tap_map/features/user_profile/bloc/user_information_bloc.dart';
+import 'package:tap_map/features/user_profile/data/user_repository.dart';
+import 'package:tap_map/features/chat/presentation/bloc/reply_bloc/reply_bloc.dart';
+import 'package:tap_map/features/chat/presentation/bloc/delete_message/delete_message_bloc.dart';
+import 'package:tap_map/features/chat/presentation/bloc/edit_bloc/edit_bloc.dart';
 
 
 final navigatorKey = GlobalKey<NavigatorState>();

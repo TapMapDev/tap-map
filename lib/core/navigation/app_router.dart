@@ -8,15 +8,15 @@ import 'package:tap_map/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/features/password_reset/ui/new_password_page.dart';
 import 'package:tap_map/features/password_reset/ui/pasword_reset_page.dart';
 import 'package:tap_map/features/registration/registration_page.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/pages/chat_list_screen.dart';
-import 'package:tap_map/features/userFlow/chat/presentation/pages/chat_screen.dart';
+import 'package:tap_map/features/chat/presentation/pages/chat_list_screen.dart';
+import 'package:tap_map/features/chat/presentation/pages/chat_screen.dart';
 import 'package:tap_map/features/userFlow/map/major_map.dart';
 import 'package:tap_map/features/userFlow/search_screen/search_page.dart';
-import 'package:tap_map/features/userFlow/user_profile/model/user_response_model.dart';
-import 'package:tap_map/features/userFlow/user_profile/ui/edit_profile_page.dart';
-import 'package:tap_map/features/userFlow/user_profile/ui/profile_share.dart';
-import 'package:tap_map/features/userFlow/user_profile/ui/public_user_profile.dart';
-import 'package:tap_map/features/userFlow/user_profile/ui/user_profile.dart';
+import 'package:tap_map/features/user_profile/model/user_response_model.dart';
+import 'package:tap_map/features/user_profile/ui/edit_profile_page.dart';
+import 'package:tap_map/features/user_profile/ui/profile_share.dart';
+import 'package:tap_map/features/user_profile/ui/public_user_profile.dart';
+import 'package:tap_map/features/user_profile/ui/user_profile.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
