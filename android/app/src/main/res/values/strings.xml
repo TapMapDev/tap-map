@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TapMap</string>
+    <!-- Значения для Facebook SDK с реальными данными -->
+    <string name="facebook_app_id">1394966721505308</string>
+    <string name="facebook_client_token">70186eae1a55bac64c10e880b87fdec0</string>
+    <string name="fb_login_protocol_scheme">fb1394966721505308</string>
+</resources>

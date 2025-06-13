@@ -191,7 +191,10 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                     const SizedBox(height: 20),
                     GestureDetector(
                       onTap: () async {
-                        // Реализация входа через Google
+                        // Отправляем событие для авторизации через Google
+                        context.read<AuthorizationBloc>().add(
+                              AuthorizationSignInWithGooglePressedEvent(),
+                            );
                       },
                       child: Container(
                         width: double.infinity,
@@ -211,7 +214,10 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                     const SizedBox(height: 12),
                     GestureDetector(
                       onTap: () async {
-                        // Реализация входа через Facebook
+                        // Отправляем событие для авторизации через Facebook
+                        context.read<AuthorizationBloc>().add(
+                              AuthorizationSignInWithFacebookPressedEvent(),
+                            );
                       },
                       child: Container(
                         width: double.infinity,

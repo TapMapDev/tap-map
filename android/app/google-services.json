@@ -12,7 +12,20 @@
           "package_name": "com.tapmap.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "665756653815-ajd4ihobk1us6ra82hs9gvlqc5te0n2b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tapmap.app",
+            "certificate_hash": "ab26d779332e55ab30b41ed1d980a86024349933"
+          }
+        },
+        {
+          "client_id": "665756653815-0dc0g4tmbcdpckvp2c9gk39ku1og9mmo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAz0lMiZcvSB-HIhDe9baEBdI3IpVnMPak"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "665756653815-0dc0g4tmbcdpckvp2c9gk39ku1og9mmo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "665756653815-p5n513d0h4a3fjr5445tu8cubq4mrfu0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tapmap.app"
+              }
+            }
+          ]
         }
       }
     }

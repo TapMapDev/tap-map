@@ -80,5 +80,67 @@ class AuthorizationBloc extends Bloc<AuthorizationEvent, AuthorizationState> {
             errorMessage: 'Ошибка при обновлении токенов: $e'));
       }
     });
+    
+    // Обработчик для авторизации через Google
+    on<AuthorizationSignInWithGooglePressedEvent>((event, emit) async {
+      emit(AuthorizationInProcess());
+      _talker.info('Starting Google authorization process');
+      try {
+        final response = await authorizationRepositoryImpl.signInWithGoogle();
+        _talker.info('Google authorization response received. Status code: ${response.statusCode}');
+        
+        // Обработка ответа аналогично email/password
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.accessToken != null && response.refreshToken != null) {
+            _talker.info('Tokens received, authorizing user');
+            emit(AuthorizationSuccess());
+          } else {
+            _talker.error('Tokens missing in Google auth response');
+            emit(AuthorizationFailed(
+              errorMessage: response.message ?? 'Ошибка авторизации через Google',
+            ));
+          }
+        } else {
+          _talker.error('Google authorization failed with status code: ${response.statusCode}');
+          emit(AuthorizationFailed(
+            errorMessage: response.message ?? 'Ошибка авторизации через Google',
+          ));
+        }
+      } catch (e) {
+        _talker.error('Google authorization error: $e');
+        emit(AuthorizationFailed(errorMessage: 'Ошибка авторизации через Google: $e'));
+      }
+    });
+    
+    // Обработчик для авторизации через Facebook
+    on<AuthorizationSignInWithFacebookPressedEvent>((event, emit) async {
+      emit(AuthorizationInProcess());
+      _talker.info('Starting Facebook authorization process');
+      try {
+        final response = await authorizationRepositoryImpl.signInWithFacebook();
+        _talker.info('Facebook authorization response received. Status code: ${response.statusCode}');
+        
+        // Обработка ответа аналогично email/password
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.accessToken != null && response.refreshToken != null) {
+            _talker.info('Tokens received, authorizing user');
+            emit(AuthorizationSuccess());
+          } else {
+            _talker.error('Tokens missing in Facebook auth response');
+            emit(AuthorizationFailed(
+              errorMessage: response.message ?? 'Ошибка авторизации через Facebook',
+            ));
+          }
+        } else {
+          _talker.error('Facebook authorization failed with status code: ${response.statusCode}');
+          emit(AuthorizationFailed(
+            errorMessage: response.message ?? 'Ошибка авторизации через Facebook',
+          ));
+        }
+      } catch (e) {
+        _talker.error('Facebook authorization error: $e');
+        emit(AuthorizationFailed(errorMessage: 'Ошибка авторизации через Facebook: $e'));
+      }
+    });
   }
 }
