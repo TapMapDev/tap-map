@@ -1,4 +1,4 @@
-class Review {
+class PointReview {
   final String author;
   final DateTime date;
   final int rating;
@@ -7,7 +7,7 @@ class Review {
   final int likes;
   final int dislikes;
 
-  Review({
+  PointReview({
     required this.author,
     required this.date,
     required this.rating,
@@ -17,7 +17,7 @@ class Review {
     this.dislikes = 0,
   });
 
-  factory Review.fromJson(Map<String, dynamic> j) => Review(
+  factory PointReview.fromJson(Map<String, dynamic> j) => PointReview(
     author: j['author'],
     date: DateTime.parse(j['date']),
     rating: j['rating'],

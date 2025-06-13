@@ -22,7 +22,7 @@ import 'package:tap_map/src/features/userFlow/chat/data/chat_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/widgets/config.dart';
-import 'package:tap_map/src/features/userFlow/search_screen/data/search_repository.dart';
+import 'package:tap_map/src/features/userFlow/search_screen/data/repositories/search_repository.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/src/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/src/features/userFlow/map/point_detail/data/repositories/point_repository.dart';
