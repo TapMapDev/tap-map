@@ -1,0 +1,47 @@
+import 'package:tap_map/core/di/di.dart';
+import 'package:tap_map/core/network/api_service.dart';
+import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
+import 'package:tap_map/features/registration/model/registration_response_model.dart';
+
+// TODO(tapmap): Упростить репозиторий, убрав абстракцию RegistrationRepository
+// и придерживаться единого стиля (BLoC + репозиторий).
+
+abstract class RegistrationRepository {
+  Future<RegistrationResponseModel> register({
+    required String email,
+    required String password1,
+    required String password2,
+    required String username,
+  });
+}
+
+class RegistrationRepositoryImpl implements RegistrationRepository {
+  final ApiService apiService;
+  final prefs = getIt.get<SharedPrefsRepository>();
+  RegistrationRepositoryImpl({required this.apiService});
+  @override
+  Future<RegistrationResponseModel> register(
+      {required String username,
+      required String email,
+      required String password1,
+      required String password2}) async {
+    final response = await apiService.postData(
+        '/auth/users/',
+        {
+          'username': username,
+          'email': email,
+          'password': password1,
+          'first_name': 'user',
+          'last_name': 'anon',
+        },
+        useAuth: false);
+    final responseModel = RegistrationResponseModel.fromJson(
+        response['data'], response['statusCode']);
+    if (responseModel.accessToken != null &&
+        responseModel.refreshToken != null) {
+      await prefs.setString('access_token', responseModel.accessToken!);
+      await prefs.setString('refresh_token', responseModel.refreshToken!);
+    }
+    return responseModel;
+  }
+}
