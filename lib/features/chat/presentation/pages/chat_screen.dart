@@ -16,7 +16,7 @@ import 'package:tap_map/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:tap_map/features/chat/presentation/widgets/message_input.dart';
 import 'package:tap_map/features/chat/presentation/widgets/scrollbottom.dart';
 import 'package:tap_map/features/chat/presentation/widgets/typing_indicator.dart';
-import 'package:tap_map/features/user_profile/data/user_repository.dart';
+import 'package:tap_map/features/profile/data/user_repository.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
