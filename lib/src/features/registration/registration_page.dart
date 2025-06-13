@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
+import 'package:tap_map/ui/theme/app_colors.dart';
 import 'package:tap_map/router/routes.dart';
 import 'package:tap_map/src/features/registration/bloc/registration_bloc.dart';
 import 'package:tap_map/src/widget/custom_elevated_button.dart';
@@ -41,12 +42,45 @@ class _RegistrationPageState extends State<RegistrationPage> {
             );
           }
           if (state is RegistarationStateSuccess) {
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Аккаунт успешно создан')),
             );
             Future.delayed(const Duration(seconds: 1), () {
               if (mounted) context.go(AppRoutes.authorization);
             });
+
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   const SnackBar(
+            //     content: Text('Аккаунт успешно создан! 🎉'),
+            //     backgroundColor: Colors.green,
+            //     duration: Duration(seconds: 2),
+            //   ),
+            // );
+            // Future.delayed(const Duration(seconds: 2), () {
+            //   context.go(AppRoutes.authorization);
+            // });
+
+            // WidgetsBinding.instance.addPostFrameCallback((_) {
+            //   ScaffoldMessenger.of(context).showSnackBar(
+            //     SnackBar(
+            //       content: const Text('Регистрация прошла успешно'),
+            //       backgroundColor: AppColors.green,
+            //       duration: const Duration(seconds: 3),
+            //       behavior: SnackBarBehavior.floating,
+            //       margin: EdgeInsets.only(
+            //         bottom: MediaQuery.of(context).size.height - 100,
+            //         left: 20,
+            //         right: 20,
+            //       ),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(10),
+            //       ),
+            //     ),
+            //   );
+            // });
+            //
+            // context.go(AppRoutes.authorization);
           }
         },
         builder: (context, state) {
