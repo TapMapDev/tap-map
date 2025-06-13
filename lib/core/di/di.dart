@@ -19,15 +19,15 @@ import 'package:tap_map/features/password_reset/data/password_reset_repository.d
 import 'package:tap_map/features/registration/data/registration_repository.dart';
 import 'package:tap_map/features/chat/presentation/bloc/pin_bloc/pin_bloc.dart';
 import 'package:tap_map/features/chat/data/repositories/chat_repository.dart';
-import 'package:tap_map/features/userFlow/map/icons/data/icons_repository.dart';
-import 'package:tap_map/features/userFlow/map/styles/data/map_styles_repository.dart';
-import 'package:tap_map/features/userFlow/map/widgets/config.dart';
-import 'package:tap_map/features/userFlow/search_screen/data/repositories/search_repository.dart';
+import 'package:tap_map/features/map/icons/data/icons_repository.dart';
+import 'package:tap_map/features/map/styles/data/map_styles_repository.dart';
+import 'package:tap_map/features/map/widgets/config.dart';
+import 'package:tap_map/features/search_screen/data/repositories/search_repository.dart';
 import 'package:tap_map/features/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/features/user_profile/data/user_repository.dart';
-import 'package:tap_map/features/userFlow/map/point_detail/data/repositories/point_repository.dart';
-import 'package:tap_map/features/userFlow/map/point_detail/data/repositories/point_repository_impl.dart';
-import 'package:tap_map/features/userFlow/map/point_detail/bloc/point_detail_bloc.dart';
+import 'package:tap_map/features/map/point_detail/data/repositories/point_repository.dart';
+import 'package:tap_map/features/map/point_detail/data/repositories/point_repository_impl.dart';
+import 'package:tap_map/features/map/point_detail/bloc/point_detail_bloc.dart';
 import 'package:tap_map/features/chat/presentation/bloc/delete_message/delete_message_bloc.dart';
 import 'package:tap_map/features/chat/presentation/bloc/edit_bloc/edit_bloc.dart';
 
