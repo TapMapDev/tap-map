@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tap_map/core/network/dio_client.dart';
-import 'package:tap_map/features/chat/data/models/chat_model.dart';
-import 'package:tap_map/features/chat/data/models/message_model.dart';
+import 'package:tap_map/features/chat/data/models/models.dart';
 
 class ChatRepository {
   final DioClient _dioClient;
