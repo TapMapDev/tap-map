@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tap_map/router/routes.dart';
+import 'package:tap_map/core/navigation/routes.dart';
 
 class DeepLinkService {
   final GoRouter router;

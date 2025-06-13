@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/router/routes.dart';
+import 'package:tap_map/core/navigation/routes.dart';
 
 Future<String?> authGuard(BuildContext context, GoRouterState state) async {
   final prefs = getIt<SharedPrefsRepository>();

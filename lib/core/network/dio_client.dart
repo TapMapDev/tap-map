@@ -10,7 +10,7 @@ import 'package:synchronized/synchronized.dart';
 import 'package:talker/talker.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/router/routes.dart';
+import 'package:tap_map/core/navigation/routes.dart';
 
 class DioClient {
   final String _baseUrl = dotenv.env['API_BASE_URL']!;

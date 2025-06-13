@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
-import 'package:tap_map/router/routes.dart';
+import 'package:tap_map/core/navigation/routes.dart';
 import 'package:tap_map/src/features/auth/authorization_page.dart';
 import 'package:tap_map/src/features/navbar/botom_nav_bar.dart';
 import 'package:tap_map/src/features/password_reset/ui/new_password_page.dart';

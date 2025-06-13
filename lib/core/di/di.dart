@@ -12,7 +12,7 @@ import 'package:tap_map/core/services/notification_service.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/core/websocket/websocket_service.dart';
 import 'package:tap_map/main.dart';
-import 'package:tap_map/router/app_router.dart';
+import 'package:tap_map/core/navigation/app_router.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/data/password_reset_repository.dart';

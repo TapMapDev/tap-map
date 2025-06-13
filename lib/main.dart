@@ -8,7 +8,7 @@ import 'package:tap_map/ui/theme/OLD_app_text_styles.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/shared_prefs/shared_prefs_repo.dart';
 import 'package:tap_map/firebase_options.dart';
-import 'package:tap_map/router/app_router.dart';
+import 'package:tap_map/core/navigation/app_router.dart';
 import 'package:tap_map/src/features/auth/bloc/authorization_bloc.dart';
 import 'package:tap_map/src/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/src/features/password_reset/bloc/password_resert_bloc.dart';
