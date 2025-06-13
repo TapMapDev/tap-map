@@ -74,8 +74,8 @@ class DioClient {
                 headers: {'Content-Type': 'application/json'},
               ));
               final resp = await tokenDio.post(
-                '/auth/jwt/refresh/',
-                data: {'refresh': refreshToken},
+                '/auth/token/refresh/',
+                data: {'refresh_token': refreshToken},
               );
 
               if (resp.statusCode == 200) {
