@@ -50,10 +50,10 @@ class RegistrationResponseModel {
 
     // Локализованное имя поля для отображения в сообщении об ошибке
     const fieldNames = {
-      'username': 'Юзернэйм',
-      'email': 'Эмэил',
+      'username': 'Псевдоним',
+      'email': 'Email',
       'password1': 'Пароль',
-      'password2': 'Повторите пароль',
+      'password2': 'Повтор пароля',
     };
 
     if (errorMessage != null && errorField != null) {
@@ -62,7 +62,10 @@ class RegistrationResponseModel {
           errorMessage.contains('пуст') ||
           errorMessage.contains('required') ||
           errorMessage.contains('обязат')) {
-        errorMessage = 'Поле "$fieldName" не может быть пустым';
+        errorMessage = '"$fieldName" не может быть пустым';
+      }
+      if (errorMessage.contains('Пользователь с таким Электронная почта уже существует')) {
+        errorMessage = 'Email уже зарегистрирован';
       }
     }
 
