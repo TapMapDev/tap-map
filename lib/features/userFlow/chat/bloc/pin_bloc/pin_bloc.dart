@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:tap_map/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/userFlow/chat/models/message_model.dart';
 
 part 'pin_event.dart';

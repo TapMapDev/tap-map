@@ -18,7 +18,7 @@ import 'package:tap_map/features/auth/data/authorization_repository.dart';
 import 'package:tap_map/features/password_reset/data/password_reset_repository.dart';
 import 'package:tap_map/features/registration/data/registration_repository.dart';
 import 'package:tap_map/features/userFlow/chat/bloc/pin_bloc/pin_bloc.dart';
-import 'package:tap_map/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/userFlow/map/icons/data/icons_repository.dart';
 import 'package:tap_map/features/userFlow/map/styles/data/map_styles_repository.dart';
 import 'package:tap_map/features/userFlow/map/widgets/config.dart';

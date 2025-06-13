@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tap_map/core/di/di.dart';
 import 'package:tap_map/core/navigation/routes.dart';
-import 'package:tap_map/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/userFlow/user_profile/bloc/user_information_bloc.dart';
 import 'package:tap_map/features/userFlow/user_profile/model/user_response_model.dart';
 import 'package:tap_map/features/userFlow/user_profile/widget/client_avatar.dart';

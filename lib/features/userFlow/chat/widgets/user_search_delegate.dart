@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tap_map/features/userFlow/chat/data/chat_repository.dart';
+import 'package:tap_map/features/userFlow/chat/data/repositories/chat_repository.dart';
 import 'package:tap_map/features/userFlow/chat/ui/chat_screen.dart';
 import 'package:tap_map/features/userFlow/user_profile/data/user_repository.dart';
 import 'package:tap_map/features/userFlow/user_profile/model/user_response_model.dart';
